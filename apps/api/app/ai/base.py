@@ -36,6 +36,9 @@ class CopilotAnswer:
     reasoning: list[str]
     provider: str
     proposal: dict[str, Any] | None = None  # optional change proposal; always requires reviewer approval
+    confidence: float = 0.0  # how well the answer is grounded in case data (deterministic for the mock)
+    recommended_actions: list[str] = field(default_factory=list)
+    requires_review: bool = True  # anything touching a critical decision needs a reviewer
 
 
 class AIProvider(Protocol):

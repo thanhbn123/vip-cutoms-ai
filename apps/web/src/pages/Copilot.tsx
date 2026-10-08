@@ -25,8 +25,11 @@ export function Copilot({ ctx }: { ctx: Ctx }) {
         <div className="section-title"><h2>AI Copilot</h2><span className="badge purple">Full case context · {msgs[0]?.provider ?? "mock"} provider</span></div>
         <div className="history" ref={hist}>
           <div className="msg ai"><b>VIP Customs AI</b><br />Hồ sơ {d?.case.case_no}: {d?.summary.open_critical ?? 0} critical, {d?.summary.open_warning ?? 0} warning. Hỏi HS, C/O, trị giá hoặc “còn thiếu gì để khai?”.</div>
-          {msgs.map((m) => (<div key={m.id} className={`msg ${m.role === "USER" ? "user" : "ai"}`}>{m.role === "AI" && <><b>VIP Customs AI</b> <span className="chip">{m.intent}</span><br /></>}
+          {msgs.map((m) => (<div key={m.id} className={`msg ${m.role === "USER" ? "user" : "ai"}`}>{m.role === "AI" && <><b>VIP Customs AI</b> <span className="chip">{m.intent}</span>
+            {m.meta?.confidence != null && <span className="chip">confidence {Math.round(m.meta.confidence * 100)}%</span>}
+            {m.meta?.requires_review && <Badge s="NEEDS_REVIEW">requires review</Badge>}<br /></>}
             <span style={{ whiteSpace: "pre-wrap" }}>{m.content}</span>
+            {m.role === "AI" && (m.meta?.recommended_actions?.length ?? 0) > 0 && <ul className="mini" style={{ margin: "6px 0 0", paddingLeft: 16 }}>{m.meta.recommended_actions!.map((a, i) => <li key={i}>{a}</li>)}</ul>}
             {m.role === "AI" && (m.sources.length > 0 || m.reasoning.length > 0) && <details><summary>Nguồn ({m.sources.length}) · reasoning</summary>
               <div className="mini">{m.sources.map((s, i) => <span key={i} className="chip">{s.type}: {s.label}</span>)}</div><ol className="mini">{m.reasoning.map((r, i) => <li key={i}>{r}</li>)}</ol></details>}
           </div>))}

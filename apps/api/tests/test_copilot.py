@@ -20,6 +20,7 @@ def test_missing_question_lists_open_issues_with_sources(world, client):
     cid = setup(world, client)
     a = ask(client, world, cid, "Còn thiếu gì để khai?")
     assert a["intent"] == "MISSING" and "critical" in a["answer"]
+    assert a["requires_review"] is True and a["confidence"] >= 0.9 and any("Item 3" in x for x in a["recommended_actions"])
     assert "Item 3" in a["answer"] and "BLOCKED" in a["answer"]
     issue_ids = {i["id"] for i in client.get(f"/api/v1/cases/{cid}/issues?status=OPEN", headers=world.h()).json()}
     assert a["sources"] and all(s["id"] in issue_ids for s in a["sources"] if s["type"] == "issue")
@@ -98,3 +99,20 @@ def test_fabricated_sources_are_dropped(world, client, monkeypatch):
     monkeypatch.setattr("app.services.copilot.get_provider", lambda: Fake())
     a = ask(client, world, cid, "hello")
     assert a["sources"] == [] and any("[validation]" in r for r in a["reasoning"])
+    assert a["confidence"] == 0.0  # Fake returned no confidence → never inflated
+
+
+def test_five_mandated_questions_return_grounded_structured_answers(world, client):
+    cid = setup(world, client)
+    expected = {"Còn thiếu gì để khai?": "MISSING", "Form E có vấn đề gì?": "CO", "Tại sao Item 3 chưa chốt HS?": "HS_WHY",
+                "Kiểm tra trị giá lô hàng": "VALUATION", "Đề xuất mô tả Item 1": "DESCRIBE"}
+    for q, intent in expected.items():
+        a = ask(client, world, cid, q, role="REVIEWER")
+        assert a["intent"] == intent, (q, a["intent"])
+        assert a["answer"] and isinstance(a["sources"], list) and a["reasoning"]
+        assert 0.0 <= a["confidence"] <= 1.0 and isinstance(a["recommended_actions"], list) and isinstance(a["requires_review"], bool)
+        assert a["requires_review"] is True  # case has a critical issue → every answer defers to the reviewer
+    hs = ask(client, world, cid, "Tại sao Item 3 chưa chốt HS?")
+    assert any("bổ sung" in x and "Item 3" in x for x in hs["recommended_actions"])
+    msgs = client.get(f"/api/v1/cases/{cid}/copilot/messages", headers=world.h()).json()
+    assert all(m["meta"].get("confidence") is not None for m in msgs if m["role"] == "AI")

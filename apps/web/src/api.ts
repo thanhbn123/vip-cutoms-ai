@@ -62,5 +62,5 @@ export interface Dataset { id: string; kind: string; version: string; label: str
 export interface Draft { id: string; version: number; kind: string; release_eligible: boolean; watermark: string; checksum: string; created_at: string }
 export interface Memory { id: string; model: string | null; description: string; hs_code: string; unit_price: string | null; currency: string | null; outcome: string; reusable: boolean; case_no: string; approved_at: string }
 export interface Proposal { id: string; target_ref: string; current_value: string | null; proposed_value: string; status: string; reasoning: string[]; requested_by: string }
-export interface Message { id: string; role: string; content: string; intent: string | null; provider: string | null; sources: { type: string; label: string }[]; reasoning: string[]; proposal_id: string | null }
+export interface Message { id: string; role: string; content: string; intent: string | null; provider: string | null; sources: { type: string; label: string }[]; reasoning: string[]; proposal_id: string | null; meta: { confidence?: number; recommended_actions?: string[]; requires_review?: boolean } }
 export interface QueueRow { case_id: string; case_no: string; status: string; priority: string; open_critical: number; open_warning: number; top_issues: Issue[] }

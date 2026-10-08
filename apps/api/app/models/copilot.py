@@ -22,6 +22,7 @@ class CopilotMessage(IdMixin, TenantMixin, Base):
     provider: Mapped[str | None] = mapped_column(String(50))
     provider_version: Mapped[str | None] = mapped_column(String(50))
     proposal_id: Mapped[uuid.UUID | None] = mapped_column(Uuid)
+    meta: Mapped[Any] = mapped_column(JSONType, default=dict)  # confidence, recommended_actions, requires_review, dropped_sources
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 
