@@ -13,7 +13,7 @@ from app.models.document import Document
 from app.models.extraction import CaseField, ExtractedField
 from app.models.identity import User
 from app.models.issue import Issue
-from app.services import audit, mapping
+from app.services import audit, evaluators, mapping
 from app.services.workflow import CaseStatus, transition
 
 router = APIRouter(tags=["pipeline"])
@@ -87,15 +87,11 @@ def run_pipeline(db: Session, case, user: User, *, parse: bool = True) -> dict:
             mapping.parse_document(db, case, d, actor)
             parsed += 1
     mapping.map_fields(db, case, actor)
-    for step in PIPELINE_STEPS:
-        step(db, case, actor)
+    evaluators.run_all(db, case, actor)
     from app.services.release import recompute_case_status
 
     status = recompute_case_status(db, case, actor)
     return {"documents_parsed": parsed, "status": status}
-
-
-PIPELINE_STEPS: list = []  # later gates append evaluators: goods/HS, valuation, C/O, policy
 
 
 @router.post("/cases/{case_id}/pipeline/run")

@@ -28,21 +28,21 @@ class IssueSpec:
     assignee_role: str | None = "REVIEWER"
 
 
-def sync(db: Session, case: CustomsCase, specs: list[IssueSpec], owned_categories: set[str]) -> None:
+def sync(db: Session, case: CustomsCase, specs: list[IssueSpec], owner: str) -> None:
     """Create new issues, refresh open ones, auto-resolve vanished auto-resolvable ones.
 
-    Only issues whose category is in `owned_categories` are touched, so evaluators can run independently.
+    Only issues raised by `owner` (an evaluator name) are touched, so evaluators run independently.
     """
     existing = {
         i.dedupe_key: i
-        for i in db.execute(select(Issue).where(Issue.case_id == case.id, Issue.category.in_(owned_categories))).scalars()
+        for i in db.execute(select(Issue).where(Issue.case_id == case.id, Issue.raised_by == owner)).scalars()
     }
     seen: set[str] = set()
     for spec in specs:
         seen.add(spec.dedupe_key)
         cur = existing.get(spec.dedupe_key)
         if cur is None:
-            cur = Issue(tenant_id=case.tenant_id, case_id=case.id, dedupe_key=spec.dedupe_key, code=spec.code,
+            cur = Issue(tenant_id=case.tenant_id, case_id=case.id, dedupe_key=spec.dedupe_key, raised_by=owner, code=spec.code,
                         severity=spec.severity, category=spec.category, title=spec.title, detail=spec.detail,
                         target_ref=spec.target_ref, evidence=spec.evidence, status="OPEN",
                         auto_resolvable=spec.auto_resolvable, assignee_role=spec.assignee_role)

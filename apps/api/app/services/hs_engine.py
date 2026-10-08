@@ -61,7 +61,7 @@ def evaluate(db: Session, case: CustomsCase, actor: audit.Actor) -> None:
     except NoActiveDataset:
         specs.append(IssueSpec("hs_dataset", "HS_KNOWLEDGE_UNAVAILABLE", "CRITICAL", "HS", "Không có bộ quy tắc HS hiệu lực",
                                "Hệ thống không phân loại khi thiếu knowledge dataset (fail-closed).", auto_resolvable=True))
-        sync(db, case, specs, {"HS", "CO"})
+        sync(db, case, specs, "hs_engine")
         return
     rules = db.execute(select(HsRule).where(HsRule.dataset_id == ds.id)).scalars().all()
     run_id = uuid.uuid4()
@@ -106,7 +106,4 @@ def evaluate(db: Session, case: CustomsCase, actor: audit.Actor) -> None:
                      entity_id=item.id, case_id=case.id,
                      after={"run_id": str(run_id), "top": top["heading"] if top else None, "confidence": item.hs_confidence,
                             "hs_status": item.hs_status, "dataset": f"{ds.kind}:{ds.version}", "is_demo": ds.is_demo})
-    sync(db, case, specs, {"HS", "CO"})
-    # Item-level DOCUMENT_CONFLICT / VALIDATION specs share categories owned by mapping.map_fields, so they are
-    # created additively here (empty owned-set → create-only, no auto-resolve of mapping's issues).
-    sync(db, case, [s for s in specs if s.category in ("DOCUMENT_CONFLICT", "VALIDATION")], set())
+    sync(db, case, specs, "hs_engine")

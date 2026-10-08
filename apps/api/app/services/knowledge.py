@@ -62,3 +62,24 @@ def seed_demo(db: Session) -> list[str]:
 
 
 EXTRA_SEEDERS: list = []  # G06 registers tariff / FTA / policy demo seeders
+
+
+def _seed_json_datasets(db: Session) -> list[str]:
+    created = []
+    for kind, data, label in (("TARIFF", fx.TARIFF_DEMO, "Demo tariff rates"), ("FTA", fx.FTA_DEMO, "Demo FTA / C/O rules"),
+                              ("POLICY", fx.POLICY_DEMO, "Demo specialized-management policy")):
+        ds = _seed(db, kind, data["version"], data["effective_from"], label)
+        if ds:
+            ds.notes = __import__("json").dumps({k: v for k, v in data.items() if k not in ("version", "effective_from")})
+            created.append(kind)
+    return created
+
+
+EXTRA_SEEDERS.append(_seed_json_datasets)
+
+
+def dataset_payload(ds: KnowledgeDataset) -> dict:
+    """JSON-encoded body for TARIFF/FTA/POLICY datasets (HS_RULES live in hs_rules)."""
+    import json
+
+    return json.loads(ds.notes) if ds.notes else {}

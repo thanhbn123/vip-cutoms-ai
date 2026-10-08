@@ -14,7 +14,7 @@ from app.db import get_db
 from app.models.base import utcnow
 from app.models.goods import ClassificationDecision, GoodsItem, HsCandidate
 from app.models.identity import User
-from app.services import audit
+from app.services import audit, evaluators
 from app.services.release import recompute_case_status
 from app.services.workflow import CaseStatus
 
@@ -150,9 +150,7 @@ def patch_item(case_id: uuid.UUID, item_id: uuid.UUID, body: ItemPatch, user: Us
     audit.record(db, tenant_id=case.tenant_id, actor=audit.Actor.user(user), action="item.edited", entity_type="goods_item",
                  entity_id=it.id, case_id=case.id, before=before,
                  after={"description_vn": it.description_vn, "model": it.model, "attributes": it.attributes}, reason=body.reason)
-    from app.services.hs_engine import evaluate
-
-    evaluate(db, case, audit.Actor.user(user))  # re-score with the new attributes
+    evaluators.run_all(db, case, audit.Actor.user(user))  # re-score with the new attributes
     recompute_case_status(db, case, audit.Actor.user(user))
     db.commit()
     return _with_candidates(db, [it])[0]
@@ -205,9 +203,7 @@ def hs_decision(case_id: uuid.UUID, item_id: uuid.UUID, body: DecisionIn, user: 
                  entity_id=it.id, case_id=case.id, before=before,
                  after={"hs_code": it.hs_code, "hs_status": it.hs_status, "decision_id": str(dec.id), "override": is_override},
                  reason=body.reason, evidence=body.evidence)
-    from app.services.hs_engine import evaluate
-
-    evaluate(db, case, audit.Actor.user(user))  # clears HS issues for approved items, re-raises for rejected ones
+    evaluators.run_all(db, case, audit.Actor.user(user))  # HS issues clear/re-raise; tax, C/O, policy follow the decision
     for hook in DECISION_HOOKS:
         hook(db, case, it, dec, user)
     recompute_case_status(db, case, audit.Actor.user(user))
@@ -215,7 +211,7 @@ def hs_decision(case_id: uuid.UUID, item_id: uuid.UUID, body: DecisionIn, user: 
     return dec
 
 
-DECISION_HOOKS: list = []  # G06 policy re-eval, G10 learning memory
+DECISION_HOOKS: list = []  # G10 learning memory
 
 
 @router.get("/cases/{case_id}/items/{item_id}/decisions", response_model=list[DecisionOut])

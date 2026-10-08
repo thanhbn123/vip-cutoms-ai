@@ -263,7 +263,7 @@ def map_fields(db: Session, case: CustomsCase, actor: audit.Actor) -> list[Issue
                                        f"Thiếu {label} cho điều kiện {inc.value}",
                                        "Trị giá tính thuế theo điều kiện này cần khoản cộng; chưa có chứng từ/giá trị.",
                                        target_ref=k, auto_resolvable=True))
-    sync(db, case, specs, {"DOCUMENT_CONFLICT", "MISSING_DATA", "VALIDATION", "VALUATION"})
+    sync(db, case, specs, "mapping")
     return specs
 
 
