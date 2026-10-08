@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api import auth, cases, documents, goods, knowledge, masterdata, pipeline
+from app.api import auth, cases, declaration, documents, goods, knowledge, masterdata, pipeline, review
 from app.services import evaluators, hs_engine, origin, policy, valuation
 
 api_router = APIRouter()
@@ -11,6 +11,8 @@ api_router.include_router(documents.router)
 api_router.include_router(pipeline.router)
 api_router.include_router(goods.router)
 api_router.include_router(knowledge.router)
+api_router.include_router(declaration.router)
+api_router.include_router(review.router)
 
 # Deterministic evaluators, run in this order after field mapping (origin before valuation so tax sees C/O decisions).
 if not evaluators.STEPS:
