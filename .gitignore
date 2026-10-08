@@ -20,3 +20,4 @@ uploads/
 local-data/
 *.tsbuildinfo
 *.egg-info/
+backups/
