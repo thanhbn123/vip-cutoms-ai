@@ -75,3 +75,16 @@ def test_acceptance_mvp_thirteen_steps(world, client):
     # 13. approved decision xuất hiện trong historical memory
     mem = client.get("/api/v1/memory", headers=H).json()
     assert {m["hs_code"] for m in mem} == {"84137099", "39172300", "85371099"} and all(m["reusable"] for m in mem)
+
+    # 14-16. new similar case (same customer/supplier/models) finds the approved history and is nudged, never auto-copied
+    case2 = world.create_case()
+    for d in ("INVOICE", "PACKING_LIST"):
+        upload(client, H, case2["id"], d, FIXTURE_FILES[d])
+    client.post(f"/api/v1/cases/{case2['id']}/pipeline/run", headers=H)
+    items2 = {i["line_no"]: i for i in client.get(f"/api/v1/cases/{case2['id']}/items", headers=H).json()}
+    top = items2[1]["candidates"][0]
+    assert top["history_refs"][0]["match"] == "EXACT" and top["history_refs"][0]["hs_code"] == "84137099"
+    assert top["confidence"] == round(items[1]["candidates"][0]["confidence"] + 0.05, 2)
+    assert items2[1]["hs_status"] == "NEEDS_REVIEW" and items2[1]["hs_code"] is None  # history informs, reviewer still decides
+    hist = client.get(f"/api/v1/cases/{case2['id']}/items/{items2[1]['id']}/history", headers=H).json()
+    assert hist["comparison"][0]["hs_previous"] == "84137099" and hist["comparison"][0]["price_flag"] == "NORMAL"
