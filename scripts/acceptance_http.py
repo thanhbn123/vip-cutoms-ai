@@ -72,10 +72,15 @@ def main() -> None:
     items = {i["line_no"]: i for i in op.get(f"/cases/{cid}/items").json()}
     step("F", "3 goods items", sorted(items) == [1, 2, 3])
     c = {n: items[n]["candidates"][0] for n in (1, 2, 3)}
-    step("G", "HS 0.87 review / 0.95 / 0.64 blocked",
-         (c[1]["heading"], c[1]["confidence"], items[1]["hs_status"]) == ("8413", 0.87, "NEEDS_REVIEW")
-         and (c[2]["heading"], c[2]["confidence"]) == ("3917", 0.95)
-         and (c[3]["heading"], c[3]["confidence"], items[3]["hs_status"]) == ("8537", 0.64, "BLOCKED") and run["status"] == "BLOCKED")
+    # Reference values hold on an empty database. If approved memory for the same fingerprint already exists (re-run on a used
+    # staging DB), the engine adds +0.05 (D-016) — accepted ONLY when history_refs are present, and reported explicitly.
+    boosted = {n: bool(c[n]["history_refs"]) for n in (1, 2, 3)}
+    exp = {1: 0.92 if boosted[1] else 0.87, 2: 0.99 if boosted[2] else 0.95, 3: 0.69 if boosted[3] else 0.64}
+    step("G", "HS 0.87 review / 0.95 / 0.64 blocked" + (" (approved-memory boost +0.05 applied on re-used DB)" if any(boosted.values()) else ""),
+         (c[1]["heading"], c[1]["confidence"], items[1]["hs_status"]) == ("8413", exp[1], "NEEDS_REVIEW")
+         and (c[2]["heading"], c[2]["confidence"]) == ("3917", exp[2])
+         and (c[3]["heading"], c[3]["confidence"], items[3]["hs_status"]) == ("8537", exp[3], "BLOCKED") and run["status"] == "BLOCKED",
+         f"item1={c[1]['confidence']} item2={c[2]['confidence']} item3={c[3]['confidence']} history={boosted}")
 
     val = next(a for a in op.get(f"/cases/{cid}/assessments").json() if a["kind"] == "VALUATION")
     step("H", "valuation 17900 + 420 + 100 = 18420", val["status"] == "COMPUTED" and val["result"]["customs_value"] == "18420.00")
