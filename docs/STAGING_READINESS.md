@@ -1,4 +1,4 @@
-# STAGING READINESS (G13) — READY_FOR_STAGING = YES (local), staging execution needs owner inputs B-01…B-04
+# STAGING READINESS (G13/G14) — READY_FOR_STAGING_DEPLOY = YES pending owner inputs (B-03 host/TLS/secrets, B-04 review); DO NOT DEPLOY without approval
 
 | Area | State | Evidence / gap |
 |---|---|---|
@@ -12,7 +12,7 @@
 | AI Copilot | ✅ mock | case-scoped, sources validated, proposals require a second reviewer |
 | Historical learning | ✅ | approved-only memory, outcome flags, boost + "do not auto-copy" |
 | Frontend | ✅ functional parity | nine V12 pages; Playwright E2E on the real stack PASS; pixel polish pending |
-| Docker Compose | ⚠️ written, not executed | daemon unavailable in the build session; YAML validated; first task of the staging session |
+| Docker Compose | ✅ executed (G14) | clean boot from zero, migrate to head, health/ready, in-container seed, Playwright + HTTP acceptance 17/17 (`docs/G14_DOCKER_STAGING_PREFLIGHT.md`) |
 | CI | ⚠️ CI_EXTERNAL_UNVERIFIED | `.github/workflows/ci.yml` present; not observable from the build session |
 | Security review | ⚠️ partial | secret scan, RBAC tests, no public document URLs, CORS allow-list, fail-closed secret; **no pentest, rate limiting or CSP yet** |
 | Backup / restore / rollback | 📄 documented | `docs/RUNBOOK.md`; not rehearsed on a staging host |
