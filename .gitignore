@@ -18,3 +18,5 @@ htmlcov/
 *.log
 uploads/
 local-data/
+*.tsbuildinfo
+*.egg-info/

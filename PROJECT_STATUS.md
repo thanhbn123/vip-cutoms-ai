@@ -1,39 +1,12 @@
 # PROJECT STATUS
 
-## Project
-`thanhbn123/vip-cutoms-ai`
+Repo `thanhbn123/vip-cutoms-ai` · baseline main `2afdf6b49112f5db3f2962fcc3345c4c5b9055a0` · working branch `claude/busy-davinci-9u8bye`.
 
-## Baseline
-Fresh implementation project. GitHub repository was empty when the initial package was prepared.
+Canonical UX: `prototype/index.html` (V12 FINAL). Plan: `docs/MASTER_PLAN.md`, decisions: `docs/DECISIONS.md`, gates: `docs/GATES.md`.
 
-## Product prototype
-- Canonical: `prototype/index.html`
-- Version: V12 FINAL
-- Historical prototypes: `docs/prototypes/`
+## Gate log
 
-## Current phase
-`PRE-G00 / IMPLEMENTATION NOT STARTED`
-
-## Completed
-- Product concept and UX prototype V1–V12
-- Core fail-closed AI rules drafted
-- Initial architecture and gate roadmap packaged
-
-## Not started
-- Application source code
-- Database schema/migrations
-- Authentication/RBAC
-- Document upload/storage
-- OCR/parser
-- AI gateway
-- HS candidate engine
-- Tax/C/O/policy engine
-- Reviewer workflow
-- Audit persistence
-- Tests/CI
-- Staging deployment
-
-## Next gate
-**G00 — Repository foundation and executable skeleton**
-
-See `docs/ROADMAP.md`.
+| Gate | Status | Evidence |
+|---|---|---|
+| G00 Repo assessment | PASS | docs/MASTER_PLAN.md, DECISIONS.md, GATES.md, STATUS.md |
+| G01 Foundation | PASS | API boots, /health + /ready, Alembic head 0001, web shell (V12 sidebar), compose, CI file, `scripts/verify.sh` green |
