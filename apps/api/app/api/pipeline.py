@@ -135,10 +135,7 @@ def set_field(case_id: uuid.UUID, key: str, body: FieldSetIn, user: User = Depen
         cf = mapping.set_field_manual(db, case, user, key, body.value, body.reason)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail={"code": "UNKNOWN_FIELD", "message": str(exc)}) from exc
-    mapping.map_fields(db, case, audit.Actor.user(user))  # refresh conflicts/alternatives against documents
-    from app.services.release import recompute_case_status
-
-    recompute_case_status(db, case, audit.Actor.user(user))
+    _reevaluate(db, case, user)
     db.commit()
     db.refresh(cf)
     return cf
@@ -166,10 +163,17 @@ def approve_field(case_id: uuid.UUID, key: str, body: FieldSetIn | None = None, 
         audit.record(db, tenant_id=case.tenant_id, actor=audit.Actor.user(user), action="field.approved", entity_type="case_field",
                      entity_id=cf.id, case_id=case.id, before=before, after={"key": key, "value": cf.value, "review_status": "APPROVED"},
                      reason=body.reason if body else "approved AI value")
-    mapping.map_fields(db, case, audit.Actor.user(user))
-    from app.services.release import recompute_case_status
-
-    recompute_case_status(db, case, audit.Actor.user(user))
+    _reevaluate(db, case, user)
     db.commit()
     db.refresh(cf)
     return cf
+
+
+def _reevaluate(db: Session, case, user: User) -> None:
+    """Field changes feed valuation/tax/C-O/policy: re-map against documents, re-run evaluators, recompute status."""
+    from app.services.release import recompute_case_status
+
+    actor = audit.Actor.user(user)
+    mapping.map_fields(db, case, actor)
+    evaluators.run_all(db, case, actor)
+    recompute_case_status(db, case, actor)

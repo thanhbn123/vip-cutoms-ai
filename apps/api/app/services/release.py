@@ -30,3 +30,11 @@ def recompute_case_status(db: Session, case: CustomsCase, actor: audit.Actor) ->
     transition(db, case, target, actor, reason=f"{len(issues)} open issue(s), critical={sum(i.severity == 'CRITICAL' for i in issues)}",
                evidence=[{"issue_id": str(i.id), "code": i.code, "severity": i.severity} for i in issues])
     return case.status
+
+
+def gate(db: Session, case: CustomsCase) -> dict:
+    """Release gate = declaration validation (all CRITICAL checks ok). Deterministic, no LLM."""
+    from app.services import declaration
+
+    decl = declaration.build(db, case)
+    return {"eligible": decl["release_eligible"], "checks": decl["validation"], "readiness": decl["readiness"], "status": case.status}
