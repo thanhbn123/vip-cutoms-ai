@@ -21,16 +21,17 @@ Canonical UX: `prototype/index.html` (V12 FINAL). Plan: `docs/MASTER_PLAN.md`, d
 | G10 Historical learning | PASS | product_memory written only from APPROVE decisions (evidence hash, fingerprint, reviewer), rejected decisions never stored, EXACT/MODEL history refs + +0.05 boost for reusable memory, CONSULTATION/DISPUTE outcome (Senior) → reference-only "do not auto-copy", item history/price-delta API, Copilot price-anomaly answer (migration 0008) |
 | G12 Full integration | PASS (+ session 2: step 16 history on similar case, Playwright browser E2E on the real stack) | `tests/test_acceptance_mvp.py` executes the owner's 13-step acceptance end-to-end via the API; live smoke run of uvicorn + seed (health/ready/login/pipeline/copilot/drafts); regression test for script-path evaluation |
 | G13 Local acceptance / staging readiness | PASS (local) | clean-checkout + migrate-from-zero + full suite + browser E2E PASS, evidence in `artifacts/test-results/`; Makefile; `docs/LOCAL_ACCEPTANCE_REPORT.md`, `docs/LOCAL_DEVELOPMENT.md`, `docs/TEST_STRATEGY.md`, `docs/NEXT_SESSION_STAGING.md`; Docker smoke NOT_RUN (no daemon) |
+| G14 Docker / staging preflight | PASS | real `docker compose` boot from zero (build, 3 containers, migrate to 0010, health/ready 200, 0 restarts, no secret leak), in-container seed, Playwright vs Docker web, HTTP acceptance A–P 17/17; demo-data labelling (banner, notice API, legal notice) + `test_demo_labels.py`; staging package `infra/staging/` + 4 docs; security preflight; evidence `docs/G14_DOCKER_STAGING_PREFLIGHT.md` |
 | G11 Frontend V12 parity | PASS | React+TS SPA reusing V12 CSS/sidebar: login, Tổng quan (readiness/mapped/history/release metrics, flow, critical issues, AI summary), Hồ sơ & chứng từ (create case, master data, Document Center upload+parse, lineage), Smart Declaration (5 sections, per-field confidence/source/status, edit/approve/approve-all, validation), Hàng hóa & HS (candidates, reasoning, attributes, HS decision, C/O decision, tax/policy), Knowledge Hub (versioned demo datasets, toggle), AI Copilot (chat, sources, proposals queue), Reviewer & Release (queue, issues resolve/waive, gate, DRAFT/READY/release, downloads), Lịch sử & Learning, Quản trị (metrics, production path, users, audit) · vitest 3 tests · seed script `scripts/seed_demo.py` |
 
 ## Current checkpoint (end of session 2 · 2026-10-08)
 
 - Branches: `main` `2afdf6b` unchanged · `develop` = release candidate (feature/g00…g13 merged `--no-ff`, pushed) · `claude/busy-davinci-9u8bye` mirrors develop
-- Tests: **66 pytest** (PostgreSQL 16, schema from zero) + **3 vitest** + **1 Playwright E2E**; `make verify` and `scripts/collect_evidence.sh` green; CI: `CI_EXTERNAL_UNVERIFIED`
+- Tests: **68 pytest** (PostgreSQL 16, schema from zero) + **3 vitest** + **1 Playwright E2E** + HTTP acceptance 17/17 vs Docker; `make verify` and `scripts/collect_evidence.sh` green; CI: `CI_EXTERNAL_UNVERIFIED`
 - Migration head: `0010_copilot_meta` (0001 → 0010, single head, downgrade verified)
 - Works end-to-end locally (API + web): the owner's 16-step flow, V12 functional parity, reviewer workflow, release gate, versioned drafts, audit chain, approved-only learning.
 - Mocked / demo: OCR-LLM provider (`mock`), HS rules, tariff, FTA, policy (all `is_demo`, NON-AUTHORITATIVE), local file storage.
-- Not executed here: Docker Compose (no daemon). Not done: real providers, authoritative data, OIDC, S3, rate limiting/CSP, staging deploy, any customs-system connection.
+- Docker Compose: executed in G14 (PASS). Staging compose (`infra/staging/`) prepared, not deployed. Not done: real providers, authoritative data, OIDC, S3, rate limiting/CSP, staging deploy, any customs-system connection.
 
 ## Next
 Staging session per `docs/NEXT_SESSION_STAGING.md` once B-01…B-04 are answered. First command there: `cp .env.example .env` (fill secrets) → `make docker-up` → `make e2e`.
