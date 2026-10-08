@@ -1,4 +1,4 @@
-# integration-e2e · 2026-10-08T06:56:46Z · develop 9c1e6a6
+# integration-e2e · 2026-10-08T12:02:06Z · develop 3592878
 $ bash -o pipefail -c PW_CHROMIUM_PATH=${PW_CHROMIUM_PATH:-/opt/pw-browsers/chromium} bash scripts/e2e.sh 2>&1 | grep -vE 'agent-proxy|google|gvt1|For details' | tail -15
 exit_code=0
 ----- last lines -----
@@ -14,6 +14,6 @@ demo case VIP-HQ-261008-001: {'documents_parsed': 4, 'status': 'BLOCKED'}
 
 Running 1 test using 1 worker
 
-  ✓  1 smoke.spec.ts:5:1 › login → V12 navigation → goods shows the BLOCKED item → copilot answers → release gate blocked (1.6s)
+  ✓  1 smoke.spec.ts:5:1 › login → V12 navigation → goods shows the BLOCKED item → copilot answers → release gate blocked (2.9s)
 
-  1 passed (2.5s)
+  1 passed (4.9s)
