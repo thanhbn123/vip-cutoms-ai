@@ -19,4 +19,18 @@ Canonical UX: `prototype/index.html` (V12 FINAL). Plan: `docs/MASTER_PLAN.md`, d
 | G08 Reviewer / Audit / Release | PASS | issue resolve/waive (critical waive = Senior + evidence), approve-all critical fields (skips conflicted), release gate (all CRITICAL checks), mark-ready → READY_TO_EXPORT, immutable versioned drafts: PREVIEW anytime (watermark) / RELEASE only from READY_TO_EXPORT → DRAFT_EXPORTED, JSON+CSV internal adapters (no VNACCS), reviewer queue, dashboard summary, hash-chain verified (migration 0007) |
 | G09 AI Copilot | PASS | case-scoped context (tenant-authorised only), deterministic mock intents (MISSING / HS_WHY / CO / VALUATION / DESCRIBE / GENERAL) with sources + reasoning, provider output validated (fabricated source ids dropped), DESCRIBE → Proposal (PROPOSED) applied only by a reviewer other than the requester, messages persisted + audited |
 | G10 Historical learning | PASS | product_memory written only from APPROVE decisions (evidence hash, fingerprint, reviewer), rejected decisions never stored, EXACT/MODEL history refs + +0.05 boost for reusable memory, CONSULTATION/DISPUTE outcome (Senior) → reference-only "do not auto-copy", item history/price-delta API, Copilot price-anomaly answer (migration 0008) |
+| G12 Full integration | PASS | `tests/test_acceptance_mvp.py` executes the owner's 13-step acceptance end-to-end via the API; live smoke run of uvicorn + seed (health/ready/login/pipeline/copilot/drafts); regression test for script-path evaluation |
+| G13 Staging readiness | PREPARED (READY_FOR_STAGING = NO) | `docs/STAGING_READINESS.md`, `docs/RUNBOOK.md`; blockers B-01..B-04 need the owner |
 | G11 Frontend V12 parity | PASS | React+TS SPA reusing V12 CSS/sidebar: login, Tổng quan (readiness/mapped/history/release metrics, flow, critical issues, AI summary), Hồ sơ & chứng từ (create case, master data, Document Center upload+parse, lineage), Smart Declaration (5 sections, per-field confidence/source/status, edit/approve/approve-all, validation), Hàng hóa & HS (candidates, reasoning, attributes, HS decision, C/O decision, tax/policy), Knowledge Hub (versioned demo datasets, toggle), AI Copilot (chat, sources, proposals queue), Reviewer & Release (queue, issues resolve/waive, gate, DRAFT/READY/release, downloads), Lịch sử & Learning, Quản trị (metrics, production path, users, audit) · vitest 3 tests · seed script `scripts/seed_demo.py` |
+
+## Current checkpoint (end of session 2026-10-08)
+
+- Branch: `claude/busy-davinci-9u8bye` (all gates committed as `[G0x]` commits; no `develop`/PR could be created from this session — see D-003 / B-04)
+- Tests: **64 pytest** (PostgreSQL 16) + **3 vitest**; `scripts/verify.sh` green locally; CI: `CI_EXTERNAL_UNVERIFIED`
+- Migration head: `0008_copilot_memory` (0001 → 0008, single head)
+- Works: case → documents (versioned, lineage) → mock parse → mapped fields with confidence/source → 3 items → HS candidates (demo rules) → BLOCKED on low evidence → Copilot → reviewer actions (HS, C/O, fields, issues) → release gate → READY_TO_EXPORT → versioned internal JSON/CSV draft → audit chain → approved-only memory. Frontend: nine V12 pages.
+- Mocked / demo: OCR-LLM provider (`mock`), HS rules, tariff rates, FTA rules, policy requirements (all `is_demo`, NON-AUTHORITATIVE), local file storage.
+- Not done: real providers, authoritative data, OIDC, S3 adapter, Playwright E2E, rate limiting/CSP, staging deploy, any customs-system connection.
+
+## Next gate
+**G13 execution** once the owner answers B-01..B-04 (see `docs/STATUS.md`). Until then: engineering checklist in `docs/STAGING_READINESS.md`.
