@@ -41,3 +41,16 @@ def test_seed_refuses_without_password(monkeypatch):
     monkeypatch.setattr(sys, "argv", ["seed_demo.py"])
     with pytest.raises(SystemExit):
         seed_demo.main()
+
+
+def test_reseed_rotates_demo_passwords(monkeypatch, client):
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"))
+    import seed_demo
+
+    monkeypatch.setattr(sys, "argv", ["seed_demo.py"])
+    monkeypatch.setenv("SEED_DEMO_PASSWORD", "first-password-2026")
+    seed_demo.main()
+    monkeypatch.setenv("SEED_DEMO_PASSWORD", "second-password-2026")
+    seed_demo.main()
+    assert client.post("/api/v1/auth/login", json={"email": "reviewer@demo.local", "password": "first-password-2026"}).status_code == 401
+    assert client.post("/api/v1/auth/login", json={"email": "reviewer@demo.local", "password": "second-password-2026"}).status_code == 200
