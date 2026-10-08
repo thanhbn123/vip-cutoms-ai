@@ -1,19 +1,18 @@
 from fastapi import APIRouter
 
-from app.api import auth, cases, declaration, documents, goods, knowledge, masterdata, pipeline, review
+from app.api import auth, cases, copilot, declaration, documents, goods, knowledge, masterdata, memory, pipeline, review
 from app.services import evaluators, hs_engine, origin, policy, valuation
+from app.services import memory as memory_service
 
 api_router = APIRouter()
-api_router.include_router(auth.router)
-api_router.include_router(masterdata.router)
-api_router.include_router(cases.router)
-api_router.include_router(documents.router)
-api_router.include_router(pipeline.router)
-api_router.include_router(goods.router)
-api_router.include_router(knowledge.router)
-api_router.include_router(declaration.router)
-api_router.include_router(review.router)
+for r in (auth, masterdata, cases, documents, pipeline, goods, knowledge, declaration, review, copilot, memory):
+    api_router.include_router(r.router)
 
 # Deterministic evaluators, run in this order after field mapping (origin before valuation so tax sees C/O decisions).
 if not evaluators.STEPS:
     evaluators.STEPS.extend([hs_engine.evaluate, origin.evaluate, valuation.evaluate, policy.evaluate])
+# Historical learning: approved memory nudges HS candidates; approvals enter memory.
+if not hs_engine.HISTORY_BOOSTERS:
+    hs_engine.HISTORY_BOOSTERS.append(memory_service.boost_candidates)
+if not goods.DECISION_HOOKS:
+    goods.DECISION_HOOKS.append(memory_service.record_approved)
