@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VIP Customs AI V6</title>
+<style>
+:root{--bg:#f5f7fa;--card:#fff;--text:#172033;--muted:#667085;--line:#e4e7ec;--nav:#0f172a;--nav2:#1e293b;--red:#b42318;--green:#067647;--amber:#b54708;--blue:#175cd3;--purple:#6941c6;--shadow:0 10px 28px rgba(16,24,40,.07)}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
+button,input,select,textarea{font:inherit}.app{display:grid;grid-template-columns:235px 1fr;min-height:100vh}.sidebar{background:var(--nav);color:#fff;padding:14px 11px;position:sticky;top:0;height:100vh}
+.logo{font-size:19px;font-weight:900;padding:9px 10px 16px;border-bottom:1px solid #334155}.logo small{display:block;color:#94a3b8;font-size:10.5px;font-weight:500;margin-top:4px}
+.menu{margin-top:12px;display:grid;gap:4px}.menu button{all:unset;cursor:pointer;color:#cbd5e1;padding:10px 11px;border-radius:9px;font-size:13px}.menu button:hover,.menu button.active{background:var(--nav2);color:#fff}
+.main{padding:16px}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}h1{font-size:22px;margin:0}.sub{font-size:11.5px;color:var(--muted);margin-top:3px}
+.actions{display:flex;gap:7px;flex-wrap:wrap}.btn{border:0;border-radius:9px;padding:8px 11px;font-size:11.5px;font-weight:750;cursor:pointer}.primary{background:var(--red);color:#fff}.secondary{background:#fff;border:1px solid var(--line);color:#344054}.dark{background:#101828;color:#fff}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:13px}.page{display:none}.page.active{display:block}.section-title{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}.section-title h2{font-size:14.5px;margin:0}
+.badge{display:inline-flex;align-items:center;padding:5px 8px;border-radius:999px;font-size:10px;font-weight:800}.ok{background:#ecfdf3;color:var(--green)}.warn{background:#fffaeb;color:var(--amber)}.bad{background:#fef3f2;color:var(--red)}.info{background:#eff8ff;color:var(--blue)}.purple{background:#f4f3ff;color:var(--purple)}
+.grid{display:grid;gap:12px}.g4{grid-template-columns:repeat(4,1fr)}.g2{grid-template-columns:1fr 1fr}.metric .l{font-size:10.5px;color:var(--muted)}.metric .v{font-size:22px;font-weight:850;margin-top:4px}
+.callout{border-radius:10px;padding:9px;font-size:11px}.critical{background:#fff6f5;border:1px solid #fda29b;color:#912018}.warning{background:#fffaeb;border:1px solid #fedf89;color:#7a2e0e}.pass{background:#f6fef9;border:1px solid #6ce9a6;color:#05603a}.callout+.callout{margin-top:7px}
+.copilot{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:12px;align-items:start}.chat{display:flex;flex-direction:column;height:700px}.chat-history{flex:1;overflow:auto;padding:4px 2px 12px;display:grid;gap:10px}
+.msg{max-width:88%;padding:10px 11px;border-radius:12px;font-size:11.5px;line-height:1.5}.user{justify-self:end;background:#101828;color:#fff;border-bottom-right-radius:4px}.ai{justify-self:start;background:#f2f4f7;color:#344054;border-bottom-left-radius:4px}.ai strong{display:block;margin-bottom:4px}
+.chat-input{border-top:1px solid var(--line);padding-top:10px}.chat-input textarea{width:100%;min-height:76px;border:1px solid #d0d5dd;border-radius:10px;padding:10px;font-size:11.5px;resize:vertical}.quick{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.quick button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 8px;font-size:10.5px;cursor:pointer}
+.context{position:sticky;top:16px;display:grid;gap:10px}.ctx{border:1px solid var(--line);border-radius:11px;padding:10px;background:#fff}.ctx h3{font-size:12.5px;margin:0 0 7px}.ctx p{margin:3px 0;font-size:10.8px;color:#667085;line-height:1.45}
+.list{display:grid;gap:7px}.row{border:1px solid var(--line);border-radius:9px;padding:8px;background:#fcfcfd}.row strong{font-size:11.5px}.row p{margin:3px 0 0;color:#667085;font-size:10.5px}
+table{width:100%;border-collapse:collapse;font-size:11px}th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{background:#f9fafb;color:#667085;font-size:10px}
+.form-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.field label{display:block;font-size:10.5px;font-weight:700;margin-bottom:4px;color:#344054}.field input,.field select,.field textarea{width:100%;border:1px solid #d0d5dd;border-radius:8px;padding:8px 9px;font-size:11.5px}.full{grid-column:1/-1}
+.action-card{border:1px solid var(--line);border-radius:10px;padding:10px;background:#fff}.action-card+.action-card{margin-top:8px}.action-card h4{font-size:11.5px;margin:0 0 4px}.action-card p{font-size:10.5px;color:#667085;margin:0 0 8px}
+.toast{position:fixed;right:18px;bottom:18px;background:#101828;color:#fff;border-radius:9px;padding:10px 13px;font-size:11px;display:none;z-index:80}.toast.show{display:block}
+.small{padding:6px 8px;font-size:10px}
+@media(max-width:1100px){.copilot{grid-template-columns:1fr}.context{position:static}.g4{grid-template-columns:repeat(2,1fr)}}@media(max-width:760px){.app{grid-template-columns:1fr}.sidebar{display:none}.main{padding:11px}.g4,.g2,.form-grid{grid-template-columns:1fr}.top{align-items:flex-start;flex-direction:column}.chat{height:650px}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="sidebar">
+<div class="logo">VIP Customs AI<small>V6 · Customs Copilot</small></div>
+<div class="menu">
+<button class="nav active" data-page="dashboard">Tổng quan</button>
+<button class="nav" data-page="copilot">AI Copilot</button>
+<button class="nav" data-page="missing">Còn thiếu gì?</button>
+<button class="nav" data-page="actions">AI đề xuất hành động</button>
+<button class="nav" data-page="handoff">Reviewer Handoff</button>
+</div>
+</aside>
+<main class="main">
+<div class="top">
+<div><h1 id="title">VIP Customs AI V6</h1><div class="sub" id="sub">AI chat trực tiếp trên hồ sơ, giải thích quyết định và chỉ đề xuất thay đổi để reviewer duyệt.</div></div>
+<div class="actions"><button class="btn secondary" onclick="toast('Đã lưu trạng thái hồ sơ')">Lưu</button><button class="btn dark" onclick="go('copilot')">Mở AI Copilot</button><button class="btn primary" onclick="go('handoff')">Reviewer Handoff</button></div>
+</div>
+
+<section class="page active" id="dashboard">
+<div class="grid g4">
+<div class="card metric"><div class="l">AI questions hôm nay</div><div class="v">36</div><span class="badge info">per case</span></div>
+<div class="card metric"><div class="l">Open review issues</div><div class="v">4</div><span class="badge warn">2 critical</span></div>
+<div class="card metric"><div class="l">AI suggested edits</div><div class="v">7</div><span class="badge purple">Chưa áp dụng</span></div>
+<div class="card metric"><div class="l">Case readiness</div><div class="v">84%</div><span class="badge bad">Blocked</span></div>
+</div>
+<div style="height:12px"></div>
+<div class="grid g2">
+<div class="card">
+<div class="section-title"><h2>AI Copilot có thể làm gì?</h2><span class="badge info">Context-aware</span></div>
+<div class="list">
+<div class="row"><strong>Giải thích HS</strong><p>Tại sao chọn nhóm này, nhóm nào đã loại, còn thiếu dữ liệu gì.</p></div>
+<div class="row"><strong>Kiểm tra C/O</strong><p>Chỉ ra trường/mô tả nào không khớp Invoice hoặc dữ liệu khai.</p></div>
+<div class="row"><strong>Kiểm tra trị giá</strong><p>Giải thích CIF, khoản điều chỉnh và dữ liệu bất thường.</p></div>
+<div class="row"><strong>Checklist còn thiếu</strong><p>Tổng hợp các bước phải xử lý trước khi hồ sơ đủ điều kiện.</p></div>
+</div></div>
+<div class="card">
+<div class="section-title"><h2>Nguyên tắc an toàn</h2><span>Fail-closed</span></div>
+<div class="callout pass"><b>Được phép:</b> AI giải thích, gợi ý, so sánh, tạo bản sửa đề xuất.</div>
+<div class="callout warning"><b>Cần reviewer:</b> thay đổi HS, trị giá, chính sách, C/O decision.</div>
+<div class="callout critical"><b>Không được:</b> tự chốt field critical hoặc phát hành khi còn BLOCKED.</div>
+</div></div>
+</section>
+
+<section class="page" id="copilot">
+<div class="copilot">
+<div class="card chat">
+<div class="section-title"><h2>AI Copilot — VIP-HQ-261008-001</h2><span class="badge purple">Full case context</span></div>
+<div class="chat-history" id="chatHistory">
+<div class="msg ai"><strong>VIP Customs AI</strong>Em đã đọc Invoice, Packing List, B/L, Form E và trạng thái reviewer. Hồ sơ còn 2 lỗi critical và 2 warning. Anh có thể hỏi “còn thiếu gì để khai?”, “Form E có vấn đề gì?” hoặc hỏi từng Item.</div>
+<div class="msg user">Item 3 tại sao chưa chốt được HS?</div>
+<div class="msg ai"><strong>Phân tích Item 3 — CT-88</strong>Invoice chỉ mô tả “Electrical controller”. Chưa có catalogue, sơ đồ chức năng hoặc thông số cho biết bộ điều khiển này dùng cho thiết bị nào. Mã 8537.xx.xx mới là ứng viên, confidence 64%. Hệ thống giữ BLOCKED thay vì tự chốt.</div>
+</div>
+<div class="chat-input">
+<div class="quick">
+<button onclick="askQuick('Còn thiếu gì để khai được?')">Còn thiếu gì?</button>
+<button onclick="askQuick('Form E có vấn đề gì?')">Kiểm Form E</button>
+<button onclick="askQuick('Giải thích HS Item 1')">HS Item 1</button>
+<button onclick="askQuick('Kiểm tra trị giá lô hàng')">Kiểm trị giá</button>
+<button onclick="askQuick('Đề xuất mô tả khai báo Item 1')">Sửa mô tả Item 1</button>
+</div>
+<textarea id="chatInput" placeholder="Hỏi AI về hồ sơ này..."></textarea>
+<div style="margin-top:7px;display:flex;justify-content:flex-end"><button class="btn primary" onclick="sendChat()">Gửi</button></div>
+</div></div>
+
+<div class="context">
+<div class="ctx"><h3>Case Context</h3><p><b>Importer:</b> Công ty Minh Phát</p><p><b>Invoice:</b> INV-2026-889</p><p><b>Items:</b> 3</p><p><b>Form E:</b> Có</p><p><b>Readiness:</b> 84%</p></div>
+<div class="ctx"><h3>Open Issues</h3><p>🔴 Item 3 HS chưa đủ căn cứ</p><p>🔴 Item 3 policy chưa xác định</p><p>🟠 Số kiện 124/126</p><p>🟠 Form E Item 1 thiếu model</p></div>
+<div class="ctx"><h3>AI Sources</h3><p>Invoice.pdf · 98%</p><p>Packing-list.xlsx · 96%</p><p>BL.pdf · 95%</p><p>Form-E.pdf · 91%</p><p>Customer history · matched</p></div>
+</div></div>
+</section>
+
+<section class="page" id="missing">
+<div class="card">
+<div class="section-title"><h2>Còn thiếu gì để khai được?</h2><span class="badge warn">4 việc mở</span></div>
+<table><thead><tr><th>Mức độ</th><th>Việc cần xử lý</th><th>Lý do</th><th>Người xử lý</th><th>Trạng thái</th></tr></thead>
+<tbody>
+<tr><td><span class="badge bad">CRITICAL</span></td><td>Bổ sung catalogue Item 3</td><td>Chưa đủ dữ liệu phân loại HS</td><td>Khách hàng / nghiệp vụ</td><td>Open</td></tr>
+<tr><td><span class="badge bad">CRITICAL</span></td><td>Xác định chính sách Item 3</td><td>Phụ thuộc HS cuối cùng và công dụng</td><td>Reviewer</td><td>Blocked</td></tr>
+<tr><td><span class="badge warn">WARNING</span></td><td>Xác minh số kiện</td><td>Invoice 124 / Packing List 126</td><td>Nghiệp vụ</td><td>Open</td></tr>
+<tr><td><span class="badge warn">WARNING</span></td><td>Kiểm mô tả Form E Item 1</td><td>Thiếu model ABC-500</td><td>Reviewer</td><td>Open</td></tr>
+</tbody></table>
+</div>
+</section>
+
+<section class="page" id="actions">
+<div class="grid g2">
+<div class="card">
+<div class="section-title"><h2>AI đề xuất hành động</h2><span class="badge purple">Không tự áp dụng</span></div>
+<div class="action-card"><h4>1. Sửa mô tả khai báo Item 1</h4><p>Đề xuất: “Máy bơm nước dùng cho hệ thống làm mát, model ABC-500, điện áp 220V, công suất 500W, hàng mới 100%.”</p><div class="actions"><button class="btn secondary small" onclick="toast('Đã mở diff mô tả')">Xem diff</button><button class="btn primary small" onclick="toast('Đã gửi đề xuất sang reviewer')">Gửi reviewer</button></div></div>
+<div class="action-card"><h4>2. Tạo yêu cầu bổ sung catalogue Item 3</h4><p>AI tạo nội dung yêu cầu khách gửi catalogue, ảnh nhãn và thông số chức năng.</p><div class="actions"><button class="btn secondary small" onclick="toast('Đã tạo nội dung yêu cầu')">Tạo nội dung</button><button class="btn primary small" onclick="toast('Đã thêm vào checklist')">Thêm checklist</button></div></div>
+<div class="action-card"><h4>3. Đánh dấu Form E cần đối chiếu</h4><p>Item 1 trên Form E thiếu model ABC-500 so với Invoice.</p><div class="actions"><button class="btn secondary small" onclick="toast('Đã mở vùng nguồn Form E')">Xem nguồn</button><button class="btn primary small" onclick="toast('Đã gửi reviewer')">Gửi reviewer</button></div></div>
+</div>
+<div class="card"><div class="section-title"><h2>Approval Queue</h2><span>Reviewer controlled</span></div>
+<div class="list"><div class="row"><strong>Mô tả Item 1</strong><p>AI proposed · Pending reviewer</p></div><div class="row"><strong>HS Item 1</strong><p>8413.xx.xx · Pending technical detail</p></div><div class="row"><strong>Package Count</strong><p>126 selected from Packing List · Pending confirmation</p></div><div class="row"><strong>Insurance 100 USD</strong><p>AI inference · Must be confirmed by evidence</p></div></div>
+</div></div>
+</section>
+
+<section class="page" id="handoff">
+<div class="grid g2">
+<div class="card">
+<div class="section-title"><h2>Reviewer Handoff</h2><span class="badge warn">Not ready</span></div>
+<div class="form-grid">
+<div class="field"><label>Reviewer</label><select><option>Reviewer 01</option><option>Senior Reviewer</option></select></div>
+<div class="field"><label>Priority</label><select><option>High</option><option>Normal</option></select></div>
+<div class="field"><label>Deadline</label><input type="datetime-local" value="2026-10-08T15:00"></div>
+<div class="field full"><label>AI Summary for Reviewer</label><textarea>2 critical: Item 3 HS + policy. 2 warnings: package count 124/126 và Form E Item 1 thiếu model. Item 2 PASS. Trị giá chưa phát hiện bất thường cấu trúc.</textarea></div>
+<div class="field full"><label>Reviewer Notes</label><textarea placeholder="Reviewer ghi quyết định tại đây..."></textarea></div>
+</div>
+<div style="margin-top:10px"><button class="btn primary" onclick="toast('Đã chuyển hồ sơ sang reviewer')">Chuyển reviewer</button></div>
+</div>
+<div class="card"><div class="section-title"><h2>Release Gate</h2><span class="badge bad">BLOCKED</span></div><div class="callout critical"><b>Không thể phát hành:</b> Item 3 vẫn còn critical issue.</div><div class="callout warning"><b>Reviewer cần xử lý:</b> HS, policy, số kiện và Form E.</div><div class="callout pass"><b>Đã đạt:</b> Importer/Exporter, Invoice, B/L, Item 2, currency, Incoterm.</div></div>
+</div>
+</section>
+</main>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const meta={
+dashboard:['VIP Customs AI V6','AI chat trực tiếp trên hồ sơ, giải thích quyết định và chỉ đề xuất thay đổi để reviewer duyệt.'],
+copilot:['AI Copilot','Hỏi AI về HS, C/O, trị giá, sai lệch và các bước còn thiếu của đúng hồ sơ hiện tại.'],
+missing:['Còn thiếu gì?','Checklist động do AI tổng hợp trước khi hồ sơ đủ điều kiện khai.'],
+actions:['AI đề xuất hành động','AI tạo đề xuất thay đổi nhưng không tự sửa field nghiệp vụ critical.'],
+handoff:['Reviewer Handoff','Chuyển hồ sơ, vấn đề mở và tóm tắt AI sang người duyệt.']
+};
+function go(id){
+ document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+ document.getElementById(id).classList.add('active');
+ document.querySelectorAll('.nav').forEach(x=>x.classList.toggle('active',x.dataset.page===id));
+ document.getElementById('title').textContent=meta[id][0];
+ document.getElementById('sub').textContent=meta[id][1];
+ window.scrollTo({top:0,behavior:'smooth'});
+}
+document.querySelectorAll('.nav').forEach(b=>b.onclick=()=>go(b.dataset.page));
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1700)}
+function addMsg(text,cls,strong){const h=document.getElementById('chatHistory');const d=document.createElement('div');d.className='msg '+cls;d.innerHTML=(strong?'<strong>'+strong+'</strong>':'')+text;h.appendChild(d);h.scrollTop=h.scrollHeight}
+function answerFor(q){
+ const s=q.toLowerCase();
+ if(s.includes('còn thiếu')) return 'Hồ sơ còn 4 việc: (1) catalogue Item 3 để phân loại HS; (2) xác định policy Item 3 sau khi có HS; (3) xác minh số kiện 124 hay 126; (4) reviewer kiểm mô tả Form E Item 1 thiếu model ABC-500. Hai việc đầu đang chặn phát hành.';
+ if(s.includes('form e')) return 'Form E có một điểm cần review: Item 1 trên Invoice có model ABC-500 nhưng mô tả trên Form E không thể hiện model. AI chưa kết luận C/O không hợp lệ; hệ thống chỉ đánh dấu cần reviewer đối chiếu.';
+ if(s.includes('item 1') && s.includes('hs')) return 'Item 1 được đề xuất vào nhóm 8413 vì chức năng chính là bơm chất lỏng. Confidence hiện 87%. Còn thiếu loại bơm, nguyên lý vận hành và lưu lượng để chốt phân nhóm chi tiết.';
+ if(s.includes('trị giá')) return 'Invoice value 17,900 USD; freight 420 USD; insurance đang ghi 100 USD; CIF dự kiến 18,420 USD. Điểm cần review là insurance 100 USD vì hiện chưa gắn chứng từ xác nhận.';
+ if(s.includes('mô tả')) return 'Đề xuất mô tả Item 1: “Máy bơm nước dùng cho hệ thống làm mát, model ABC-500, điện áp 220V, công suất 500W, hàng mới 100%.” Đây là bản đề xuất, chưa tự ghi đè vào tờ khai.';
+ return 'Em đang dùng toàn bộ context của hồ sơ này. Nếu thiếu căn cứ, hệ thống sẽ trả NEEDS_REVIEW thay vì tự kết luận.';
+}
+function sendChat(){const i=document.getElementById('chatInput');const q=i.value.trim();if(!q)return;addMsg(q,'user');i.value='';setTimeout(()=>addMsg(answerFor(q),'ai','VIP Customs AI'),250)}
+function askQuick(q){document.getElementById('chatInput').value=q;sendChat()}
+</script>
+</body>
+</html>

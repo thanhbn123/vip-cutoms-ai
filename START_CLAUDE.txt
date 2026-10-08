@@ -1,0 +1,5 @@
+Mở Claude Code tại thư mục repo này và dán nội dung file:
+
+docs/prompts/CLAUDE-PROJECT-CONTROLLER.md
+
+Claude phải bắt đầu từ G00 và cập nhật PROJECT_STATUS.md sau mỗi gate.

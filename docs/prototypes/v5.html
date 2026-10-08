@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>VIP Customs AI — V5 Document Mapping Prototype</title>
+<style>
+:root{
+  --bg:#f4f6f8;--card:#fff;--text:#172033;--muted:#667085;--line:#e4e7ec;
+  --nav:#0f172a;--nav2:#1e293b;--red:#b42318;--green:#067647;--amber:#b54708;
+  --blue:#175cd3;--purple:#6941c6;--cyan:#0e7490;--shadow:0 10px 28px rgba(16,24,40,.07);
+  --r:14px
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
+button,input,select,textarea{font:inherit}
+.app{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+.sidebar{background:var(--nav);color:#fff;padding:14px 12px;position:sticky;top:0;height:100vh;overflow:auto}
+.logo{font-size:19px;font-weight:900;padding:9px 10px 16px;border-bottom:1px solid #334155}.logo small{display:block;color:#94a3b8;font-size:10.5px;font-weight:500;margin-top:4px}
+.menu{margin-top:12px;display:grid;gap:4px}.menu button{all:unset;cursor:pointer;color:#cbd5e1;padding:10px 11px;border-radius:9px;font-size:13px}
+.menu button:hover,.menu button.active{background:var(--nav2);color:#fff}
+.main{padding:16px}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
+h1{font-size:22px;margin:0}.sub{font-size:11.5px;color:var(--muted);margin-top:3px}
+.actions{display:flex;gap:7px;flex-wrap:wrap}.btn{border:0;border-radius:9px;padding:8px 11px;font-size:11.5px;font-weight:750;cursor:pointer}
+.primary{background:var(--red);color:#fff}.secondary{background:#fff;border:1px solid var(--line);color:#344054}.dark{background:#101828;color:#fff}.ghost{background:#f2f4f7;color:#344054}
+.card{background:#fff;border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:13px}
+.page{display:none}.page.active{display:block}
+.section-title{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}.section-title h2{font-size:14.5px;margin:0}
+.badge{display:inline-flex;align-items:center;padding:5px 8px;border-radius:999px;font-size:10px;font-weight:800}
+.ok{background:#ecfdf3;color:var(--green)}.warn{background:#fffaeb;color:var(--amber)}.bad{background:#fef3f2;color:var(--red)}.info{background:#eff8ff;color:var(--blue)}.purple{background:#f4f3ff;color:var(--purple)}
+.grid{display:grid;gap:12px}.g4{grid-template-columns:repeat(4,1fr)}.g2{grid-template-columns:1fr 1fr}
+.metric .l{font-size:10.5px;color:var(--muted)}.metric .v{font-size:22px;font-weight:850;margin-top:4px}
+.workspace{display:grid;grid-template-columns:minmax(0,1.12fr) minmax(420px,.88fr);gap:12px;align-items:start}
+.doc-pane{background:#e9edf2;border-radius:14px;padding:10px;min-height:700px}
+.doc-toolbar{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}.doc-tabs{display:flex;gap:6px;flex-wrap:wrap}.doc-tab{border:1px solid #cbd5e1;background:#fff;border-radius:999px;padding:6px 9px;font-size:10.5px;cursor:pointer}.doc-tab.active{background:#101828;color:#fff;border-color:#101828}
+.paper{position:relative;background:#fff;width:min(760px,100%);min-height:650px;margin:auto;box-shadow:0 8px 24px rgba(15,23,42,.15);padding:34px 38px;overflow:hidden}
+.paper h3{text-align:center;margin:0 0 20px;font-size:20px}.paper .line{font-size:12px;line-height:1.75;margin:2px 0}.paper table{width:100%;border-collapse:collapse;margin-top:18px;font-size:10.5px}.paper th,.paper td{border:1px solid #cbd5e1;padding:6px;text-align:left}
+.source-box{position:absolute;border:2px solid transparent;border-radius:6px;pointer-events:none;transition:.15s}.source-box.active{border-color:#f79009;background:rgba(247,144,9,.10)}.source-box.good.active{border-color:#12b76a;background:rgba(18,183,106,.10)}
+.supplier-box{left:35px;top:98px;width:360px;height:52px}.invoice-box{right:38px;top:98px;width:190px;height:52px}.incoterm-box{left:35px;top:165px;width:245px;height:28px}.currency-box{left:295px;top:165px;width:120px;height:28px}.total-box{right:38px;top:165px;width:190px;height:28px}.item1-box{left:35px;top:294px;width:680px;height:42px}.item2-box{left:35px;top:338px;width:680px;height:42px}
+.mapping-pane{display:grid;gap:10px}
+.field-card{border:1px solid var(--line);border-radius:11px;padding:10px;background:#fff;cursor:pointer;transition:.15s}.field-card:hover,.field-card.active{border-color:#f79009;box-shadow:0 0 0 2px rgba(247,144,9,.10)}
+.field-top{display:flex;justify-content:space-between;gap:8px;align-items:center}.field-name{font-size:11.5px;font-weight:800}.field-value{font-size:12.5px;font-weight:750;margin-top:5px}.field-meta{font-size:10.5px;color:var(--muted);margin-top:4px}
+.progress{height:6px;border-radius:999px;background:#eef2f6;overflow:hidden;margin-top:7px}.progress i{display:block;height:100%;background:#12b76a}.progress.mid i{background:#f79009}.progress.bad i{background:#f04438}
+.group-title{font-size:11px;font-weight:850;color:#475467;margin:3px 0}
+.callout{border-radius:10px;padding:9px;font-size:11px}.critical{background:#fff6f5;border:1px solid #fda29b;color:#912018}.warning{background:#fffaeb;border:1px solid #fedf89;color:#7a2e0e}.pass{background:#f6fef9;border:1px solid #6ce9a6;color:#05603a}
+.map-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.sum{border:1px solid var(--line);background:#f9fafb;border-radius:10px;padding:9px}.sum b{font-size:9.5px;color:#667085}.sum span{display:block;font-size:13px;font-weight:850;margin-top:3px}
+table{width:100%;border-collapse:collapse;font-size:11px}th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{background:#f9fafb;color:#667085;font-size:10px}
+.form-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.field label{display:block;font-size:10.5px;font-weight:700;margin-bottom:4px;color:#344054}.field input,.field select,.field textarea{width:100%;border:1px solid #d0d5dd;border-radius:8px;padding:8px 9px;font-size:11.5px}.span2{grid-column:span 2}.full{grid-column:1/-1}
+.toast{position:fixed;right:18px;bottom:18px;background:#101828;color:#fff;border-radius:9px;padding:10px 13px;font-size:11px;display:none;z-index:80}.toast.show{display:block}
+.small{padding:6px 8px;font-size:10px}
+@media(max-width:1200px){.workspace{grid-template-columns:1fr}.doc-pane{min-height:auto}.form-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:900px){.g4,.g2{grid-template-columns:1fr 1fr}.map-summary{grid-template-columns:1fr 1fr}}
+@media(max-width:760px){.app{grid-template-columns:1fr}.sidebar{display:none}.main{padding:11px}.g4,.g2,.form-grid,.map-summary{grid-template-columns:1fr}.span2{grid-column:auto}.top{align-items:flex-start;flex-direction:column}.paper{padding:24px 20px}.source-box{display:none}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="sidebar">
+  <div class="logo">VIP Customs AI<small>V5 · Document Mapping Workspace</small></div>
+  <div class="menu">
+    <button class="nav active" data-page="dashboard">Tổng quan</button>
+    <button class="nav" data-page="mapper">Document Mapper</button>
+    <button class="nav" data-page="lineitems">Line Item Mapping</button>
+    <button class="nav" data-page="review">Discrepancy Review</button>
+    <button class="nav" data-page="declaration">Mapped Declaration</button>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="top">
+    <div><h1 id="title">VIP Customs AI V5</h1><div class="sub" id="sub">Chứng từ bên trái, dữ liệu AI bên phải — bấm trường để thấy đúng vùng nguồn.</div></div>
+    <div class="actions">
+      <button class="btn secondary" onclick="toast('Đã lưu mapping')">Lưu mapping</button>
+      <button class="btn dark" onclick="go('review')">Review sai lệch</button>
+      <button class="btn primary" onclick="go('mapper')">Mở Document Mapper</button>
+    </div>
+  </div>
+
+  <section class="page active" id="dashboard">
+    <div class="grid g4">
+      <div class="card metric"><div class="l">Trường đã map</div><div class="v">72</div><span class="badge ok">64 auto</span></div>
+      <div class="card metric"><div class="l">Nguồn chứng từ</div><div class="v">4</div><span class="badge info">Invoice / PL / B/L / C/O</span></div>
+      <div class="card metric"><div class="l">Sai lệch</div><div class="v">3</div><span class="badge warn">Cần reviewer</span></div>
+      <div class="card metric"><div class="l">Mapping score</div><div class="v">91%</div><span class="badge purple">High confidence</span></div>
+    </div>
+    <div style="height:12px"></div>
+    <div class="grid g2">
+      <div class="card">
+        <div class="section-title"><h2>Luồng xử lý chứng từ</h2><span class="badge info">AI-first</span></div>
+        <table><thead><tr><th>Bước</th><th>Trạng thái</th><th>Kết quả</th></tr></thead>
+        <tbody>
+          <tr><td>OCR / Parse</td><td><span class="badge ok">PASS</span></td><td>4 tài liệu / 138 field candidates</td></tr>
+          <tr><td>Entity Matching</td><td><span class="badge ok">PASS</span></td><td>Importer / Exporter / Invoice / B/L</td></tr>
+          <tr><td>Field Mapping</td><td><span class="badge ok">91%</span></td><td>72 trường được map</td></tr>
+          <tr><td>Discrepancy Detection</td><td><span class="badge warn">3 issues</span></td><td>Package count / Item description / Insurance</td></tr>
+        </tbody></table>
+      </div>
+      <div class="card">
+        <div class="section-title"><h2>Điểm khác biệt của hệ</h2><span>V5</span></div>
+        <div class="callout pass"><b>Traceable:</b> mỗi ô dữ liệu truy được đúng vùng nguồn trên chứng từ.</div>
+        <div class="callout warning"><b>Conflict-aware:</b> nếu 2 chứng từ lệch nhau, AI không tự chọn im lặng.</div>
+        <div class="callout critical"><b>Fail-closed:</b> critical chưa xử lý thì không được phát hành.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="page" id="mapper">
+    <div class="workspace">
+      <div class="doc-pane">
+        <div class="doc-toolbar">
+          <div class="doc-tabs">
+            <button class="doc-tab active" data-doc="invoice">Invoice</button>
+            <button class="doc-tab" data-doc="packing">Packing List</button>
+            <button class="doc-tab" data-doc="bl">B/L</button>
+            <button class="doc-tab" data-doc="co">Form E</button>
+          </div>
+          <div class="actions"><button class="btn secondary small" onclick="toast('Zoom 100%')">100%</button><button class="btn secondary small" onclick="toast('Đã bật chế độ OCR overlay')">OCR</button></div>
+        </div>
+
+        <div class="paper" id="paper">
+          <h3>COMMERCIAL INVOICE</h3>
+          <div class="line"><b>Exporter:</b> GUANGZHOU ABC TRADING CO., LTD.</div>
+          <div class="line">No. 88 Huangpu Road, Guangzhou, China</div>
+          <div class="line" style="position:absolute;right:40px;top:96px"><b>Invoice No:</b> INV-2026-889<br><b>Date:</b> 05/10/2026</div>
+          <div class="line" style="margin-top:20px"><b>Importer:</b> CÔNG TY TNHH MINH PHÁT — Bắc Ninh, Việt Nam</div>
+          <div class="line"><b>Incoterm:</b> FOB Guangzhou &nbsp;&nbsp;&nbsp; <b>Currency:</b> USD &nbsp;&nbsp;&nbsp; <b>Total:</b> 17,900.00</div>
+
+          <table>
+            <thead><tr><th>No.</th><th>Description</th><th>Model</th><th>Qty</th><th>Unit</th><th>Unit Price</th><th>Amount</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>Water pump for cooling system</td><td>ABC-500</td><td>20</td><td>PCE</td><td>45.00</td><td>900.00</td></tr>
+              <tr><td>2</td><td>PVC pipe, non-reinforced</td><td>PVC-20</td><td>500</td><td>MTR</td><td>1.20</td><td>600.00</td></tr>
+              <tr><td>3</td><td>Electrical controller</td><td>CT-88</td><td>15</td><td>SET</td><td>32.00</td><td>480.00</td></tr>
+            </tbody>
+          </table>
+
+          <div class="source-box good supplier-box" data-source="exporter"></div>
+          <div class="source-box good invoice-box" data-source="invoice"></div>
+          <div class="source-box good incoterm-box" data-source="incoterm"></div>
+          <div class="source-box good currency-box" data-source="currency"></div>
+          <div class="source-box good total-box" data-source="total"></div>
+          <div class="source-box item1-box" data-source="item1"></div>
+          <div class="source-box item2-box" data-source="item2"></div>
+        </div>
+      </div>
+
+      <div class="mapping-pane">
+        <div class="card">
+          <div class="section-title"><h2>AI Field Mapping</h2><span class="badge info">Click field → highlight source</span></div>
+          <div class="map-summary">
+            <div class="sum"><b>Mapped</b><span>72</span></div>
+            <div class="sum"><b>Review</b><span>8</span></div>
+            <div class="sum"><b>Conflict</b><span>3</span></div>
+            <div class="sum"><b>Score</b><span>91%</span></div>
+          </div>
+        </div>
+
+        <div class="group-title">Header fields</div>
+        <div class="field-card active" data-source="exporter">
+          <div class="field-top"><span class="field-name">Exporter</span><span class="badge ok">98%</span></div>
+          <div class="field-value">GUANGZHOU ABC TRADING CO., LTD.</div>
+          <div class="field-meta">Map → Declaration.ExporterName · Source: Invoice</div>
+          <div class="progress"><i style="width:98%"></i></div>
+        </div>
+
+        <div class="field-card" data-source="invoice">
+          <div class="field-top"><span class="field-name">Invoice No.</span><span class="badge ok">99%</span></div>
+          <div class="field-value">INV-2026-889</div>
+          <div class="field-meta">Map → Declaration.InvoiceNo · Source: Invoice</div>
+          <div class="progress"><i style="width:99%"></i></div>
+        </div>
+
+        <div class="field-card" data-source="incoterm">
+          <div class="field-top"><span class="field-name">Incoterm</span><span class="badge ok">97%</span></div>
+          <div class="field-value">FOB Guangzhou</div>
+          <div class="field-meta">Map → Valuation.Incoterm</div>
+          <div class="progress"><i style="width:97%"></i></div>
+        </div>
+
+        <div class="field-card" data-source="currency">
+          <div class="field-top"><span class="field-name">Currency</span><span class="badge ok">99%</span></div>
+          <div class="field-value">USD</div>
+          <div class="field-meta">Map → Invoice.Currency</div>
+          <div class="progress"><i style="width:99%"></i></div>
+        </div>
+
+        <div class="field-card" data-source="total">
+          <div class="field-top"><span class="field-name">Invoice Value</span><span class="badge ok">96%</span></div>
+          <div class="field-value">17,900.00 USD</div>
+          <div class="field-meta">Map → Valuation.InvoiceValue</div>
+          <div class="progress"><i style="width:96%"></i></div>
+        </div>
+
+        <div class="group-title">Line items</div>
+        <div class="field-card" data-source="item1">
+          <div class="field-top"><span class="field-name">Item 1 — Description</span><span class="badge warn">87%</span></div>
+          <div class="field-value">Water pump for cooling system — ABC-500</div>
+          <div class="field-meta">Map → Goods[1].Description · HS candidate 8413.xx.xx</div>
+          <div class="progress mid"><i style="width:87%"></i></div>
+        </div>
+
+        <div class="field-card" data-source="item2">
+          <div class="field-top"><span class="field-name">Item 2 — Description</span><span class="badge ok">95%</span></div>
+          <div class="field-value">PVC pipe, non-reinforced — PVC-20</div>
+          <div class="field-meta">Map → Goods[2].Description · HS candidate 3917.xx.xx</div>
+          <div class="progress"><i style="width:95%"></i></div>
+        </div>
+
+        <div class="callout warning"><b>Conflict:</b> Package count hiện chưa hiển thị trong Invoice; Packing List ghi 126, dữ liệu hồ sơ cũ ghi 124.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="page" id="lineitems">
+    <div class="card">
+      <div class="section-title"><h2>Line Item Mapping</h2><span class="badge purple">Invoice → Customs Item</span></div>
+      <table>
+        <thead><tr><th>#</th><th>Invoice Description</th><th>VN Customs Description</th><th>Model</th><th>Qty</th><th>HS AI</th><th>Confidence</th><th>Source</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Water pump for cooling system</td><td>Máy bơm nước dùng cho hệ thống làm mát, model ABC-500...</td><td>ABC-500</td><td>20 PCE</td><td>8413.xx.xx</td><td>87%</td><td>Invoice + history</td><td><span class="badge warn">REVIEW</span></td></tr>
+          <tr><td>2</td><td>PVC pipe, non-reinforced</td><td>Ống nhựa PVC không gia cường, model PVC-20...</td><td>PVC-20</td><td>500 MTR</td><td>3917.xx.xx</td><td>95%</td><td>Invoice + catalogue</td><td><span class="badge ok">PASS</span></td></tr>
+          <tr><td>3</td><td>Electrical controller</td><td>Bộ điều khiển điện, model CT-88...</td><td>CT-88</td><td>15 SET</td><td>8537.xx.xx</td><td>64%</td><td>Invoice only</td><td><span class="badge bad">BLOCKED</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="page" id="review">
+    <div class="grid g2">
+      <div class="card">
+        <div class="section-title"><h2>Discrepancy Review</h2><span class="badge warn">3 open issues</span></div>
+        <div class="callout warning"><b>Package Count:</b> Packing List = 126, prior shipment note = 124.</div>
+        <div class="callout warning"><b>Form E Description:</b> Item 1 thiếu model ABC-500.</div>
+        <div class="callout critical"><b>Item 3:</b> chưa đủ dữ liệu kỹ thuật để chốt HS / chính sách.</div>
+      </div>
+      <div class="card">
+        <div class="section-title"><h2>Reviewer Actions</h2><span>Manual decision</span></div>
+        <div class="form-grid">
+          <div class="field span2"><label>Package Count Decision</label><select><option>Chưa quyết định</option><option>Chọn 126 theo Packing List</option><option>Chọn 124 theo hồ sơ khác</option></select></div>
+          <div class="field span2"><label>Item 1 Form E</label><select><option>Yêu cầu sửa C/O</option><option>Chấp nhận sau kiểm tra</option></select></div>
+          <div class="field span2"><label>Item 3</label><select><option>Yêu cầu catalogue</option><option>Reviewer tự chốt</option></select></div>
+          <div class="field span2"><label>Ghi chú reviewer</label><textarea>Chưa đủ điều kiện phát hành.</textarea></div>
+        </div>
+        <div style="margin-top:10px"><button class="btn primary" onclick="toast('Đã lưu quyết định reviewer')">Lưu quyết định</button></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="page" id="declaration">
+    <div class="card">
+      <div class="section-title"><h2>Mapped Declaration</h2><div class="actions"><span class="badge warn">DRAFT</span><button class="btn secondary small">Validate</button><button class="btn primary small" onclick="toast('Đã xuất dữ liệu nháp')">Xuất nháp</button></div></div>
+      <div class="form-grid">
+        <div class="field"><label>Loại hình</label><input value="A11"></div>
+        <div class="field"><label>Invoice No.</label><input value="INV-2026-889"></div>
+        <div class="field"><label>Currency</label><input value="USD"></div>
+        <div class="field"><label>Incoterm</label><input value="FOB"></div>
+        <div class="field span2"><label>Exporter</label><input value="GUANGZHOU ABC TRADING CO., LTD."></div>
+        <div class="field span2"><label>Importer</label><input value="CÔNG TY TNHH MINH PHÁT"></div>
+      </div>
+      <div style="height:10px"></div>
+      <table><thead><tr><th>#</th><th>Description</th><th>HS</th><th>Qty</th><th>Value</th><th>Source confidence</th><th>Validation</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>Máy bơm nước...</td><td>8413.xx.xx</td><td>20 PCE</td><td>900 USD</td><td>87%</td><td><span class="badge warn">Review</span></td></tr>
+        <tr><td>2</td><td>Ống nhựa PVC...</td><td>3917.xx.xx</td><td>500 MTR</td><td>600 USD</td><td>95%</td><td><span class="badge ok">PASS</span></td></tr>
+        <tr><td>3</td><td>Bộ điều khiển điện...</td><td>8537.xx.xx</td><td>15 SET</td><td>480 USD</td><td>64%</td><td><span class="badge bad">BLOCKED</span></td></tr>
+      </tbody></table>
+      <div style="height:10px"></div>
+      <div class="callout critical"><b>Không phát hành:</b> Item 3 đang BLOCKED và package count chưa có reviewer decision.</div>
+    </div>
+  </section>
+</main>
+</div>
+
+<div class="toast" id="toast"></div>
+<script>
+const meta={
+dashboard:['VIP Customs AI V5','Chứng từ bên trái, dữ liệu AI bên phải — bấm trường để thấy đúng vùng nguồn.'],
+mapper:['Document Mapper','AI map từng trường từ chứng từ sang dữ liệu khai báo có thể truy nguồn.'],
+lineitems:['Line Item Mapping','Chuẩn hóa dòng hàng từ Invoice sang mô tả khai báo và HS AI.'],
+review:['Discrepancy Review','Xử lý mọi xung đột giữa chứng từ trước khi phát hành.'],
+declaration:['Mapped Declaration','Bộ dữ liệu tờ khai được hình thành từ mapping đã kiểm soát.']
+};
+function go(id){
+ document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+ document.getElementById(id).classList.add('active');
+ document.querySelectorAll('.nav').forEach(x=>x.classList.toggle('active',x.dataset.page===id));
+ document.getElementById('title').textContent=meta[id][0];
+ document.getElementById('sub').textContent=meta[id][1];
+ window.scrollTo({top:0,behavior:'smooth'});
+}
+document.querySelectorAll('.nav').forEach(b=>b.onclick=()=>go(b.dataset.page));
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1700)}
+function activateSource(src){
+ document.querySelectorAll('.field-card').forEach(x=>x.classList.toggle('active',x.dataset.source===src));
+ document.querySelectorAll('.source-box').forEach(x=>x.classList.toggle('active',x.dataset.source===src));
+}
+document.querySelectorAll('.field-card').forEach(card=>card.onclick=()=>activateSource(card.dataset.source));
+activateSource('exporter');
+
+document.querySelectorAll('.doc-tab').forEach(btn=>{
+ btn.onclick=()=>{
+   document.querySelectorAll('.doc-tab').forEach(x=>x.classList.remove('active'));btn.classList.add('active');
+   const h=document.querySelector('.paper h3');
+   const map={invoice:'COMMERCIAL INVOICE',packing:'PACKING LIST',bl:'BILL OF LADING',co:'CERTIFICATE OF ORIGIN — FORM E'};
+   h.textContent=map[btn.dataset.doc];
+   toast('Đã chuyển chứng từ mô phỏng');
+ };
+});
+</script>
+</body>
+</html>

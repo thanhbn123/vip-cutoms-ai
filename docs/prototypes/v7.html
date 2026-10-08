@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>V7 · Historical Learning</title>
+<style>
+:root{--bg:#f5f7fa;--card:#fff;--text:#172033;--muted:#667085;--line:#e4e7ec;--nav:#0f172a;--nav2:#1e293b;--red:#b42318;--green:#067647;--amber:#b54708;--blue:#175cd3;--purple:#6941c6;--shadow:0 10px 28px rgba(16,24,40,.07)}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}button,input,select,textarea{font:inherit}
+.app{display:grid;grid-template-columns:238px 1fr;min-height:100vh}.sidebar{background:var(--nav);color:#fff;padding:14px 11px;position:sticky;top:0;height:100vh;overflow:auto}
+.logo{font-size:19px;font-weight:900;padding:9px 10px 16px;border-bottom:1px solid #334155}.logo small{display:block;color:#94a3b8;font-size:10.5px;font-weight:500;margin-top:4px}
+.menu{margin-top:12px;display:grid;gap:4px}.menu button{all:unset;cursor:pointer;color:#cbd5e1;padding:10px 11px;border-radius:9px;font-size:13px}.menu button:hover,.menu button.active{background:var(--nav2);color:#fff}
+.main{padding:16px}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}h1{font-size:22px;margin:0}.sub{font-size:11.5px;color:var(--muted);margin-top:3px}
+.actions{display:flex;gap:7px;flex-wrap:wrap}.btn{border:0;border-radius:9px;padding:8px 11px;font-size:11.5px;font-weight:750;cursor:pointer}.primary{background:var(--red);color:#fff}.secondary{background:#fff;border:1px solid var(--line);color:#344054}.dark{background:#101828;color:#fff}.ghost{background:#f2f4f7;color:#344054}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:13px}.page{display:none}.page.active{display:block}.section-title{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}.section-title h2{font-size:14.5px;margin:0}
+.badge{display:inline-flex;align-items:center;padding:5px 8px;border-radius:999px;font-size:10px;font-weight:800}.ok{background:#ecfdf3;color:var(--green)}.warn{background:#fffaeb;color:var(--amber)}.bad{background:#fef3f2;color:var(--red)}.info{background:#eff8ff;color:var(--blue)}.purple{background:#f4f3ff;color:var(--purple)}
+.grid{display:grid;gap:12px}.g4{grid-template-columns:repeat(4,1fr)}.g3{grid-template-columns:repeat(3,1fr)}.g2{grid-template-columns:1fr 1fr}.metric .l{font-size:10.5px;color:var(--muted)}.metric .v{font-size:22px;font-weight:850;margin-top:4px}
+.callout{border-radius:10px;padding:9px;font-size:11px}.critical{background:#fff6f5;border:1px solid #fda29b;color:#912018}.warning{background:#fffaeb;border:1px solid #fedf89;color:#7a2e0e}.pass{background:#f6fef9;border:1px solid #6ce9a6;color:#05603a}.callout+.callout{margin-top:7px}
+table{width:100%;border-collapse:collapse;font-size:11px}th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{background:#f9fafb;color:#667085;font-size:10px}
+.list{display:grid;gap:7px}.row{border:1px solid var(--line);border-radius:9px;padding:8px;background:#fcfcfd}.row strong{font-size:11.5px}.row p{margin:3px 0 0;color:#667085;font-size:10.5px}
+.form-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.field label{display:block;font-size:10.5px;font-weight:700;margin-bottom:4px;color:#344054}.field input,.field select,.field textarea{width:100%;border:1px solid #d0d5dd;border-radius:8px;padding:8px 9px;font-size:11.5px}.full{grid-column:1/-1}
+.toast{position:fixed;right:18px;bottom:18px;background:#101828;color:#fff;border-radius:9px;padding:10px 13px;font-size:11px;display:none;z-index:80}.toast.show{display:block}.small{padding:6px 8px;font-size:10px}
+
+@media(max-width:1000px){.g4,.g3,.g2{grid-template-columns:1fr 1fr}}@media(max-width:760px){.app{grid-template-columns:1fr}.sidebar{display:none}.main{padding:11px}.g4,.g3,.g2,.form-grid{grid-template-columns:1fr}.top{align-items:flex-start;flex-direction:column}}
+</style></head>
+<body><div class="app"><aside class="sidebar"><div class="logo">VIP Customs AI<small>V7 · Historical Learning</small></div><div class="menu"><button class="nav active" data-page="history">Lịch sử khai</button><button class="nav" data-page="match">AI tìm hồ sơ tương tự</button><button class="nav" data-page="compare">So sánh lần khai</button><button class="nav" data-page="learn">Learning Memory</button></div></aside>
+<main class="main"><div class="top"><div><h1 id="title">V7 · Historical Learning</h1><div class="sub" id="sub">Học từ tờ khai cũ nhưng chỉ dùng dữ liệu đã được duyệt.</div></div><div class="actions"><button class="btn secondary" onclick="toast('Đã lưu')">Lưu</button><button class="btn dark" onclick="toast('Đã chạy AI kiểm tra')">AI kiểm tra</button><button class="btn primary" onclick="toast('Đã tạo bản nháp')">Tạo bản nháp</button></div></div>
+
+<section class="page active" id="history">
+<div class="grid g4">
+<div class="card metric"><div class="l">Tờ khai lịch sử</div><div class="v">1,842</div><span class="badge info">Theo khách hàng</span></div>
+<div class="card metric"><div class="l">Mặt hàng đã học</div><div class="v">4,926</div><span class="badge ok">Structured</span></div>
+<div class="card metric"><div class="l">Matches hồ sơ hiện tại</div><div class="v">7</div><span class="badge purple">Similar</span></div>
+<div class="card metric"><div class="l">Bất thường mới</div><div class="v">3</div><span class="badge warn">Review</span></div></div>
+<div style="height:12px"></div>
+<div class="card"><div class="section-title"><h2>Lịch sử cùng khách hàng / model</h2><span class="badge info">Customer Memory</span></div>
+<table><thead><tr><th>Ngày</th><th>Model</th><th>Mô tả</th><th>HS</th><th>Đơn giá</th><th>C/O</th><th>Kết quả</th></tr></thead>
+<tbody><tr><td>12/09/2026</td><td>ABC-500</td><td>Máy bơm nước...</td><td>8413.xx.xx</td><td>44 USD</td><td>Form E</td><td><span class="badge ok">Thông quan</span></td></tr>
+<tr><td>22/07/2026</td><td>ABC-500</td><td>Máy bơm nước...</td><td>8413.xx.xx</td><td>43.5 USD</td><td>Form E</td><td><span class="badge ok">Thông quan</span></td></tr>
+<tr><td>18/03/2026</td><td>CT-88</td><td>Bộ điều khiển điện...</td><td>8537.xx.xx</td><td>41 USD</td><td>Không</td><td><span class="badge warn">Đã tham vấn</span></td></tr></tbody></table></div>
+</section>
+<section class="page" id="match">
+<div class="grid g2"><div class="card"><div class="section-title"><h2>AI tìm hồ sơ tương tự</h2><span class="badge purple">Vector + Rules</span></div>
+<div class="list"><div class="row"><strong>Match 96% — ABC-500 / Minh Phát</strong><p>Cùng model, cùng supplier, cùng công dụng. HS lịch sử: 8413.xx.xx.</p></div>
+<div class="row"><strong>Match 89% — ABC-450 / Minh Phát</strong><p>Cùng dòng bơm, khác công suất. HS cùng nhóm 8413.</p></div>
+<div class="row"><strong>Match 73% — Pump X500 / Khách khác</strong><p>Cùng công dụng nhưng supplier khác.</p></div></div></div>
+<div class="card"><div class="section-title"><h2>AI kết luận</h2><span class="badge warn">Không tự copy</span></div><div class="callout pass"><b>Ổn định:</b> ABC-500 đã dùng cùng nhóm HS trong 2 lần trước.</div><div class="callout warning"><b>Khác:</b> đơn giá hiện tại 45 USD, cao hơn lịch sử khoảng 2–3%.</div><div class="callout critical"><b>CT-88:</b> lần trước từng tham vấn — không được dùng lịch sử để tự chốt.</div></div></div>
+</section>
+<section class="page" id="compare">
+<div class="card"><div class="section-title"><h2>So sánh lần khai mới với lịch sử</h2><span class="badge info">Change Detection</span></div>
+<table><thead><tr><th>Field</th><th>Lần trước</th><th>Lần này</th><th>Chênh lệch</th><th>AI</th></tr></thead>
+<tbody><tr><td>HS ABC-500</td><td>8413.xx.xx</td><td>8413.xx.xx</td><td>Không</td><td><span class="badge ok">Stable</span></td></tr>
+<tr><td>Unit price</td><td>44 USD</td><td>45 USD</td><td>+2.27%</td><td><span class="badge ok">Normal</span></td></tr>
+<tr><td>Form E description</td><td>Có model</td><td>Thiếu model</td><td>Khác</td><td><span class="badge warn">Review</span></td></tr>
+<tr><td>CT-88 price</td><td>41 USD</td><td>32 USD</td><td>-21.95%</td><td><span class="badge bad">Risk</span></td></tr></tbody></table></div>
+</section>
+<section class="page" id="learn"><div class="grid g2"><div class="card"><div class="section-title"><h2>Learning Memory</h2><span class="badge purple">Approved-only</span></div>
+<div class="callout pass"><b>Chỉ học từ dữ liệu đã được reviewer duyệt.</b></div><div class="callout warning"><b>Không học từ AI guess hoặc hồ sơ bị reject.</b></div><div class="callout critical"><b>HS critical phải lưu căn cứ và người duyệt.</b></div></div>
+<div class="card"><div class="section-title"><h2>Memory record mẫu</h2></div><div class="list"><div class="row"><strong>Product fingerprint</strong><p>Customer + supplier + model + technical attributes.</p></div><div class="row"><strong>Approved classification</strong><p>HS, description, C/O rule, reviewer, evidence hash.</p></div><div class="row"><strong>Outcome</strong><p>Đã thông quan / tham vấn / sửa đổi sau khai.</p></div></div></div></div></section>
+
+</main></div><div class="toast" id="toast"></div>
+<script>
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1700)}
+function go(id){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('.nav').forEach(x=>x.classList.toggle('active',x.dataset.page===id));window.scrollTo({top:0,behavior:'smooth'})}
+document.querySelectorAll('.nav').forEach(b=>b.onclick=()=>go(b.dataset.page));
+
+</script></body></html>

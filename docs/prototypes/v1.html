@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VIP Customs AI — Prototype</title>
+  <style>
+    :root{
+      --bg:#f6f7fb; --card:#fff; --text:#172033; --muted:#6b7280;
+      --line:#e5e7eb; --primary:#b91c1c; --primary2:#ef4444;
+      --ok:#047857; --warn:#b45309; --danger:#b91c1c;
+      --shadow:0 12px 30px rgba(16,24,40,.08); --radius:16px;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
+    .app{display:grid;grid-template-columns:250px 1fr;min-height:100vh}
+    aside{background:#111827;color:#fff;padding:22px 16px;position:sticky;top:0;height:100vh}
+    .brand{font-weight:800;font-size:20px;padding:8px 12px 18px;border-bottom:1px solid rgba(255,255,255,.08)}
+    .brand small{display:block;color:#9ca3af;font-size:12px;margin-top:4px;font-weight:500}
+    nav{margin-top:18px;display:grid;gap:6px}
+    nav a{color:#d1d5db;text-decoration:none;padding:11px 12px;border-radius:10px;font-size:14px}
+    nav a:hover,nav a.active{background:#1f2937;color:#fff}
+    main{padding:26px}
+    .topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:22px}
+    h1{font-size:26px;margin:0}.sub{color:var(--muted);font-size:14px;margin-top:5px}
+    .btn{border:0;border-radius:10px;padding:11px 16px;font-weight:700;cursor:pointer}
+    .btn-primary{background:var(--primary);color:white}.btn-light{background:white;border:1px solid var(--line);color:#111827}
+    .grid{display:grid;gap:16px}.grid-4{grid-template-columns:repeat(4,1fr)}.grid-2{grid-template-columns:1.1fr .9fr}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px}
+    .metric .label{color:var(--muted);font-size:13px}.metric .value{font-size:26px;font-weight:800;margin-top:7px}
+    .section-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+    .section-title h2{font-size:17px;margin:0}.section-title span{font-size:12px;color:var(--muted)}
+    .drop{border:2px dashed #d1d5db;border-radius:14px;padding:32px;text-align:center;background:#fafafa}
+    .drop strong{display:block;margin-bottom:7px}.drop p{margin:0;color:var(--muted);font-size:13px}
+    .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.chip{padding:7px 10px;border:1px solid var(--line);border-radius:999px;font-size:12px;background:#fff}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    th,td{padding:11px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{color:#6b7280;font-weight:700;background:#fafafa}
+    .status{display:inline-flex;padding:5px 8px;border-radius:999px;font-size:11px;font-weight:700}
+    .ok{background:#ecfdf5;color:var(--ok)}.warn{background:#fff7ed;color:var(--warn)}.danger{background:#fef2f2;color:var(--danger)}
+    .ai-box{background:#111827;color:#fff;border-radius:14px;padding:16px}
+    .ai-box h3{margin:0 0 10px;font-size:16px}.ai-box p{color:#d1d5db;font-size:13px;line-height:1.55}
+    .confidence{height:8px;border-radius:99px;background:#374151;overflow:hidden;margin:8px 0 12px}.confidence i{display:block;height:100%;width:87%;background:#22c55e}
+    .kv{display:grid;grid-template-columns:120px 1fr;gap:8px;font-size:13px;margin-top:10px}.kv b{color:#9ca3af}
+    .footer-note{font-size:12px;color:var(--muted);margin-top:18px}
+    .stepper{display:flex;gap:8px;flex-wrap:wrap}.step{padding:9px 11px;border-radius:10px;background:#f3f4f6;font-size:12px}.step.active{background:#fee2e2;color:#991b1b;font-weight:700}
+    @media(max-width:1100px){.grid-4{grid-template-columns:repeat(2,1fr)}.grid-2{grid-template-columns:1fr}}
+    @media(max-width:760px){.app{grid-template-columns:1fr}aside{display:none}main{padding:16px}.grid-4{grid-template-columns:1fr}.topbar{align-items:flex-start;flex-direction:column}}
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <div class="brand">VIP Customs AI<small>Hệ thống khai báo hải quan thông minh</small></div>
+    <nav>
+      <a class="active" href="#">Tổng quan</a>
+      <a href="#">Lô hàng</a>
+      <a href="#">Chứng từ</a>
+      <a href="#">Danh mục hàng</a>
+      <a href="#">HS Code AI</a>
+      <a href="#">Biểu thuế</a>
+      <a href="#">C/O & FTA</a>
+      <a href="#">Tờ khai nháp</a>
+      <a href="#">Kiểm tra rủi ro</a>
+      <a href="#">Kho kiến thức</a>
+      <a href="#">Lịch sử & Audit</a>
+    </nav>
+  </aside>
+
+  <main>
+    <div class="topbar">
+      <div>
+        <h1>Trung tâm khai báo AI</h1>
+        <div class="sub">Upload chứng từ → AI đọc → gợi ý HS → tính thuế → sinh tờ khai nháp.</div>
+      </div>
+      <button class="btn btn-primary">+ Tạo lô hàng mới</button>
+    </div>
+
+    <div class="grid grid-4">
+      <div class="card metric"><div class="label">Lô hàng đang xử lý</div><div class="value">12</div></div>
+      <div class="card metric"><div class="label">Chứng từ chờ đọc</div><div class="value">7</div></div>
+      <div class="card metric"><div class="label">Mặt hàng cần duyệt HS</div><div class="value">18</div></div>
+      <div class="card metric"><div class="label">Tờ khai sẵn sàng</div><div class="value">5</div></div>
+    </div>
+
+    <div style="height:16px"></div>
+
+    <div class="card">
+      <div class="section-title"><h2>Quy trình hiện tại</h2><span>MVP Prototype</span></div>
+      <div class="stepper">
+        <div class="step active">1. Upload chứng từ</div>
+        <div class="step">2. AI trích dữ liệu</div>
+        <div class="step">3. Chuẩn hoá hàng</div>
+        <div class="step">4. Gợi ý HS</div>
+        <div class="step">5. Tính thuế</div>
+        <div class="step">6. Kiểm tra rủi ro</div>
+        <div class="step">7. Sinh tờ khai nháp</div>
+      </div>
+    </div>
+
+    <div style="height:16px"></div>
+
+    <div class="grid grid-2">
+      <section class="card">
+        <div class="section-title"><h2>Nhập chứng từ</h2><span>PDF · Excel · Ảnh</span></div>
+        <div class="drop">
+          <strong>Kéo thả Invoice / Packing List / C/O / B/L vào đây</strong>
+          <p>AI sẽ đọc và gom dữ liệu vào một hồ sơ lô hàng.</p>
+          <div style="margin-top:14px"><button class="btn btn-light">Chọn tệp</button></div>
+        </div>
+        <div class="chips">
+          <span class="chip">invoice.pdf ✓</span>
+          <span class="chip">packing-list.xlsx ✓</span>
+          <span class="chip">form-e.pdf</span>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="section-title"><h2>AI phân tích mặt hàng</h2><span>Không chắc → NEEDS_REVIEW</span></div>
+        <div class="ai-box">
+          <h3>Máy bơm nước Model ABC-500</h3>
+          <p>AI nhận diện: bơm dùng cho hệ thống làm mát, công suất 500W, điện áp 220V.</p>
+          <div style="font-size:12px;color:#9ca3af">Confidence 87%</div>
+          <div class="confidence"><i></i></div>
+          <div class="kv">
+            <b>HS đề xuất</b><span>8413.xx.xx</span>
+            <b>Thuế NK</b><span>Đang tra biểu thuế</span>
+            <b>VAT</b><span>Đang kiểm tra</span>
+            <b>C/O</b><span>Form E — cần kiểm điều kiện</span>
+            <b>Cảnh báo</b><span>Thiếu catalogue để xác định loại bơm chính xác.</span>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div style="height:16px"></div>
+
+    <section class="card">
+      <div class="section-title"><h2>Danh sách hàng đã trích xuất</h2><button class="btn btn-light">Xuất Excel</button></div>
+      <div style="overflow:auto">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th><th>Tên hàng</th><th>Model</th><th>SL</th><th>Đơn giá</th><th>HS AI</th><th>Confidence</th><th>Trạng thái</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>Máy bơm nước</td><td>ABC-500</td><td>20</td><td>45 USD</td><td>8413.xx.xx</td><td>87%</td><td><span class="status warn">Cần duyệt</span></td></tr>
+          <tr><td>2</td><td>Ống nhựa PVC</td><td>PVC-20</td><td>500</td><td>1.2 USD</td><td>3917.xx.xx</td><td>94%</td><td><span class="status ok">Đạt</span></td></tr>
+          <tr><td>3</td><td>Bộ điều khiển điện</td><td>CT-88</td><td>15</td><td>32 USD</td><td>8537.xx.xx</td><td>69%</td><td><span class="status danger">NEEDS_REVIEW</span></td></tr>
+        </tbody>
+      </table>
+      </div>
+    </section>
+
+    <div class="footer-note">
+      Nguyên tắc lõi: AI không tự điền khi thiếu căn cứ. Mọi trường không đủ chắc chắn phải được gắn NEEDS_REVIEW và nêu rõ lý do.
+    </div>
+  </main>
+</div>
+</body>
+</html>

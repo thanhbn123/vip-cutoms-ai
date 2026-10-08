@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>VIP Customs AI — Interactive Prototype</title>
+<style>
+:root{
+ --bg:#f4f6f8;--card:#fff;--text:#14213d;--muted:#667085;--line:#e4e7ec;
+ --nav:#101828;--red:#b42318;--red2:#d92d20;--green:#067647;--amber:#b54708;
+ --blue:#175cd3;--shadow:0 10px 28px rgba(16,24,40,.07);--r:16px
+}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
+button,input,select,textarea{font:inherit}
+.app{display:grid;grid-template-columns:250px 1fr;min-height:100vh}
+.sidebar{background:var(--nav);color:#fff;padding:18px 14px;position:sticky;top:0;height:100vh}
+.logo{font-size:20px;font-weight:900;padding:8px 10px 18px;border-bottom:1px solid #344054}.logo small{display:block;color:#98a2b3;font-weight:500;font-size:11px;margin-top:5px}
+.menu{margin-top:15px;display:grid;gap:4px}.menu button{all:unset;cursor:pointer;color:#d0d5dd;padding:11px 12px;border-radius:10px;font-size:14px}
+.menu button:hover,.menu button.active{background:#1d2939;color:#fff}
+.main{padding:22px}.top{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:18px}
+h1{font-size:25px;margin:0}.muted{color:var(--muted);font-size:13px}.actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:0;border-radius:10px;padding:10px 14px;font-weight:750;cursor:pointer}.primary{background:var(--red);color:#fff}.secondary{background:#fff;border:1px solid var(--line);color:#344054}.ghost{background:#f2f4f7;color:#344054}
+.grid{display:grid;gap:14px}.g4{grid-template-columns:repeat(4,1fr)}.g3{grid-template-columns:repeat(3,1fr)}.g2{grid-template-columns:1.15fr .85fr}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:16px}
+.metric .v{font-size:25px;font-weight:850;margin-top:6px}.metric .l{font-size:12px;color:var(--muted)}
+.section-title{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:13px}.section-title h2{font-size:16px;margin:0}
+.badge{display:inline-flex;align-items:center;padding:5px 8px;border-radius:999px;font-size:11px;font-weight:800}.ok{background:#ecfdf3;color:var(--green)}.warn{background:#fffaeb;color:var(--amber)}.bad{background:#fef3f2;color:var(--red)}.info{background:#eff8ff;color:var(--blue)}
+.stepper{display:flex;gap:7px;flex-wrap:wrap}.step{padding:8px 10px;background:#f2f4f7;border-radius:9px;font-size:12px;color:#475467}.step.active{background:#fee4e2;color:#912018;font-weight:800}
+table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{background:#f9fafb;color:#667085;font-size:11.5px}
+.page{display:none}.page.active{display:block}
+.form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.field label{display:block;font-size:12px;font-weight:700;margin-bottom:6px;color:#344054}
+.field input,.field select,.field textarea{width:100%;border:1px solid #d0d5dd;border-radius:9px;padding:10px;background:white;color:#101828}.field textarea{min-height:84px;resize:vertical}
+.full{grid-column:1/-1}.drop{border:2px dashed #d0d5dd;border-radius:14px;padding:28px;text-align:center;background:#fcfcfd}.drop strong{display:block;margin-bottom:6px}
+.chips{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}.chip{font-size:11.5px;border:1px solid var(--line);background:white;padding:6px 9px;border-radius:999px}
+.ai{background:#101828;color:#fff;border-radius:14px;padding:15px}.ai h3{margin:0 0 8px;font-size:15px}.ai p{font-size:12.5px;color:#d0d5dd;line-height:1.5}.kv{display:grid;grid-template-columns:120px 1fr;gap:8px;font-size:12.5px}.kv b{color:#98a2b3}
+.progress{height:7px;background:#344054;border-radius:999px;overflow:hidden;margin:8px 0 12px}.progress i{display:block;height:100%;background:#12b76a;width:87%}
+.timeline{display:grid;gap:10px}.event{display:grid;grid-template-columns:14px 1fr;gap:10px}.dot{width:10px;height:10px;border-radius:50%;background:#98a2b3;margin-top:4px}.event strong{font-size:12.5px}.event p{margin:3px 0 0;color:var(--muted);font-size:12px}
+.notice{border:1px solid #fedf89;background:#fffaeb;border-radius:12px;padding:12px;font-size:12.5px;color:#7a2e0e}
+.review{border-left:4px solid var(--red);background:#fff6f5;padding:12px;border-radius:10px;font-size:12.5px}
+.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}.toolbar input{border:1px solid #d0d5dd;border-radius:9px;padding:9px 10px;min-width:220px}
+.modal{display:none;position:fixed;inset:0;background:rgba(16,24,40,.55);z-index:50;align-items:center;justify-content:center;padding:16px}.modal.show{display:flex}.modalbox{background:#fff;width:min(760px,100%);max-height:90vh;overflow:auto;border-radius:18px;padding:18px}
+.toast{position:fixed;right:18px;bottom:18px;background:#101828;color:#fff;padding:11px 14px;border-radius:10px;font-size:12.5px;display:none;z-index:80}.toast.show{display:block}
+.row-actions{display:flex;gap:6px;flex-wrap:wrap}.small{padding:6px 8px;font-size:11px}
+.code{background:#f2f4f7;padding:9px;border-radius:8px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
+@media(max-width:1050px){.g4{grid-template-columns:repeat(2,1fr)}.g3,.g2{grid-template-columns:1fr}}
+@media(max-width:760px){.app{grid-template-columns:1fr}.sidebar{display:none}.main{padding:14px}.g4,.form-grid{grid-template-columns:1fr}.top{align-items:flex-start;flex-direction:column}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="sidebar">
+  <div class="logo">VIP Customs AI<small>Customs Operating System</small></div>
+  <div class="menu">
+    <button class="nav active" data-page="dashboard">Tổng quan</button>
+    <button class="nav" data-page="shipment">Lô hàng</button>
+    <button class="nav" data-page="documents">Chứng từ</button>
+    <button class="nav" data-page="products">Danh mục hàng</button>
+    <button class="nav" data-page="hs">HS Code AI</button>
+    <button class="nav" data-page="tax">Thuế & chính sách</button>
+    <button class="nav" data-page="declaration">Tờ khai nháp</button>
+    <button class="nav" data-page="audit">Lịch sử & Audit</button>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="top">
+    <div><h1 id="pageTitle">Trung tâm khai báo AI</h1><div class="muted" id="pageSub">Prototype tương tác — dữ liệu minh hoạ để nghiệm thu luồng nghiệp vụ.</div></div>
+    <div class="actions">
+      <button class="btn secondary" onclick="showToast('Đã lưu bản nháp')">Lưu nháp</button>
+      <button class="btn primary" onclick="openNewShipment()">+ Tạo lô hàng</button>
+    </div>
+  </div>
+
+  <section class="page active" id="dashboard">
+    <div class="grid g4">
+      <div class="card metric"><div class="l">Lô hàng đang xử lý</div><div class="v">12</div><span class="badge info">+3 hôm nay</span></div>
+      <div class="card metric"><div class="l">Chứng từ chờ AI đọc</div><div class="v">7</div><span class="badge warn">Cần xử lý</span></div>
+      <div class="card metric"><div class="l">Mặt hàng cần duyệt HS</div><div class="v">18</div><span class="badge bad">4 rủi ro cao</span></div>
+      <div class="card metric"><div class="l">Tờ khai sẵn sàng</div><div class="v">5</div><span class="badge ok">Đã kiểm tra</span></div>
+    </div>
+    <div style="height:14px"></div>
+    <div class="card">
+      <div class="section-title"><h2>Luồng nghiệp vụ</h2><span class="badge info">MVP</span></div>
+      <div class="stepper">
+        <div class="step active">1 Upload</div><div class="step">2 AI đọc</div><div class="step">3 Chuẩn hoá</div><div class="step">4 HS AI</div><div class="step">5 Thuế</div><div class="step">6 Chính sách</div><div class="step">7 Tờ khai nháp</div><div class="step">8 Reviewer</div>
+      </div>
+    </div>
+    <div style="height:14px"></div>
+    <div class="grid g2">
+      <div class="card">
+        <div class="section-title"><h2>Lô hàng gần đây</h2><button class="btn ghost small" onclick="go('shipment')">Xem tất cả</button></div>
+        <div style="overflow:auto"><table>
+          <thead><tr><th>Mã</th><th>Khách hàng</th><th>Tuyến</th><th>Trạng thái</th><th>AI</th></tr></thead>
+          <tbody>
+            <tr><td>VIP-261008-001</td><td>Công ty Minh Phát</td><td>China → VN</td><td><span class="badge warn">Đang phân tích</span></td><td>82%</td></tr>
+            <tr><td>VIP-261007-006</td><td>Hưng Thịnh</td><td>China → VN</td><td><span class="badge ok">Sẵn sàng khai</span></td><td>96%</td></tr>
+            <tr><td>VIP-261007-002</td><td>An Phúc</td><td>China → VN</td><td><span class="badge bad">NEEDS_REVIEW</span></td><td>64%</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+      <div class="card">
+        <div class="section-title"><h2>Cảnh báo AI</h2><span>3 mục</span></div>
+        <div class="timeline">
+          <div class="event"><div class="dot" style="background:#d92d20"></div><div><strong>HS thiếu căn cứ kỹ thuật</strong><p>Model CT-88 thiếu catalogue hoặc ảnh nhãn máy.</p></div></div>
+          <div class="event"><div class="dot" style="background:#f79009"></div><div><strong>Invoice lệch Packing List</strong><p>Số lượng Item 03 chênh 2 kiện.</p></div></div>
+          <div class="event"><div class="dot" style="background:#175cd3"></div><div><strong>Form E cần kiểm tra</strong><p>Mô tả hàng trên C/O chưa khớp hoàn toàn Invoice.</p></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="page" id="shipment">
+    <div class="card">
+      <div class="section-title"><h2>Danh sách lô hàng</h2><button class="btn primary small" onclick="openNewShipment()">+ Lô hàng mới</button></div>
+      <div class="toolbar"><input placeholder="Tìm mã lô / khách hàng / vận đơn"/><select><option>Tất cả trạng thái</option><option>Đang xử lý</option><option>Needs Review</option><option>Sẵn sàng khai</option></select></div>
+      <div style="overflow:auto"><table>
+        <thead><tr><th>Mã lô</th><th>Khách hàng</th><th>Nhà cung cấp</th><th>Invoice</th><th>Ngày ETA</th><th>Trạng thái</th><th></th></tr></thead>
+        <tbody id="shipmentRows">
+          <tr><td>VIP-261008-001</td><td>Công ty Minh Phát</td><td>Guangzhou ABC</td><td>INV-2026-889</td><td>10/10/2026</td><td><span class="badge warn">Đang phân tích</span></td><td><button class="btn ghost small" onclick="go('documents')">Mở hồ sơ</button></td></tr>
+          <tr><td>VIP-261007-006</td><td>Hưng Thịnh</td><td>Shenzhen Tech</td><td>ST-6671</td><td>09/10/2026</td><td><span class="badge ok">Sẵn sàng khai</span></td><td><button class="btn ghost small" onclick="go('declaration')">Tờ khai</button></td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <section class="page" id="documents">
+    <div class="grid g2">
+      <div class="card">
+        <div class="section-title"><h2>Upload bộ chứng từ</h2><span class="badge info">AI Parser</span></div>
+        <div class="drop">
+          <strong>Kéo thả Invoice / Packing List / B/L / C/O / Contract</strong>
+          <div class="muted">PDF, XLSX, JPG, PNG — prototype chưa gửi file thật lên server.</div>
+          <div style="margin-top:12px"><button class="btn secondary" onclick="simulateUpload()">Chọn tệp</button></div>
+        </div>
+        <div class="chips" id="fileChips"><span class="chip">invoice.pdf ✓</span><span class="chip">packing-list.xlsx ✓</span></div>
+        <div style="height:14px"></div>
+        <button class="btn primary" onclick="runAIParse()">Chạy AI đọc chứng từ</button>
+      </div>
+      <div class="card">
+        <div class="section-title"><h2>Kết quả AI</h2><span id="parseStatus" class="badge warn">Chưa chạy</span></div>
+        <div class="form-grid">
+          <div class="field"><label>Invoice No.</label><input id="invoiceNo" value="INV-2026-889"/></div>
+          <div class="field"><label>Invoice Date</label><input value="2026-10-05"/></div>
+          <div class="field"><label>Exporter</label><input value="Guangzhou ABC Trading Co., Ltd."/></div>
+          <div class="field"><label>Importer</label><input value="CÔNG TY TNHH MINH PHÁT"/></div>
+          <div class="field"><label>Currency</label><select><option>USD</option><option>CNY</option></select></div>
+          <div class="field"><label>Incoterm</label><select><option>FOB</option><option>CIF</option><option>EXW</option></select></div>
+          <div class="field full"><label>AI nhận xét</label><textarea id="aiComment">Chưa có kết quả.</textarea></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="page" id="products">
+    <div class="card">
+      <div class="section-title"><h2>Danh mục hàng trích xuất</h2><div class="actions"><button class="btn secondary small">Import Excel</button><button class="btn primary small" onclick="showToast('Đã thêm dòng hàng mới')">+ Thêm hàng</button></div></div>
+      <div style="overflow:auto"><table>
+        <thead><tr><th>#</th><th>Tên hàng khai báo</th><th>Model</th><th>SL</th><th>ĐVT</th><th>Đơn giá</th><th>Xuất xứ</th><th>HS AI</th><th>Trạng thái</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td><input value="Máy bơm nước dùng cho hệ thống làm mát" style="width:260px"></td><td>ABC-500</td><td>20</td><td>PCE</td><td>45 USD</td><td>China</td><td>8413.xx.xx</td><td><span class="badge warn">Cần duyệt</span></td></tr>
+          <tr><td>2</td><td>Ống nhựa PVC không gia cường</td><td>PVC-20</td><td>500</td><td>MTR</td><td>1.2 USD</td><td>China</td><td>3917.xx.xx</td><td><span class="badge ok">Đạt</span></td></tr>
+          <tr><td>3</td><td>Bộ điều khiển điện</td><td>CT-88</td><td>15</td><td>SET</td><td>32 USD</td><td>China</td><td>8537.xx.xx</td><td><span class="badge bad">NEEDS_REVIEW</span></td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <section class="page" id="hs">
+    <div class="grid g2">
+      <div class="card">
+        <div class="section-title"><h2>HS Code AI</h2><span class="badge info">BRAIN</span></div>
+        <div class="field"><label>Mô tả hàng</label><textarea id="hsInput">Máy bơm nước model ABC-500, 220V, 500W, dùng cho hệ thống làm mát.</textarea></div>
+        <div class="form-grid" style="margin-top:10px">
+          <div class="field"><label>Vật liệu</label><input placeholder="Ví dụ: thép, nhựa..."></div>
+          <div class="field"><label>Công dụng</label><input value="Bơm nước làm mát"></div>
+          <div class="field"><label>Thương hiệu</label><input value="ABC"></div>
+          <div class="field"><label>Xuất xứ</label><input value="China"></div>
+        </div>
+        <div style="margin-top:12px"><button class="btn primary" onclick="runHS()">Phân tích HS</button></div>
+      </div>
+      <div class="ai">
+        <h3 id="hsTitle">Kết quả đề xuất</h3>
+        <p id="hsDesc">Nhấn “Phân tích HS” để chạy mô phỏng.</p>
+        <div id="hsResult" style="display:none">
+          <div style="font-size:12px;color:#98a2b3">Confidence 87%</div><div class="progress"><i></i></div>
+          <div class="kv">
+            <b>HS đề xuất</b><span>8413.xx.xx</span>
+            <b>Nhóm so sánh</b><span>8413 / 8414</span>
+            <b>Lý do</b><span>Chức năng chính là bơm chất lỏng.</span>
+            <b>Còn thiếu</b><span>Loại bơm, nguyên lý vận hành, lưu lượng.</span>
+            <b>Kết luận</b><span class="badge warn">NEEDS_REVIEW</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="height:14px"></div>
+    <div class="notice"><b>Luật hệ thống:</b> AI không được tự “chốt” HS khi thiếu thông tin phân loại quan trọng. Phải nêu trường thiếu và chuyển reviewer.</div>
+  </section>
+
+  <section class="page" id="tax">
+    <div class="grid g3">
+      <div class="card metric"><div class="l">Trị giá CIF dự kiến</div><div class="v">18,420 USD</div></div>
+      <div class="card metric"><div class="l">Thuế NK dự kiến</div><div class="v">1,105 USD</div></div>
+      <div class="card metric"><div class="l">VAT dự kiến</div><div class="v">1,952 USD</div></div>
+    </div>
+    <div style="height:14px"></div>
+    <div class="grid g2">
+      <div class="card">
+        <div class="section-title"><h2>Kiểm tra thuế & ưu đãi</h2><span class="badge warn">Cần dữ liệu biểu thuế thật</span></div>
+        <table><thead><tr><th>Mặt hàng</th><th>HS</th><th>MFN</th><th>Form E</th><th>VAT</th></tr></thead>
+          <tbody><tr><td>Máy bơm</td><td>8413.xx.xx</td><td>6%</td><td>0%*</td><td>10%</td></tr><tr><td>Ống PVC</td><td>3917.xx.xx</td><td>5%</td><td>0%*</td><td>10%</td></tr></tbody>
+        </table>
+        <div class="muted" style="margin-top:8px">* Dữ liệu mô phỏng, chưa phải kết luận pháp lý.</div>
+      </div>
+      <div class="card">
+        <div class="section-title"><h2>Rủi ro / chính sách</h2><span>AI Rule Engine</span></div>
+        <div class="review"><b>1. Form E:</b> cần kiểm tiêu chí xuất xứ và mô tả hàng.</div>
+        <div style="height:8px"></div>
+        <div class="review"><b>2. Bộ điều khiển CT-88:</b> chưa đủ dữ liệu để xác định chính sách chuyên ngành.</div>
+        <div style="height:8px"></div>
+        <div class="review"><b>3. Trị giá:</b> AI phát hiện đơn giá Item 3 thấp hơn lịch sử khai gần nhất 24%.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="page" id="declaration">
+    <div class="card">
+      <div class="section-title"><h2>Tờ khai nháp</h2><div class="actions"><span class="badge warn">DRAFT</span><button class="btn secondary small" onclick="showToast('Đã kiểm tra validation')">Kiểm tra</button><button class="btn primary small" onclick="showToast('Prototype: đã tạo file xuất nháp')">Xuất dữ liệu</button></div></div>
+      <div class="form-grid">
+        <div class="field"><label>Loại hình</label><select><option>A11 - Nhập kinh doanh tiêu dùng</option><option>A12</option></select></div>
+        <div class="field"><label>Chi cục Hải quan</label><input value="Bắc Ninh"></div>
+        <div class="field"><label>Người nhập khẩu</label><input value="CÔNG TY TNHH MINH PHÁT"></div>
+        <div class="field"><label>Người xuất khẩu</label><input value="GUANGZHOU ABC TRADING CO., LTD."></div>
+        <div class="field"><label>Invoice</label><input value="INV-2026-889"></div>
+        <div class="field"><label>Điều kiện giá</label><select><option>FOB</option><option>CIF</option></select></div>
+        <div class="field"><label>Phương thức vận chuyển</label><select><option>Đường bộ</option><option>Đường biển</option><option>Đường hàng không</option></select></div>
+        <div class="field"><label>Nước xuất khẩu</label><input value="CN"></div>
+      </div>
+      <div style="height:14px"></div>
+      <table><thead><tr><th>Dòng</th><th>Mô tả</th><th>HS</th><th>SL</th><th>Đơn giá</th><th>Trị giá</th><th>AI Validation</th></tr></thead>
+      <tbody><tr><td>1</td><td>Máy bơm nước...</td><td>8413.xx.xx</td><td>20 PCE</td><td>45 USD</td><td>900 USD</td><td><span class="badge warn">Review HS</span></td></tr>
+      <tr><td>2</td><td>Ống nhựa PVC...</td><td>3917.xx.xx</td><td>500 MTR</td><td>1.2 USD</td><td>600 USD</td><td><span class="badge ok">PASS</span></td></tr></tbody></table>
+    </div>
+  </section>
+
+  <section class="page" id="audit">
+    <div class="card">
+      <div class="section-title"><h2>Audit log</h2><span>Mọi thay đổi đều lưu dấu vết</span></div>
+      <div class="timeline">
+        <div class="event"><div class="dot" style="background:#12b76a"></div><div><strong>01:18 — AI Parser</strong><p>Đọc invoice.pdf, trích 23 trường, confidence trung bình 94%.</p></div></div>
+        <div class="event"><div class="dot" style="background:#f79009"></div><div><strong>01:20 — HS AI</strong><p>Item 1 chuyển NEEDS_REVIEW do thiếu thông số nguyên lý bơm.</p></div></div>
+        <div class="event"><div class="dot" style="background:#175cd3"></div><div><strong>01:22 — User: reviewer01</strong><p>Sửa mô tả Item 2, giữ nguyên HS đề xuất.</p></div></div>
+      </div>
+    </div>
+  </section>
+</main>
+</div>
+
+<div class="modal" id="newShipmentModal">
+  <div class="modalbox">
+    <div class="section-title"><h2>Tạo lô hàng mới</h2><button class="btn ghost small" onclick="closeModal()">Đóng</button></div>
+    <div class="form-grid">
+      <div class="field"><label>Khách hàng *</label><input id="newCustomer" value="Công ty Minh Phát"></div>
+      <div class="field"><label>Nhà cung cấp</label><input value="Guangzhou ABC Trading Co., Ltd."></div>
+      <div class="field"><label>Loại hình dự kiến</label><select><option>A11</option><option>A12</option><option>E31</option></select></div>
+      <div class="field"><label>Tuyến</label><select><option>China → Vietnam</option><option>Vietnam → China</option></select></div>
+      <div class="field"><label>ETA</label><input type="date" value="2026-10-10"></div>
+      <div class="field"><label>Phương thức vận chuyển</label><select><option>Đường bộ</option><option>Đường biển</option><option>Đường hàng không</option></select></div>
+      <div class="field full"><label>Ghi chú</label><textarea placeholder="Ví dụ: cần kiểm Form E, khách yêu cầu khai trước 15h..."></textarea></div>
+    </div>
+    <div style="margin-top:14px;display:flex;justify-content:flex-end;gap:8px">
+      <button class="btn secondary" onclick="closeModal()">Huỷ</button>
+      <button class="btn primary" onclick="createShipment()">Tạo & sang bước chứng từ</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const titles={
+ dashboard:['Trung tâm khai báo AI','Prototype tương tác — dữ liệu minh hoạ để nghiệm thu luồng nghiệp vụ.'],
+ shipment:['Quản lý lô hàng','Tạo, tìm kiếm và theo dõi trạng thái xử lý từng bộ hồ sơ.'],
+ documents:['Chứng từ & AI Parser','Upload bộ chứng từ và chuẩn hoá dữ liệu trước khi phân loại hàng.'],
+ products:['Danh mục hàng hoá','Kiểm tra tên hàng, model, số lượng, trị giá và thông tin phân loại.'],
+ hs:['HS Code AI','AI phân tích phân loại nhưng không tự chốt khi thiếu căn cứ.'],
+ tax:['Thuế & chính sách','Tính thuế dự kiến, ưu đãi FTA và phát hiện rủi ro nghiệp vụ.'],
+ declaration:['Tờ khai nháp','Tổng hợp dữ liệu đã duyệt thành bộ dữ liệu khai báo nháp.'],
+ audit:['Lịch sử & Audit','Theo dõi toàn bộ thay đổi của AI và người dùng.']
+};
+function go(id){
+ document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+ document.getElementById(id).classList.add('active');
+ document.querySelectorAll('.nav').forEach(x=>x.classList.toggle('active',x.dataset.page===id));
+ document.getElementById('pageTitle').textContent=titles[id][0];
+ document.getElementById('pageSub').textContent=titles[id][1];
+ window.scrollTo({top:0,behavior:'smooth'});
+}
+document.querySelectorAll('.nav').forEach(b=>b.onclick=()=>go(b.dataset.page));
+function openNewShipment(){document.getElementById('newShipmentModal').classList.add('show')}
+function closeModal(){document.getElementById('newShipmentModal').classList.remove('show')}
+function createShipment(){
+ const c=document.getElementById('newCustomer').value||'Khách hàng mới';
+ const row=document.createElement('tr');
+ row.innerHTML=`<td>VIP-261008-NEW</td><td>${c}</td><td>Guangzhou ABC</td><td>Chưa có</td><td>10/10/2026</td><td><span class="badge info">Mới tạo</span></td><td><button class="btn ghost small" onclick="go('documents')">Upload chứng từ</button></td>`;
+ document.getElementById('shipmentRows').prepend(row);
+ closeModal();showToast('Đã tạo lô hàng mới');go('documents');
+}
+function simulateUpload(){
+ const chips=document.getElementById('fileChips');
+ chips.innerHTML+='<span class="chip">bill-of-lading.pdf ✓</span><span class="chip">form-e.pdf ✓</span>';
+ showToast('Đã thêm 2 tệp mô phỏng');
+}
+function runAIParse(){
+ const st=document.getElementById('parseStatus');
+ st.textContent='Đang xử lý...';st.className='badge info';
+ setTimeout(()=>{st.textContent='Đã đọc 94%';st.className='badge ok';document.getElementById('aiComment').value='AI đã đối chiếu Invoice và Packing List. Phát hiện Item 03 lệch 2 kiện. Form E cần kiểm tra mô tả hàng trước khi áp dụng ưu đãi.';showToast('AI Parser hoàn tất');},700);
+}
+function runHS(){
+ document.getElementById('hsDesc').textContent='Phân tích theo mô tả, công dụng và nhóm hàng tiềm năng.';
+ document.getElementById('hsResult').style.display='block';showToast('HS AI đã trả kết quả mô phỏng');
+}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800)}
+</script>
+</body>
+</html>
