@@ -18,3 +18,6 @@ Session gate list (owner brief) with mapping to `docs/ROADMAP.md`.
 | G11 | Frontend V12 parity | — | web build + unit tests |
 | G12 | Full integration (acceptance MVP 1–13) | ACCEPTANCE | e2e API test |
 | G13 | Staging readiness (runbook, compose, security checklist) | ROADMAP G13 (prep only) | checklist; deploy requires owner |
+
+## Branches (owner brief §II)
+`develop` ← `feature/g00-assessment` … `feature/g13-local-acceptance`, each merged `--no-ff` with its evidence in the merge message. `main` = baseline until staging acceptance.

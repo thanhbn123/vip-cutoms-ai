@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ApiError, post, setToken, type Me } from "./api";
+import { api, ApiError, post, setToken, type Me } from "./api";
 
 export function Login({ onLogin, env }: { onLogin: (me: Me) => void; env: string }) {
   const [email, setEmail] = useState("");
@@ -12,7 +12,6 @@ export function Login({ onLogin, env }: { onLogin: (me: Me) => void; env: string
     try {
       const r = await post<{ access_token: string }>("/auth/login", { email, password });
       setToken(r.access_token);
-      const { api } = await import("./api");
       onLogin(await api<Me>("/auth/me"));
     } catch (ex) {
       setErr(ex instanceof ApiError ? ex.message : "Không kết nối được API");
