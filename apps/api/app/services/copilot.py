@@ -101,15 +101,22 @@ def ask(db: Session, case: CustomsCase, user: User, question: str) -> dict:
             audit.record(db, tenant_id=case.tenant_id, actor=audit.Actor.ai(), action="proposal.created", entity_type="proposal", entity_id=proposal.id,
                          case_id=case.id, before={"value": item.description_vn}, after={"proposed_value": proposal.proposed_value, "target": str(item.id)},
                          reason=f"Copilot DESCRIBE requested by {user.email}", evidence=valid_sources)
+    confidence = round(max(0.0, min(1.0, float(ans.confidence or 0.0))), 2)
+    if dropped:
+        confidence = round(confidence * 0.5, 2)  # fabricated references halve our trust in the answer
+    actions = [str(a)[:300] for a in (ans.recommended_actions or [])][:10]
+    requires_review = bool(ans.requires_review) or proposal is not None or any(i["severity"] == "CRITICAL" for i in ctx["issues"])
+    meta = {"confidence": confidence, "recommended_actions": actions, "requires_review": requires_review, "dropped_sources": len(dropped)}
     now = utcnow()
-    db.add(CopilotMessage(tenant_id=case.tenant_id, case_id=case.id, user_id=user.id, role="USER", content=question, created_at=now))
+    db.add(CopilotMessage(tenant_id=case.tenant_id, case_id=case.id, user_id=user.id, role="USER", content=question, meta={}, created_at=now))
     ai_msg = CopilotMessage(tenant_id=case.tenant_id, case_id=case.id, user_id=user.id, role="AI", content=ans.answer, intent=ans.intent,
                             sources=valid_sources, reasoning=reasoning, provider=provider.name, provider_version=provider.version,
-                            proposal_id=proposal.id if proposal else None, created_at=now)
+                            proposal_id=proposal.id if proposal else None, meta=meta, created_at=now)
     db.add(ai_msg)
     db.flush()
     audit.record(db, tenant_id=case.tenant_id, actor=audit.Actor.ai(), action="copilot.answered", entity_type="copilot_message", entity_id=ai_msg.id,
                  case_id=case.id, after={"intent": ans.intent, "sources": len(valid_sources), "dropped_sources": len(dropped), "proposal": bool(proposal)},
                  reason=question[:500])
     return {"answer": ans.answer, "intent": ans.intent, "sources": valid_sources, "reasoning": reasoning, "provider": provider.name,
-            "provider_version": provider.version, "proposal_id": str(proposal.id) if proposal else None, "message_id": str(ai_msg.id)}
+            "provider_version": provider.version, "proposal_id": str(proposal.id) if proposal else None, "message_id": str(ai_msg.id),
+            "confidence": confidence, "recommended_actions": actions, "requires_review": requires_review}

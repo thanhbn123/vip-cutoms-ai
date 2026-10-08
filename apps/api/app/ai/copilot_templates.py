@@ -65,7 +65,11 @@ def answer(question: str, ctx: dict[str, Any], provider: str) -> CopilotAnswer:
             lines.append("Không còn việc mở — reviewer có thể đánh dấu READY_TO_EXPORT.")
         reasoning += ["Đọc danh sách issue mở theo mức độ.", "Đối chiếu trạng thái HS từng dòng hàng và trạng thái duyệt của trường critical.",
                       "Áp quy tắc fail-closed: còn critical → không phát hành."]
-        return CopilotAnswer("\n".join(lines), intent, sources, reasoning, provider)
+        actions = [f"Xử lý: {i['title']}" for i in crit] + ([f"Reviewer duyệt HS: {', '.join(pending_hs)}"] if pending_hs else []) \
+            + (["Reviewer duyệt các trường critical (Smart Declaration → Duyệt tất cả)"] if unapproved else []) \
+            + [f"Resolve/waive: {i['title']}" for i in warn[:5]]
+        return CopilotAnswer("\n".join(lines), intent, sources, reasoning, provider, confidence=0.95,
+                             recommended_actions=actions or ["Đánh dấu READY_TO_EXPORT"], requires_review=bool(crit or pending_hs or unapproved))
 
     if intent == "HS_WHY":
         targets = [items[n]] if n in items else ctx["items"]
@@ -94,7 +98,15 @@ def answer(question: str, ctx: dict[str, Any], provider: str) -> CopilotAnswer:
                 sources.append(_src("document", it["source_document_id"], it.get("source_ref") or "invoice"))
         reasoning += ["Lấy ứng viên HS từ engine quy tắc (dataset có phiên bản/hiệu lực).", "Giải thích theo từ khóa khớp, thuộc tính kỹ thuật có/thiếu và lịch sử đã duyệt.",
                       "Không tự chốt HS: critical field cần reviewer."]
-        return CopilotAnswer("\n".join(lines), intent, sources, reasoning, provider)
+        actions, unapproved_items = [], [it for it in targets if it["hs"]["status"] != "APPROVED"]
+        for it in unapproved_items:
+            top = it["hs"]["candidates"][0] if it["hs"]["candidates"] else None
+            if top and top["missing_attributes"]:
+                actions.append(f"Item {it['line_no']}: bổ sung {', '.join(top['missing_attributes'])} (catalogue/ảnh nhãn) rồi chạy lại AI")
+            actions.append(f"Item {it['line_no']}: reviewer chốt mã 8 số" + (f" trong nhóm {top['heading']}" if top else " thủ công"))
+        conf = 0.9 if all(it["hs"]["candidates"] for it in targets) else 0.5
+        return CopilotAnswer("\n".join(lines), intent, sources, reasoning, provider, confidence=conf, recommended_actions=actions,
+                             requires_review=bool(unapproved_items))
 
     if intent == "CO":
         co_issues = [i for i in issues if i["category"] == "CO" or i["code"].startswith("CO_")]
@@ -115,7 +127,10 @@ def answer(question: str, ctx: dict[str, Any], provider: str) -> CopilotAnswer:
             sources.append(_src("issue", i["id"], i["code"]))
         lines.append("FTA chỉ được áp dụng sau khi reviewer quyết định trên từng dòng hàng.")
         reasoning += ["Đọc trạng thái đánh giá C/O từng dòng (dataset FTA có phiên bản).", "Liệt kê issue liên quan C/O.", "Không tự áp dụng ưu đãi."]
-        return CopilotAnswer("\n".join(lines), intent, sources, reasoning, provider)
+        pending = [it for it in ctx["items"] if (it["origin"] or {}).get("status") == "ELIGIBLE_PENDING_REVIEW" and not (it["origin"] or {}).get("reviewer_decision")]
+        actions = [f"Xử lý: {i['title']}" for i in co_issues if i["code"] != "CO_DECISION_PENDING"] + [f"Item {it['line_no']}: reviewer quyết định áp dụng C/O" for it in pending]
+        return CopilotAnswer("\n".join(lines), intent, sources, reasoning, provider, confidence=0.9 if ctx.get("co_document") else 0.8,
+                             recommended_actions=actions, requires_review=bool(co_issues or pending))
 
     if intent == "VALUATION":
         v = ctx.get("valuation") or {}
@@ -144,12 +159,16 @@ def answer(question: str, ctx: dict[str, Any], provider: str) -> CopilotAnswer:
         if not compared:
             lines.append("Không có dữ liệu lịch sử đã duyệt để so sánh đơn giá; không phát hiện bất thường từ dữ liệu hiện có.")
         reasoning += ["Lấy đánh giá VALUATION (số học xác định trên các trường đã map/duyệt).", "So sánh đơn giá với bộ nhớ đã duyệt cùng model nếu có."]
-        return CopilotAnswer("\n".join(lines), intent, sources, reasoning, provider)
+        actions = [f"Xử lý: {i['title']}" for i in val_issues] + [f"Reviewer duyệt {f['label']}" for f in ctx["fields"] if f["is_critical"]
+                                                                  and f["key"].startswith(("valuation.", "invoice.total")) and f["review_status"] != "APPROVED"]
+        return CopilotAnswer("\n".join(lines), intent, sources, reasoning, provider, confidence=0.9 if v.get("status") == "COMPUTED" else 0.6,
+                             recommended_actions=actions, requires_review=bool(actions))
 
     if intent == "DESCRIBE":
         it = items.get(n) if n else (ctx["items"][0] if ctx["items"] else None)
         if not it:
-            return CopilotAnswer("Không xác định được dòng hàng. Hãy hỏi kèm số dòng, ví dụ: 'đề xuất mô tả item 1'.", intent, [], ["Không có item"], provider)
+            return CopilotAnswer("Không xác định được dòng hàng. Hãy hỏi kèm số dòng, ví dụ: 'đề xuất mô tả item 1'.", intent, [], ["Không có item"], provider,
+                                 confidence=0.0, recommended_actions=["Hỏi lại kèm số dòng"], requires_review=False)
         from app.ai.mock_provider import MockProvider
 
         proposed, why = MockProvider().propose_description({"description": it["description"], "description_vn": it["description_vn"], "model": it["model"],
@@ -160,7 +179,10 @@ def answer(question: str, ctx: dict[str, Any], provider: str) -> CopilotAnswer:
         lines = [f"Đề xuất mô tả khai báo cho Item {it['line_no']}:", f"“{proposed}”", "Đây là đề xuất — chỉ áp dụng sau khi reviewer duyệt."]
         return CopilotAnswer("\n".join(lines), intent, sources, why, provider,
                              proposal={"target_type": "ITEM_DESCRIPTION_VN", "target_ref": it["id"], "current_value": it["description_vn"],
-                                       "proposed_value": proposed})
+                                       "proposed_value": proposed},
+                             confidence=0.7 if it.get("attributes") else 0.6,
+                             recommended_actions=["Reviewer duyệt/từ chối đề xuất trong Approval Queue", "Bổ sung thuộc tính kỹ thuật nếu mô tả còn thiếu"],
+                             requires_review=True)
 
     crit = sum(i["severity"] == "CRITICAL" for i in issues)
     lines = [f"Hồ sơ {ctx['case']['case_no']}: {len(ctx['items'])} dòng hàng, {len(ctx['documents'])} chứng từ, {crit} critical / {len(issues) - crit} warning mở, readiness {ctx['readiness']}%.",
@@ -169,4 +191,5 @@ def answer(question: str, ctx: dict[str, Any], provider: str) -> CopilotAnswer:
     for d in ctx["documents"]:
         sources.append(_src("document", d["id"], f"{d['doc_type']} v{d['version']}"))
     reasoning += ["Tóm tắt từ trạng thái hồ sơ, issue mở và chứng từ hiện tại."]
-    return CopilotAnswer("\n".join(lines), intent, sources, reasoning, provider)
+    return CopilotAnswer("\n".join(lines), intent, sources, reasoning, provider, confidence=0.8,
+                         recommended_actions=["Hỏi 'còn thiếu gì để khai?' để lấy checklist"], requires_review=crit > 0)

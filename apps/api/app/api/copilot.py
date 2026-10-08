@@ -33,6 +33,7 @@ class MessageOut(BaseModel):
     reasoning: list
     provider: str | None
     proposal_id: uuid.UUID | None
+    meta: dict
     created_at: object
     model_config = {"from_attributes": True}
 
