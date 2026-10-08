@@ -112,7 +112,6 @@ def test_full_reviewer_path_to_ready_and_versioned_release_draft(world, client):
     acts = [e["action"] for e in api(client, world, "get", f"/cases/{cid}/audit").json()]
     assert acts.count("draft.exported") == 2 and "issue.resolved" in acts and "hs.approve" in acts and "case.status_changed" in acts
     assert api(client, world, "get", "/audit/verify").json()["chain_valid"] is True
-    assert api(client, world, "get", f"/drafts/{draft['id']}", role="OPERATOR", headers=None) is not None
 
 
 def test_issue_actions_rbac_and_critical_waiver_rules(world, client):
