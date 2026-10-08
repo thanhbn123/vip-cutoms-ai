@@ -8,21 +8,16 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import load_case, require
 from app.core.config import get_settings
-from app.core.errors import DomainError, not_found
+from app.core.errors import not_found
 from app.core.rbac import Perm
 from app.db import get_db
 from app.models.document import Document
 from app.models.identity import User
-from app.services import audit
-from app.services.workflow import CaseStatus, transition
-from app.storage.base import get_storage, sha256
+from app.storage.base import get_storage
 
 router = APIRouter(tags=["documents"])
 
-DOC_TYPES = {"INVOICE", "PACKING_LIST", "BILL_OF_LADING", "CO", "CONTRACT", "CATALOGUE", "OTHER"}
-# One current version per case for these; CATALOGUE/OTHER are additive.
-VERSIONED_TYPES = {"INVOICE", "PACKING_LIST", "BILL_OF_LADING", "CO", "CONTRACT"}
-ALLOWED_EXT = {".pdf", ".txt", ".json", ".csv", ".xlsx", ".xls", ".png", ".jpg", ".jpeg", ".tif", ".tiff"}
+from app.services.documents import ALLOWED_EXT, DOC_TYPES, ingest, safe_filename  # noqa: E402
 
 
 class DocumentOut(BaseModel):
@@ -48,11 +43,6 @@ class DocumentOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
-def _safe_filename(name: str) -> str:
-    base = name.replace("\\", "/").split("/")[-1].strip()
-    return "".join(ch for ch in base if ch.isprintable())[:255] or "upload.bin"
-
-
 @router.post("/cases/{case_id}/documents", response_model=DocumentOut, status_code=201)
 async def upload_document(
     case_id: uuid.UUID,
@@ -66,7 +56,7 @@ async def upload_document(
     doc_type = doc_type.upper()
     if doc_type not in DOC_TYPES:
         raise HTTPException(status_code=422, detail={"code": "INVALID_DOC_TYPE", "message": f"doc_type must be one of {sorted(DOC_TYPES)}"})
-    filename = _safe_filename(file.filename or "")
+    filename = safe_filename(file.filename or "")
     ext = "." + filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
     if ext not in ALLOWED_EXT:
         raise HTTPException(status_code=422, detail={"code": "INVALID_FILE_TYPE", "message": f"extension {ext or '(none)'} not allowed"})
@@ -77,37 +67,8 @@ async def upload_document(
         raise HTTPException(status_code=422, detail={"code": "EMPTY_FILE", "message": "file is empty"})
 
     case = load_case(db, user, case_id, for_update=True)
-    digest = sha256(data)
-    dup = db.execute(select(Document).where(Document.case_id == case.id, Document.doc_type == doc_type,
-                                            Document.sha256 == digest, Document.is_current.is_(True))).scalar()
-    if dup:
-        raise DomainError("DUPLICATE_DOCUMENT", "identical file already uploaded for this document type", details={"document_id": str(dup.id)})
-
-    previous = None
-    version = 1
-    if doc_type in VERSIONED_TYPES:
-        previous = db.execute(select(Document).where(Document.case_id == case.id, Document.doc_type == doc_type,
-                                                     Document.is_current.is_(True))).scalar()
-        if previous:
-            version = previous.version + 1
-            previous.is_current = False
-            previous.status = "SUPERSEDED"
-
-    doc_id = uuid.uuid4()
-    key = f"{case.tenant_id}/{case.id}/{doc_id}{ext}"
-    storage = get_storage()
-    storage.put(key, data)
-    doc = Document(id=doc_id, tenant_id=case.tenant_id, case_id=case.id, doc_type=doc_type, filename=filename,
-                   content_type=file.content_type or "application/octet-stream", size_bytes=len(data), sha256=digest,
-                   storage_backend=storage.name, storage_key=key, version=version, is_current=True,
-                   supersedes_id=previous.id if previous else None, status="UPLOADED", uploaded_by=user.id,
-                   meta={k: v for k, v in {"document_no": document_no, "issuer": issuer}.items() if v}, parse_warnings=[])
-    db.add(doc)
-    db.flush()
-    audit.record(db, tenant_id=case.tenant_id, actor=audit.Actor.user(user), action="document.uploaded", entity_type="document",
-                 entity_id=doc.id, case_id=case.id, before={"superseded_id": str(previous.id)} if previous else None,
-                 after={"doc_type": doc_type, "filename": filename, "sha256": digest, "version": version})
-    transition(db, case, CaseStatus.DOCUMENTS_UPLOADED, audit.Actor.user(user), reason=f"{doc_type} v{version} uploaded")
+    doc = ingest(db, case, user, doc_type, filename, file.content_type or "application/octet-stream", data,
+                 meta={k: v for k, v in {"document_no": document_no, "issuer": issuer}.items() if v})
     db.commit()
     return doc
 
