@@ -1,0 +1,6 @@
+PRODUCT CATALOGUE
+Model: CT-88
+Function: Programmable control panel for switching and protecting water pump motors
+Voltage: 220V
+Power: 1.5kW
+Application: Used for pump station control cabinets

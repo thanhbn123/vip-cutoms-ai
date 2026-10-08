@@ -1,0 +1,10 @@
+BILL OF LADING
+B/L No: GZHPH2610001
+B/L Date: 2026-10-06
+Vessel: DEMO STAR V.2610
+Port of Loading: GUANGZHOU, CN
+Port of Discharge: HAI PHONG, VN
+Consignee: CONG TY TNHH MINH PHAT
+Total Packages: 126
+Gross Weight: 1250.5
+Freight: 420.00
