@@ -12,12 +12,16 @@ The system is **fail-closed**: AI may extract, compare, explain, recommend, and 
 
 ## Current status
 
-- Product/UI prototype: **V12 FINAL**
-- Backend: not implemented yet
-- Database: not implemented yet
-- OCR/LLM integrations: not implemented yet
-- Staging: not deployed yet
-- Production: not deployed
+- Product/UI prototype: **V12 FINAL** (`prototype/index.html`)
+- Backend API: implemented (FastAPI + SQLAlchemy 2 + Alembic, PostgreSQL 16) — gates G00–G12, see `PROJECT_STATUS.md`
+- Frontend: implemented (React + TypeScript + Vite), functional parity with V12
+- OCR/LLM: deterministic **mock provider** behind the AI gateway (real providers need owner credentials)
+- Tariff / FTA / policy knowledge: **demo fixtures, NON-AUTHORITATIVE**
+- Staging: not deployed (`docs/STAGING_READINESS.md`); Production: not deployed; no VNACCS/ECUS connection
+
+## Run locally
+
+See `docs/RUNBOOK.md`. Short version: `bash scripts/dev_db.sh`; in `apps/api`: `alembic upgrade head`, `SEED_DEMO_PASSWORD=... python scripts/seed_demo.py --with-case`, `uvicorn app.main:app --port 8000`; in `apps/web`: `npm ci && npm run dev`. Full verification: `bash scripts/verify.sh`.
 
 Open `prototype/index.html` for the owner-approved design direction.
 

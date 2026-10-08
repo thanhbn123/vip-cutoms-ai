@@ -204,7 +204,7 @@ def hs_decision(case_id: uuid.UUID, item_id: uuid.UUID, body: DecisionIn, user: 
                  after={"hs_code": it.hs_code, "hs_status": it.hs_status, "decision_id": str(dec.id), "override": is_override},
                  reason=body.reason, evidence=body.evidence)
     evaluators.run_all(db, case, audit.Actor.user(user))  # HS issues clear/re-raise; tax, C/O, policy follow the decision
-    for hook in DECISION_HOOKS:
+    for hook in DECISION_HOOKS:  # populated by evaluators.ensure_registered()
         hook(db, case, it, dec, user)
     recompute_case_status(db, case, audit.Actor.user(user))
     db.commit()
