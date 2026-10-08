@@ -35,6 +35,7 @@ class CopilotAnswer:
     sources: list[dict[str, Any]]
     reasoning: list[str]
     provider: str
+    proposal: dict[str, Any] | None = None  # optional change proposal; always requires reviewer approval
 
 
 class AIProvider(Protocol):
