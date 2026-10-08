@@ -10,7 +10,10 @@ test("login → V12 navigation → goods shows the BLOCKED item → copilot answ
 
   const nav = ["Tổng quan", "Hồ sơ & chứng từ", "Smart Declaration", "Hàng hóa & HS", "Knowledge Hub", "AI Copilot", "Reviewer & Release", "Lịch sử & Learning", "Quản trị"];
   for (const n of nav) await expect(page.getByRole("button", { name: n, exact: true })).toBeVisible();
+  // Explicitly select the seeded reference case (a re-used database may list newer cases first).
   await expect(page.locator(".caseselect")).toContainText("VIP-HQ-261008-001");
+  const demoOption = page.locator(".caseselect option", { hasText: "VIP-HQ-261008-001" });
+  await page.locator(".caseselect").selectOption((await demoOption.getAttribute("value")) ?? "");
   await expect(page.locator(".top .badge")).toHaveText("BLOCKED");
 
   await page.getByRole("button", { name: "Hàng hóa & HS", exact: true }).click();
