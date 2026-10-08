@@ -33,7 +33,9 @@ class InternalCsvAdapter:
     def render(self, payload: dict) -> bytes:
         buf = io.StringIO()
         w = csv.writer(buf)
-        w.writerow([f"# {payload['meta']['watermark']} · {payload['case']['case_no']} · v{payload['meta']['version']} · {payload['meta']['schema_version']}"])
+        notice = payload["meta"].get("legal_notice")
+        w.writerow([f"# {payload['meta']['watermark']} · {payload['case']['case_no']} · v{payload['meta']['version']} · {payload['meta']['schema_version']}"
+                    + (f" · {notice}" if notice else "")])
         w.writerow(["line_no", "description", "description_vn", "model", "quantity", "unit", "unit_price", "amount", "hs_code", "hs_status",
                     "origin_criterion", "fta_decision", "duty_pct", "import_duty", "vat", "policy_status"])
         for it in payload["items"]:

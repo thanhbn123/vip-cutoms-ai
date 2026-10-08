@@ -64,3 +64,4 @@ export interface Memory { id: string; model: string | null; description: string;
 export interface Proposal { id: string; target_ref: string; current_value: string | null; proposed_value: string; status: string; reasoning: string[]; requested_by: string }
 export interface Message { id: string; role: string; content: string; intent: string | null; provider: string | null; sources: { type: string; label: string }[]; reasoning: string[]; proposal_id: string | null; meta: { confidence?: number; recommended_actions?: string[]; requires_review?: boolean } }
 export interface QueueRow { case_id: string; case_no: string; status: string; priority: string; open_critical: number; open_warning: number; top_issues: Issue[] }
+export interface DemoNotice { demo_active: boolean; notice: string | null; datasets: string[]; non_demo_datasets: string[] }

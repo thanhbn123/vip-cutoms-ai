@@ -79,6 +79,17 @@ def list_datasets(user: User = Depends(require(Perm.CASE_READ)), db: Session = D
     return out
 
 
+@router.get("/knowledge/notice")
+def demo_notice(user: User = Depends(require(Perm.CASE_READ)), db: Session = Depends(get_db)):
+    """UI banner source: which active datasets are demo. Never empty-string a notice when demo data is in use."""
+    from app.services.declaration import DEMO_NOTICE
+
+    active = db.execute(select(KnowledgeDataset).where(KnowledgeDataset.is_active.is_(True))).scalars().all()
+    demo = [f"{d.kind} {d.version}" for d in active if d.is_demo]
+    return {"demo_active": bool(demo), "notice": DEMO_NOTICE if demo else None, "datasets": demo,
+            "non_demo_datasets": [f"{d.kind} {d.version}" for d in active if not d.is_demo]}
+
+
 @router.get("/knowledge/datasets/{dataset_id}")
 def get_dataset(dataset_id: uuid.UUID, user: User = Depends(require(Perm.CASE_READ)), db: Session = Depends(get_db)):
     ds = db.get(KnowledgeDataset, dataset_id)

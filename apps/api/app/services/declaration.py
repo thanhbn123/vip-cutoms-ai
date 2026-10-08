@@ -17,6 +17,7 @@ from app.services.mapping import FIELD_DEFS
 SECTIONS = [("general", "Thông tin chung"), ("transport", "Vận đơn & vận tải"), ("invoice", "Invoice"), ("valuation", "Trị giá"),
             ("origin", "Xuất xứ / C/O")]
 SCHEMA_VERSION = "internal-draft-v1"
+DEMO_NOTICE = "DEMO DATA — NON-AUTHORITATIVE — NOT FOR CUSTOMS FILING"
 
 
 def _field(cf: CaseField | None, fd) -> dict:
@@ -92,6 +93,8 @@ def build(db: Session, case: CustomsCase) -> dict:
         })
 
     validation = validate(case, fields, items, issues, docs, val)
+    demo_versions = sorted({a.dataset_version for a in assess if a.dataset_is_demo and a.dataset_version}
+                           | {r["hs"]["candidate"]["dataset_version"] for r in item_rows if r["hs"]["candidate"] and r["hs"]["candidate"]["dataset_version"].startswith("demo-")})
     all_fields = [f for s in sections for f in s["fields"]]
     scored = [f for f in all_fields if f["is_critical"] or f["value"]]
     good = sum(1 for f in scored if f["review_status"] in ("APPROVED", "AUTO_ACCEPTABLE", "COMPUTED"))
@@ -109,7 +112,10 @@ def build(db: Session, case: CustomsCase) -> dict:
         "items": item_rows,
         "validation": validation,
         "release_eligible": all(v["ok"] for v in validation if v["severity"] == "CRITICAL"),
-        "disclaimer": "Internal draft generated from reviewed case data. Not a customs submission. Demo knowledge datasets are NON-AUTHORITATIVE.",
+        "demo_datasets": demo_versions,
+        "demo_notice": DEMO_NOTICE if demo_versions else None,
+        "disclaimer": "Internal draft generated from reviewed case data. Not a customs submission. "
+                      + (f"Rule-derived values come from {DEMO_NOTICE} ({', '.join(demo_versions)})." if demo_versions else ""),
     }
 
 

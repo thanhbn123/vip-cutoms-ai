@@ -15,7 +15,7 @@ export function Knowledge({ ctx }: { ctx: Ctx }) {
   const toggle = (d: Dataset) => { const r = ask(`Lý do ${d.is_active ? "tắt" : "bật"} ${d.kind} ${d.version}`); if (r) patch(`/knowledge/datasets/${d.id}`, { is_active: !d.is_active, reason: r }).then(() => { ctx.toast("Đã cập nhật dataset"); load(); }).catch((e) => setErr(errMsg(e))); };
   return (
     <div className="grid g2">
-      <Card title="Knowledge Hub" right={<span className="badge warn">DEMO — NON-AUTHORITATIVE</span>}>
+      <Card title="Knowledge Hub" right={<span className="badge warn">DEMO DATA — NON-AUTHORITATIVE — NOT FOR CUSTOMS FILING</span>}>
         {err && <p className="err">{err}</p>}
         <div className="list">
           {ds.map((d) => (<Row key={d.id} title={<>{KIND[d.kind] ?? d.kind} <Badge s={d.is_active ? "PASS" : "REJECTED"}>{d.is_active ? "active" : "inactive"}</Badge> {d.is_demo && <span className="badge warn">demo</span>}</>}>

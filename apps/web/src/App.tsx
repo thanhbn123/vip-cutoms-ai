@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { api, ApiError, getToken, recall, remember, setToken, type Case, type Me } from "./api";
+import { api, ApiError, getToken, recall, remember, setToken, type Case, type DemoNotice, type Me } from "./api";
 import { Login } from "./Login";
 import { NAV, type PageId } from "./nav";
 import { CasePage } from "./pages/CasePage";
@@ -23,6 +23,8 @@ export function App() {
   const [msg, setMsg] = useState<string | null>(null);
   const [bump, setBump] = useState(0);
   const [checked, setChecked] = useState(false);
+  const [demo, setDemo] = useState<DemoNotice | null>(null);
+  useEffect(() => { if (me) api<DemoNotice>("/knowledge/notice").then(setDemo).catch(() => setDemo(null)); }, [me, bump]);
 
   useEffect(() => {
     fetch("/ready").then((r) => r.json()).then((b) => setEnv(b.checks?.environment ?? b.status)).catch(() => setEnv("api unreachable"));
@@ -58,6 +60,7 @@ export function App() {
         </div>
       </aside>
       <main className="main">
+        {demo?.demo_active && <div className="demo-banner" role="note">⚠ {demo.notice} · bộ quy tắc đang dùng: {demo.datasets.join(", ")} — mọi giá trị HS/thuế/C/O/chính sách chỉ để nghiệm thu quy trình.</div>}
         <div className="top">
           <div>
             <h1>{NAV.find((n) => n.id === page)?.label}</h1>

@@ -14,10 +14,14 @@ make dev           # API :8000 (+ /docs) and web :5173
 ```
 Login with `reviewer@demo.local` (or operator / senior / admin `@demo.local`) and the password you chose.
 
-## Docker Compose (staging shape)
+## Docker Compose (verified in G14 — see docs/G14_DOCKER_STAGING_PREFLIGHT.md)
 ```bash
 cp .env.example .env    # set POSTGRES_PASSWORD and APP_SECRET_KEY (≥32 chars); never commit .env
-make docker-up          # postgres:16 + api (runs alembic upgrade head on start) + web (vite)
+                        # POSTGRES_HOST_PORT=55432 if a local PostgreSQL already uses 5432
+                        # BUILD_CA_BUNDLE=/path/ca.crt only on hosts whose egress is TLS-intercepted (default: none)
+make docker-smoke       # down -v → build --no-cache → up -d → health/ready/migration/log checks (evidence file)
+SEED_DEMO_PASSWORD=… make docker-acceptance   # owner flow A–P over HTTP against the containers
+make docker-up          # or just run the stack: postgres:16 + api (alembic upgrade head on start) + web (vite)
 ```
 Health: `curl localhost:8000/health` · readiness: `curl localhost:8000/ready` (DB + migration head + AI provider).
 

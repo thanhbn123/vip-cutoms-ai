@@ -5,7 +5,7 @@ B-02 authoritative tariff/FTA/policy source · B-03 staging host, domain, TLS, s
 B-04 review the `develop` branch (PR to `main` only after staging acceptance).
 
 ## Plan
-1. **Docker smoke on a host with a daemon**: `cp .env.example .env` → set secrets → `make docker-up` → `/health`, `/ready` → `make e2e` against the compose stack. Record in `artifacts/test-results/docker-smoke.txt`.
+1. ~~Docker smoke~~ — done in G14 (`docs/G14_DOCKER_STAGING_PREFLIGHT.md`, `artifacts/test-results/docker-smoke.txt`). Staging package: `infra/staging/`, `docs/STAGING_DEPLOYMENT.md`, `docs/STAGING_ACCEPTANCE.md`, `docs/STAGING_ROLLBACK.md`, `docs/STAGING_SECRETS.md`.
 2. **Provision staging** (single VM or container host): PostgreSQL 16 managed or container with volume; object storage (S3-compatible) → implement `S3Storage` behind `app/storage/base.py`.
 3. **Providers**: implement `app/ai/<provider>.py` for OCR/LLM behind `AIProvider`; keep `mock` for CI. Output validation already exists in `services/mapping.parse_document` and `services/copilot.ask`.
 4. **Knowledge**: load the owner-approved tariff/FTA/policy datasets as new `knowledge_datasets` versions (`is_demo=false`, effective dates, source refs); demo rows stay inactive.

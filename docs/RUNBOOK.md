@@ -7,7 +7,7 @@ Python 3.12, Node 22, PostgreSQL 16 (native or Docker). No external credentials 
 ```bash
 bash scripts/dev_db.sh            # creates role vip_customs + DBs vip_customs, vip_customs_test (local-only creds)
 ```
-Or with Docker: `cp .env.example .env`, set `POSTGRES_PASSWORD` and `APP_SECRET_KEY`, then `docker compose -f infra/docker-compose.yml --env-file .env up --build`.
+Or with Docker: `cp .env.example .env`, set `POSTGRES_PASSWORD`, `APP_SECRET_KEY` (and `POSTGRES_HOST_PORT` if 5432 is taken), then `make docker-smoke` / `docker compose -f infra/docker-compose.yml --env-file .env up --build`. Staging shape: `infra/staging/` + `docs/STAGING_DEPLOYMENT.md`.
 
 ## 2. API
 ```bash

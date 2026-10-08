@@ -24,10 +24,12 @@ test("with a token the nine V12 sidebar entries render in order", async () => {
   mockFetch({
     "/ready": { status: "ready", checks: { environment: "test" } },
     "/auth/me": { user: { id: "u", email: "r@t", full_name: "R", role: "REVIEWER", tenant_id: "t" }, permissions: ["case.read"] },
+    "/knowledge/notice": { demo_active: true, notice: "DEMO DATA — NON-AUTHORITATIVE — NOT FOR CUSTOMS FILING", datasets: ["HS_RULES demo-hs-2026.10"], non_demo_datasets: [] },
     "/cases": [],
   });
   render(<App />);
   await waitFor(() => expect(screen.getByRole("button", { name: "Hồ sơ & chứng từ" })).toBeInTheDocument());
+  await waitFor(() => expect(screen.getByRole("note")).toHaveTextContent("NOT FOR CUSTOMS FILING"));
   const labels = screen.getAllByRole("button", { name: /.+/ }).map((b) => b.textContent).filter((t) => NAV.some((n) => n.label === t));
   expect(labels).toEqual(NAV.map((n) => n.label));
 });
