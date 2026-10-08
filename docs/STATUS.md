@@ -2,8 +2,8 @@
 
 See `PROJECT_STATUS.md` (gate log), `docs/LOCAL_ACCEPTANCE_REPORT.md` (evidence), `docs/STAGING_READINESS.md` (G13 matrix), `docs/NEXT_SESSION_STAGING.md`.
 
-- Current gate: **G14 — Docker/staging preflight PASS (Docker boot + acceptance from zero); staging deployment awaits owner inputs (B-03/B-04) — DO NOT DEPLOY until approved**
-- Gates passed: G00 … G14 (local + Docker scope)
+- Current gate: **G15 — Staging deployment BLOCKED_OWNER (no host/SSH/domain provided; nothing deployed). Automation prepared and dry-run locally: `scripts/staging/deploy.sh`, `scripts/staging/acceptance.sh`, `docs/G15_STAGING_ACCEPTANCE_REPORT.md`**
+- Gates passed: G00 … G14 (local + Docker scope); G15 prepared, awaiting owner inputs
 - Branches: `main` = baseline `2afdf6b` (unchanged) · `develop` = release candidate (feature/g00…g13 merged `--no-ff`) · `claude/busy-davinci-9u8bye` = mirror of develop
 - Tests: 68 pytest (PostgreSQL) · 3 vitest · 1 Playwright E2E (native + Docker) · HTTP acceptance 17/17 vs Docker · migration head `0010_copilot_meta`
 - CI: `CI_EXTERNAL_UNVERIFIED` · LOCAL_VERIFICATION = PASS (`artifacts/test-results/`)

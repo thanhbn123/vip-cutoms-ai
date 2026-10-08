@@ -1,4 +1,4 @@
-# lint · 2026-10-08T06:55:58Z · develop 9c1e6a6
+# lint · 2026-10-08T11:59:49Z · develop 3592878
 $ bash -o pipefail -c cd apps/api && .venv/bin/ruff check app tests scripts && echo RUFF_OK
 exit_code=0
 ----- last lines -----

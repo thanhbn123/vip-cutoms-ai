@@ -1,6 +1,7 @@
 """Dev/staging-acceptance seed: demo tenant, one user per role, master data, demo knowledge datasets and the V12 reference case.
 
 Refuses to run outside development/test. Password must be supplied (env SEED_DEMO_PASSWORD) — nothing secret lives in the repo.
+Re-running with a different SEED_DEMO_PASSWORD rotates the demo users' passwords (idempotent for everything else).
 Usage: SEED_DEMO_PASSWORD='...' python scripts/seed_demo.py [--with-case]
 """
 
@@ -45,6 +46,8 @@ def main() -> None:
             u = User(tenant_id=tenant.id, email=email, full_name=name, role=role, password_hash=hash_password(pw))
             db.add(u)
             db.flush()
+        else:
+            u.password_hash = hash_password(pw)  # demo users always follow the current SEED_DEMO_PASSWORD (re-seed = rotate)
         users[role] = u
     customer = db.execute(select(Customer).where(Customer.tenant_id == tenant.id, Customer.code == "MINHPHAT")).scalar()
     if not customer:

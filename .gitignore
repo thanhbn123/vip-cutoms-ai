@@ -20,3 +20,5 @@ uploads/
 local-data/
 *.tsbuildinfo
 *.egg-info/
+backups/
+artifacts/test-results/.*.full

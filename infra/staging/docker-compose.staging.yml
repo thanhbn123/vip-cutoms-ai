@@ -21,7 +21,7 @@ services:
     image: ${API_IMAGE:-vip-customs-api:${IMAGE_TAG:-latest}}
     build: { context: ../../apps/api, dockerfile: Dockerfile, secrets: [ca_bundle] }
     command: ["alembic", "upgrade", "head"]
-    env_file: [.env]
+    env_file: [{ path: .env, required: false }]  # deploy.sh guarantees the file; optional here so `config` validates without it
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
     depends_on: { postgres: { condition: service_healthy } }
@@ -33,7 +33,7 @@ services:
     build: { context: ../../apps/api, dockerfile: Dockerfile, secrets: [ca_bundle] }
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips", "*"]
     restart: unless-stopped
-    env_file: [.env]
+    env_file: [{ path: .env, required: false }]  # deploy.sh guarantees the file; optional here so `config` validates without it
     environment:
       APP_ENV: ${APP_ENV:-staging}
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
