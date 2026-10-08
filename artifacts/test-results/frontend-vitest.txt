@@ -1,12 +1,12 @@
-# frontend-vitest · 2026-10-08T06:56:34Z · develop 9c1e6a6
+# frontend-vitest · 2026-10-08T12:01:31Z · develop 3592878
 $ bash -o pipefail -c cd apps/web && npx vitest run 2>&1 | tail -8
 exit_code=0
 ----- last lines -----
- ✓ src/pages/Goods.test.tsx (1 test) 47ms
- ✓ src/App.test.tsx (2 tests) 158ms
+ ✓ src/App.test.tsx (2 tests) 435ms
+   ✓ with a token the nine V12 sidebar entries render in order 316ms
 
  Test Files  2 passed (2)
       Tests  3 passed (3)
-   Start at  06:56:35
-   Duration  1.09s (transform 293ms, setup 114ms, collect 661ms, tests 205ms, environment 619ms, prepare 104ms)
+   Start at  12:01:34
+   Duration  3.48s (transform 926ms, setup 517ms, collect 2.11s, tests 534ms, environment 2.52s, prepare 299ms)
 
