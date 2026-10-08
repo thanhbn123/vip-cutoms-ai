@@ -12,7 +12,7 @@ run() { # name, cmd...  → file with header, exit code and last 40 lines
 cd "$ROOT"
 run lint             bash -o pipefail -c "cd apps/api && .venv/bin/ruff check app tests scripts && echo RUFF_OK"
 run typecheck        bash -o pipefail -c "cd apps/web && npx tsc -b && echo TSC_OK"
-run backend-pytest   bash -o pipefail -c "cd apps/api && .venv/bin/pytest -q 2>&1 | tail -5"
+run backend-pytest   bash -o pipefail -c "cd apps/api && .venv/bin/pytest 2>&1 | tail -5"
 run frontend-vitest  bash -o pipefail -c "cd apps/web && npx vitest run 2>&1 | tail -8"
 run build            bash -o pipefail -c "cd apps/web && npx vite build 2>&1 | tail -6"
 run migration-test   bash -o pipefail -c "cd apps/api && export DATABASE_URL=postgresql+psycopg://vip_customs:vip_customs@localhost:5432/vip_customs_test && .venv/bin/python -c \"from sqlalchemy import create_engine,text;e=create_engine('postgresql+psycopg://vip_customs:vip_customs@localhost:5432/vip_customs_test');c=e.connect();c.execute(text('DROP SCHEMA public CASCADE; CREATE SCHEMA public;'));c.commit()\" && .venv/bin/alembic upgrade head 2>&1 | tail -12 && echo HEADS=\$(.venv/bin/alembic heads | wc -l) && .venv/bin/alembic downgrade 0008_copilot_memory 2>&1 | tail -2 && .venv/bin/alembic upgrade head 2>&1 | tail -2 && .venv/bin/alembic current"
