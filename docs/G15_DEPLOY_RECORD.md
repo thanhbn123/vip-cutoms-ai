@@ -1,13 +1,20 @@
-# G15 DEPLOYMENT RECORD
+# G15 DEPLOYMENT RECORD (updated by G15A — merge of the staging tooling)
 
 | | |
 |---|---|
-| DEPLOY_SHA | `474f7d84d2c64938ce86ca74fdb33cc0c0c7f2ae` (= `origin/develop` at G15 start, verified 2026-10-08) |
 | MAIN SHA | `2afdf6b49112f5db3f2962fcc3345c4c5b9055a0` (untouched) |
+| PREVIOUS DEVELOP (G14 candidate, superseded) | `474f7d84d2c64938ce86ca74fdb33cc0c0c7f2ae` |
+| G15 FEATURE HEAD merged | `a95aa83066d48328d9689411092f1bf17f1c2f91` (`feature/g15-staging-acceptance`) |
+| MERGE COMMIT | `030933f09304253ddbd96e44998b4b6fc023df20` — "merge: G15 staging deployment and acceptance tooling" |
+| **STAGING_CANDIDATE_SHA** | **the commit that adds this record = `origin/develop` after G15A**; immutable pointer: annotated tag `staging-candidate-g15a`. Verify with `git rev-parse origin/develop` and `git rev-parse staging-candidate-g15a^{commit}` — they must match. |
 | Compose project | `vip-customs-ai-staging` |
 | Providers | `AI_PROVIDER=mock` (parser / HS / Copilot) — intentionally, for workflow acceptance |
 | Knowledge data | DEMO DATA — NON-AUTHORITATIVE — NOT FOR CUSTOMS FILING (`is_demo=true` only) |
-| FIRST_DEPLOY | expected YES (no prior staging) — `scripts/staging/deploy.sh` records the previous image/DB baseline if one exists |
-| Staging host | **NOT PROVIDED** (brief carried placeholders `<IP_OR_HOSTNAME>`, `<SSH_USER>`, `<STAGING_DOMAIN_OR_NONE>`) → G15 = BLOCKED_OWNER |
+| FIRST_DEPLOY | expected YES — `scripts/staging/deploy.sh` records any previous image/DB baseline |
+| Staging host | still NOT PROVIDED → deployment remains BLOCKED_OWNER (B-03) |
 
-Deployment is performed only from this record: never from a floating working tree.
+What the candidate adds over `474f7d8`: staging deploy/acceptance automation and docs, negative-test driver, demo-password rotation on
+re-seed, staging compose `env_file` optional for validation, ignore rules for backups/raw logs. No domain or API behaviour change.
+
+Deploy only this SHA: `DEPLOY_SHA=$(git rev-parse staging-candidate-g15a^{commit}) bash scripts/staging/deploy.sh` (on the host, after
+`infra/staging/.env` is filled — see `docs/STAGING_SECRETS.md`).
