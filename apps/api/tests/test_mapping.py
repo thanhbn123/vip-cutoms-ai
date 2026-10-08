@@ -48,7 +48,14 @@ def test_package_count_conflict_detected_with_evidence(world, client):
 
 
 def test_fob_without_insurance_raises_valuation_warning(world, client):
-    case, _ = setup_case(world, client, docs=("INVOICE",))
+    import os
+
+    from conftest import FIXTURES
+
+    inv = open(os.path.join(FIXTURES, "invoice.txt"), "rb").read().replace(b"Insurance: 100.00\n", b"")
+    case = world.create_case()
+    upload(client, world.h(), case["id"], "INVOICE", "invoice.txt", content=inv)
+    assert client.post(f"/api/v1/cases/{case['id']}/pipeline/run", headers=world.h()).status_code == 200
     codes = {(i["code"], i["target_ref"]) for i in client.get(f"/api/v1/cases/{case['id']}/issues", headers=world.h()).json()}
     assert ("VALUATION_INPUT_MISSING", "valuation.insurance") in codes
 

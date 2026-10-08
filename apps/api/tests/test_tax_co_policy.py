@@ -37,19 +37,16 @@ def test_tax_only_after_approved_hs_and_complete_valuation_inputs(world, client)
     its = items(client, world, cid)
     assert assess(client, world, cid, "TAX", its[2]["id"])["status"] == "AWAITING_HS"
     val = assess(client, world, cid, "VALUATION")
-    assert val["status"] == "INPUT_MISSING" and "bảo hiểm" in " ".join(val["reasoning"])  # FOB, insurance missing
+    assert val["status"] == "COMPUTED" and val["result"]["customs_value"] == "18420.00"  # 17,900 + 420 freight + 100 insurance (owner scenario)
+    fields = {f["key"]: f for f in client.get(f"/api/v1/cases/{cid}/fields", headers=world.h()).json()}
+    assert fields["valuation.insurance"]["value"] == "100.00" and fields["valuation.insurance"]["review_status"] == "NEEDS_REVIEW"  # AI-extracted, must be reviewed
+    assert ("INVOICE_TOTAL_MISMATCH", "invoice.total_amount") in open_codes(client, world, cid)  # lines sum to 1,980
     approve_hs(client, world, cid, its[2], "39172300")
-    assert assess(client, world, cid, "TAX", its[2]["id"])["status"] == "INPUT_MISSING"
-    r = client.put(f"/api/v1/cases/{cid}/fields/valuation.insurance", json={"value": "100", "reason": "insurance invoice received"},
-                   headers=world.h("REVIEWER"))
-    assert r.status_code == 200 and r.json()["review_status"] == "APPROVED"
-    client.post(f"/api/v1/cases/{cid}/pipeline/run", headers=world.h())
-    val = assess(client, world, cid, "VALUATION")
-    assert val["status"] == "COMPUTED" and val["result"]["customs_value"] == "2500.00"  # 1980 + 420 freight + 100 insurance
     tax = assess(client, world, cid, "TAX", its[2]["id"])
     assert tax["status"] == "COMPUTED" and tax["dataset_is_demo"] is True and "NON-AUTHORITATIVE" in tax["result"]["label"]
-    assert tax["inputs"]["duty_pct"] == "5.0" and tax["result"]["import_duty"] == "37.88"  # 600/1980*2500=757.58 × 5%
-    assert tax["result"]["vat"] == "79.55"
+    assert tax["inputs"]["item_value"] == "617.43"  # 18,420 × 600/17,900
+    assert tax["inputs"]["duty_pct"] == "5.0" and tax["result"]["import_duty"] == "30.87"
+    assert tax["result"]["vat"] == "64.83"
 
 
 def test_co_assessment_states_and_reviewer_decision_fail_closed(world, client):
@@ -71,8 +68,6 @@ def test_co_assessment_states_and_reviewer_decision_fail_closed(world, client):
     assert ("CO_DECISION_PENDING", "item:2") not in open_codes(client, world, cid)
     # preferential rate flows into tax once HS approved and valuation complete
     approve_hs(client, world, cid, its[2], "39172300")
-    client.put(f"/api/v1/cases/{cid}/fields/valuation.insurance", json={"value": "100", "reason": "insurance invoice received"}, headers=world.h("REVIEWER"))
-    client.post(f"/api/v1/cases/{cid}/pipeline/run", headers=world.h())
     tax = assess(client, world, cid, "TAX", its[2]["id"])
     assert tax["inputs"]["fta_applied"] is True and tax["result"]["import_duty"] == "0.00"
     acts = [e["action"] for e in client.get(f"/api/v1/cases/{cid}/audit", headers=world.h()).json()]
@@ -117,8 +112,11 @@ def test_knowledge_datasets_are_labelled_demo_versioned_and_fail_closed_when_ina
     assert ("HS_KNOWLEDGE_UNAVAILABLE", None) not in open_codes(client, world, case["id"])
 
 
-def test_invoice_total_mismatch_flagged(world, client):
-    inv = open(__import__("conftest").FIXTURES + "/invoice.txt", "rb").read().replace(b"Total Amount: 1980.00", b"Total Amount: 17900.00")
-    case = run(world, client, docs=(), extra=(("INVOICE", "invoice.txt", inv),))
+def test_invoice_total_mismatch_flagged_and_consistent_invoice_is_clean(world, client):
+    case = run(world, client, docs=("INVOICE",))
     assert ("INVOICE_TOTAL_MISMATCH", "invoice.total_amount") in open_codes(client, world, case["id"])
-    assert assess(client, world, case["id"], "VALUATION")["inputs"]["line_sum"] == "1980.00"
+    val = assess(client, world, case["id"], "VALUATION")
+    assert val["inputs"]["line_sum"] == "1980.00" and val["inputs"]["invoice_total"] == "17900.00"
+    inv = open(__import__("conftest").FIXTURES + "/invoice.txt", "rb").read().replace(b"Total Amount: 17900.00", b"Total Amount: 1980.00")
+    case2 = run(world, client, docs=(), extra=(("INVOICE", "invoice.txt", inv),))
+    assert ("INVOICE_TOTAL_MISMATCH", "invoice.total_amount") not in open_codes(client, world, case2["id"])

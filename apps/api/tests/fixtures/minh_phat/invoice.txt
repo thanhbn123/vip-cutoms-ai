@@ -5,7 +5,8 @@ Exporter: GUANGZHOU ABC TRADING CO., LTD.
 Importer: CONG TY TNHH MINH PHAT
 Incoterm: FOB
 Currency: USD
-Total Amount: 1980.00
+Total Amount: 17900.00
+Insurance: 100.00
 Total Packages: 124
 Gross Weight: 1250.5
 ITEMS
