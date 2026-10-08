@@ -5,7 +5,7 @@ WEB := apps/web
 PY  := $(API)/.venv/bin/python
 export DATABASE_URL ?= postgresql+psycopg://vip_customs:vip_customs@localhost:5432/vip_customs
 
-.PHONY: help setup db dev dev-api dev-web test test-api test-web lint typecheck build db-migrate db-downgrade db-reset-test seed e2e verify docker-up docker-down clean
+.PHONY: help setup db dev dev-api dev-web test test-api test-web lint typecheck build db-migrate db-downgrade db-reset-test seed e2e verify docker-up docker-down docker-smoke docker-acceptance clean
 
 help: ## list targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  %-16s %s\n", $$1, $$2}'
@@ -68,6 +68,12 @@ docker-up: ## docker compose stack (needs .env with POSTGRES_PASSWORD, APP_SECRE
 
 docker-down:
 	docker compose -f infra/docker-compose.yml --env-file .env down -v
+
+docker-smoke: ## clean compose boot from zero + host-side health/ready/migration checks → artifacts/test-results/docker-smoke.txt
+	bash scripts/docker_smoke.sh
+
+docker-acceptance: ## seed inside container → Playwright → owner flow A–P over HTTP against the compose stack (SEED_DEMO_PASSWORD optional)
+	bash scripts/docker_acceptance.sh
 
 clean:
 	rm -rf $(WEB)/dist $(WEB)/test-results $(API)/.pytest_cache local-data

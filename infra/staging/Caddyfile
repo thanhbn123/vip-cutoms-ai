@@ -1,0 +1,20 @@
+# Reverse proxy: /api, /health, /ready → api:8000 ; everything else → web:80 (static build).
+# TLS: {$TLS_MODE} = internal → Caddy self-signed (private staging); acme → automatic certificates (public DNS required).
+{$PUBLIC_HOST} {
+	encode gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "no-referrer"
+		Content-Security-Policy "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; connect-src 'self'"
+	}
+	@api path /api/* /health /ready /docs /openapi.json
+	handle @api {
+		reverse_proxy api:8000
+	}
+	handle {
+		reverse_proxy web:80
+	}
+	tls {$TLS_MODE}
+}

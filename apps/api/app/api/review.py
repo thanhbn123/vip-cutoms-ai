@@ -160,7 +160,8 @@ def create_draft(case_id: uuid.UUID, body: DraftIn, user: User = Depends(require
     version = (db.execute(select(func.max(DeclarationDraft.version)).where(DeclarationDraft.case_id == case.id)).scalar() or 0) + 1
     payload = {"meta": {"schema_version": declaration.SCHEMA_VERSION, "version": version, "kind": body.kind, "watermark": watermark,
                         "release_eligible": eligible, "generated_at": utcnow().isoformat(), "generated_by": str(user.id),
-                        "case_status": case.status, "disclaimer": decl["disclaimer"]}, **decl}
+                        "case_status": case.status, "disclaimer": decl["disclaimer"], "legal_notice": decl["demo_notice"],
+                        "demo_datasets": decl["demo_datasets"]}, **decl}
     checksum = hashlib.sha256(json.dumps(payload, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
     d = DeclarationDraft(tenant_id=case.tenant_id, case_id=case.id, version=version, kind=body.kind, schema_version=declaration.SCHEMA_VERSION,
                          release_eligible=eligible, watermark=watermark, case_status_at_export=case.status, payload=payload, checksum=checksum,

@@ -1,0 +1,34 @@
+# security-preflight · 2026-10-08T06:47:40Z · 9c1e6a6
+## secret scan
+SECRET SCAN: clean
+## tracked sensitive files
+none tracked
+## pip-audit
+pip  24.0    PYSEC-2026-1796 26.0
+pip  24.0    PYSEC-2026-2875 26.1
+pip  24.0    PYSEC-2026-2876 26.1
+pip  24.0    PYSEC-2026-196  26.1.2
+pip  24.0    PYSEC-2026-1795 25.3
+pip  24.0    PYSEC-2026-1796 26.0
+pip  24.0    PYSEC-2026-196  26.1.2
+pip  24.0    PYSEC-2026-2875 26.1
+pip  24.0    PYSEC-2026-2876 26.1
+pip  24.0    PYSEC-2026-3721 26.2
+pip  24.0    PYSEC-2026-3721 26.2.0
+
+Name            Skip Reason
+--------------- ------------------------------------------------------------------------------
+vip-customs-api Dependency not found on PyPI and could not be audited: vip-customs-api (0.1.0)
+## npm audit
+found 0 vulnerabilities
+--- including dev:
+
+To address all issues, run:
+  npm audit fix --force
+## RBAC / upload / traversal / tenant tests
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+## path traversal (storage key)
+rejected ../../etc/passwd
+rejected a/../../x
+rejected /etc/passwd

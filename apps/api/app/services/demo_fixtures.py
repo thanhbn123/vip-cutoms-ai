@@ -4,7 +4,7 @@ Every dataset seeded from here carries is_demo=True and the label below. Replaci
 owner-approved authoritative source is BLOCKED_OWNER B-02 (see docs/STATUS.md).
 """
 
-DEMO_LABEL = "DEMO — NON-AUTHORITATIVE FIXTURE"
+DEMO_LABEL = "DEMO DATA — NON-AUTHORITATIVE — NOT FOR CUSTOMS FILING"
 DEMO_SOURCE = "apps/api/app/services/demo_fixtures.py (hand-written illustrative data)"
 
 HS_RULES_DEMO = {
