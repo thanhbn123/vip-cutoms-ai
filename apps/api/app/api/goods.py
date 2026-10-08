@@ -75,7 +75,7 @@ class ItemPatch(BaseModel):
 
 
 class DecisionIn(BaseModel):
-    decision: Literal["APPROVE", "REJECT"]
+    decision: Literal["APPROVE", "REJECT", "REQUEST_INFO"]
     hs_code: str | None = Field(default=None, description="8-digit code, required for APPROVE")
     candidate_id: uuid.UUID | None = None
     reason: str = Field(min_length=5, max_length=2000)
@@ -188,6 +188,19 @@ def hs_decision(case_id: uuid.UUID, item_id: uuid.UUID, body: DecisionIn, user: 
     db.add(dec)
     db.flush()
     before = {"hs_code": it.hs_code, "hs_status": it.hs_status}
+    if body.decision == "REQUEST_INFO":
+        # Reviewer asks the operator/customer for evidence; item state is unchanged and an explicit, non-auto-resolvable issue tracks it.
+        from app.models.issue import Issue
+
+        key = f"hs_info:item:{it.line_no}:{dec.id}"
+        db.add(Issue(tenant_id=case.tenant_id, case_id=case.id, dedupe_key=key, raised_by="reviewer", code="HS_INFO_REQUESTED", severity="WARNING",
+                     category="HS", title=f"Item {it.line_no}: reviewer yêu cầu bổ sung thông tin phân loại", detail=body.reason, target_ref=f"item:{it.line_no}",
+                     evidence=[{"decision_id": str(dec.id), "requested": body.evidence}], status="OPEN", auto_resolvable=False, assignee_role="OPERATOR"))
+        audit.record(db, tenant_id=case.tenant_id, actor=audit.Actor.user(user), action="hs.request_info", entity_type="goods_item", entity_id=it.id,
+                     case_id=case.id, before=before, after={"decision_id": str(dec.id), "hs_status": it.hs_status}, reason=body.reason, evidence=body.evidence)
+        recompute_case_status(db, case, audit.Actor.user(user))
+        db.commit()
+        return dec
     if body.decision == "APPROVE":
         it.hs_code = body.hs_code
         it.hs_status = "APPROVED"
