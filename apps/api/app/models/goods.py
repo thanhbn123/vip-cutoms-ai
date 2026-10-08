@@ -67,7 +67,7 @@ class ClassificationDecision(IdMixin, TenantMixin, Base):
     item_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("goods_items.id"), index=True)
     case_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("cases.id"), index=True)
     candidate_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, ForeignKey("hs_candidates.id"))
-    decision: Mapped[str] = mapped_column(String(10))  # APPROVE | REJECT
+    decision: Mapped[str] = mapped_column(String(20))  # APPROVE | REJECT | REQUEST_INFO
     hs_code: Mapped[str | None] = mapped_column(String(12))
     is_override: Mapped[bool] = mapped_column(Boolean, default=False)
     reason: Mapped[str] = mapped_column(Text)
