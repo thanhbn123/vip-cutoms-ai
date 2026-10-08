@@ -1,0 +1,9 @@
+PACKING LIST
+Invoice Ref: INV-2026-889
+Total Packages: 126
+Gross Weight: 1250.5
+Net Weight: 1180.0
+ITEMS
+1 | Water pump for cooling system | ABC-500 | 20 | PCE | 20
+2 | PVC pipe, non-reinforced | PVC-20 | 500 | MTR | 100
+3 | Electrical controller | CT-88 | 15 | SET | 6

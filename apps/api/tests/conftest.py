@@ -100,3 +100,20 @@ class World:
 @pytest.fixture
 def world(client):
     return World(client)
+
+
+FIXTURES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures", "minh_phat")
+FIXTURE_FILES = {
+    "INVOICE": "invoice.txt",
+    "PACKING_LIST": "packing_list.txt",
+    "BILL_OF_LADING": "bill_of_lading.txt",
+    "CO": "form_e.txt",
+}
+
+
+def upload(client, headers, case_id, doc_type, filename, content=None):
+    if content is None:
+        with open(os.path.join(FIXTURES, filename), "rb") as fh:
+            content = fh.read()
+    return client.post(f"/api/v1/cases/{case_id}/documents", data={"doc_type": doc_type},
+                       files={"file": (filename, content, "text/plain")}, headers=headers)

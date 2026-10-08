@@ -23,7 +23,7 @@ HEADER_PATTERNS: dict[str, list[tuple[str, str]]] = {
         ("valuation.incoterm", r"incoterms?"),
         ("valuation.currency", r"currency"),
         ("invoice.total_amount", r"total\s*amount|total"),
-        ("valuation.freight", r"freight"),
+        ("valuation.freight", r"freight(\s*amount)?"),
         ("valuation.insurance", r"insurance"),
         ("shipment.total_packages", r"total\s*packages|packages"),
         ("shipment.gross_weight", r"gross\s*weight"),
@@ -43,6 +43,7 @@ HEADER_PATTERNS: dict[str, list[tuple[str, str]]] = {
         ("shipment.total_packages", r"total\s*packages|packages"),
         ("shipment.gross_weight", r"gross\s*weight"),
         ("party.consignee", r"consignee"),
+        ("valuation.freight", r"freight(\s*amount)?"),
     ],
     "CO": [
         ("co.form", r"form"),

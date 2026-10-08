@@ -1,0 +1,11 @@
+CERTIFICATE OF ORIGIN
+Form: E
+Reference No: E2026-CN-000889
+Issued Date: 2026-10-06
+Exporter: GUANGZHOU ABC TRADING CO., LTD.
+Importer: CONG TY TNHH MINH PHAT
+Invoice Ref: INV-2026-889
+Origin Country: CN
+ITEMS
+1 | Water pump for cooling system |  | 20 | PCE | WO
+2 | PVC pipe, non-reinforced | PVC-20 | 500 | MTR | WO
