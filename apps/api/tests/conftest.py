@@ -36,9 +36,10 @@ def clean_tables(migrated_db):
     tables = [t.name for t in reversed(Base.metadata.sorted_tables)]
     if tables:
         with migrated_db.begin() as conn:
-            conn.execute(text("SET session_replication_role = replica"))  # bypass append-only trigger for test cleanup
+            # Test-only cleanup: the table owner temporarily disables the append-only trigger.
+            conn.execute(text("ALTER TABLE audit_events DISABLE TRIGGER USER"))
             conn.execute(text("TRUNCATE " + ", ".join(tables) + " RESTART IDENTITY CASCADE"))
-            conn.execute(text("SET session_replication_role = origin"))
+            conn.execute(text("ALTER TABLE audit_events ENABLE TRIGGER USER"))
 
 
 @pytest.fixture
@@ -46,3 +47,56 @@ def client():
     from app.main import create_app
 
     return TestClient(create_app())
+
+
+class World:
+    """Two isolated tenants with one user per role, a customer and a supplier."""
+
+    def __init__(self, client):
+        from app.core.security import hash_password, issue_token
+        from app.db import get_sessionmaker
+        from app.models.identity import Customer, Supplier, Tenant, User
+
+        self.client = client
+        db = get_sessionmaker()()
+        pw = hash_password("correct-horse-battery")
+        self.tokens = {}
+        self.users = {}
+        for code in ("T1", "T2"):
+            t = Tenant(code=code, name=f"Tenant {code}")
+            db.add(t)
+            db.flush()
+            for role in ("OPERATOR", "REVIEWER", "SENIOR_REVIEWER", "ADMIN"):
+                u = User(tenant_id=t.id, email=f"{role.lower()}@{code.lower()}.test", full_name=f"{role} {code}", role=role,
+                         password_hash=pw)
+                db.add(u)
+                db.flush()
+                self.users[(code, role)] = u
+                self.tokens[(code, role)] = issue_token(str(u.id), str(t.id), role)
+            c = Customer(tenant_id=t.id, code=f"MP-{code}", name="CÔNG TY TNHH MINH PHÁT", tax_code="0100000000")
+            db.add(c)
+            db.flush()
+            s = Supplier(tenant_id=t.id, name="GUANGZHOU ABC TRADING CO., LTD.", country="CN", customer_id=c.id)
+            db.add(s)
+            db.flush()
+            setattr(self, f"customer_{code}", c)
+            setattr(self, f"supplier_{code}", s)
+            setattr(self, f"tenant_{code}", t)
+        db.commit()
+        db.close()
+
+    def h(self, role="OPERATOR", tenant="T1"):
+        return {"Authorization": f"Bearer {self.tokens[(tenant, role)]}"}
+
+    def create_case(self, tenant="T1", role="OPERATOR", **kw):
+        body = {"customer_id": str(getattr(self, f"customer_{tenant}").id),
+                "supplier_id": str(getattr(self, f"supplier_{tenant}").id),
+                "declaration_type": "A11", "customs_office": "Bắc Ninh"} | kw
+        r = self.client.post("/api/v1/cases", json=body, headers=self.h(role, tenant))
+        assert r.status_code == 201, r.text
+        return r.json()
+
+
+@pytest.fixture
+def world(client):
+    return World(client)
