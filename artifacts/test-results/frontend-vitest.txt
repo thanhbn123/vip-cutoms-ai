@@ -1,0 +1,12 @@
+# frontend-vitest · 2026-10-08T06:35:09Z · develop ad1ea4b
+$ bash -o pipefail -c cd apps/web && npx vitest run 2>&1 | tail -8
+exit_code=0
+----- last lines -----
+ ✓ src/pages/Goods.test.tsx (1 test) 79ms
+ ✓ src/App.test.tsx (2 tests) 170ms
+
+ Test Files  2 passed (2)
+      Tests  3 passed (3)
+   Start at  06:35:10
+   Duration  1.17s (transform 408ms, setup 118ms, collect 841ms, tests 248ms, environment 576ms, prepare 107ms)
+

@@ -1,0 +1,9 @@
+# clean-checkout · 2026-10-08T06:32:55Z · fresh clone of develop ad1ea4b into scratchpad, fresh venv, fresh DB vip_customs_clean
+pip install -e '.[dev]': OK
+alembic upgrade head from empty schema: 0010_copilot_meta (head)
+seed_demo --with-case: demo case VIP-HQ-261008-001 → BLOCKED (4 documents parsed)
+pytest: 66 passed, 1 warning in 28.79s
+npm ci: 194 packages
+tsc -b: OK
+vitest: 3 passed
+vite build: dist/index.html present=yes (re-run after excluding e2e from vitest; 189.82 kB js, 5.80 kB css)
