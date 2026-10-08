@@ -42,10 +42,10 @@ def evaluate(db: Session, case: CustomsCase, actor: audit.Actor) -> None:
     reasoning = []
     if total is not None and line_sum is not None and items and abs(total - line_sum) > Decimal("0.01"):
         specs.append(IssueSpec("invoice_total", "INVOICE_TOTAL_MISMATCH", "WARNING", "VALUATION",
-                               f"Tổng Invoice {total} ≠ tổng dòng hàng {line_sum}", "Trị giá khai sẽ dùng tổng dòng hàng cho tới khi reviewer xác nhận.",
+                               f"Tổng Invoice {total} ≠ tổng dòng hàng {line_sum}", "Trị giá dùng tổng Invoice đã khai; reviewer phải xác nhận trước khi phát hành.",
                                target_ref="invoice.total_amount", auto_resolvable=True))
-        reasoning.append(f"Tổng hóa đơn {total} khác tổng dòng {line_sum}; phân bổ theo dòng.")
-    basis = line_sum if line_sum else total
+        reasoning.append(f"Tổng hóa đơn {total} khác tổng dòng {line_sum}; dùng tổng hóa đơn đã khai, reviewer phải xử lý cảnh báo.")
+    basis = total if total is not None else line_sum  # declared invoice total is the valuation basis (D-007)
     additions = Decimal(0)
     status = "COMPUTED"
     if inc.startswith(("FOB", "EXW", "FCA", "CFR", "CPT")):

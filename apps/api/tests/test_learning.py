@@ -68,7 +68,7 @@ def test_copilot_uses_history_for_price_anomaly(world, client):
     cid1, its1 = new_case(world, client)
     decide(client, world, cid1, its1[3], "APPROVE", "85371099", role="SENIOR_REVIEWER") if False else None
     decide(client, world, cid1, its1[2], "APPROVE", "39172300")
-    inv = open(__import__("conftest").FIXTURES + "/invoice.txt", "rb").read().replace(b"| 1.20 | 600.00", b"| 0.90 | 450.00").replace(b"Total Amount: 1980.00", b"Total Amount: 1830.00")
+    inv = open(__import__("conftest").FIXTURES + "/invoice.txt", "rb").read().replace(b"| 1.20 | 600.00", b"| 0.90 | 450.00").replace(b"Total Amount: 17900.00", b"Total Amount: 17750.00")
     case = world.create_case()
     upload(client, world.h(), case["id"], "INVOICE", "invoice.txt", content=inv)
     client.post(f"/api/v1/cases/{case['id']}/pipeline/run", headers=world.h())

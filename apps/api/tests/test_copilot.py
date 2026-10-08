@@ -39,8 +39,8 @@ def test_form_e_and_valuation_questions_use_case_context_only(world, client):
     cid = setup(world, client)
     a = ask(client, world, cid, "Form E có vấn đề gì?")
     assert a["intent"] == "CO" and "Item 1" in a["answer"] and ("không khớp" in a["answer"] or "CO_LINE_MISMATCH" in str(a["sources"]))
-    v = ask(client, world, cid, "Trị giá có bất thường không?")
-    assert v["intent"] == "VALUATION" and "bảo hiểm" in v["answer"]
+    v = ask(client, world, cid, "Kiểm tra trị giá lô hàng")
+    assert v["intent"] == "VALUATION" and "18420.00" in v["answer"] and "Tổng Invoice" in v["answer"]  # CIF + line-sum warning, from case data
     assert "lịch sử" in v["answer"].lower()  # explicitly says there is no history to compare
 
 
