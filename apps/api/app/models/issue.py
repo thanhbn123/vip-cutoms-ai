@@ -15,6 +15,7 @@ class Issue(IdMixin, TimestampMixin, TenantMixin, Base):
     __table_args__ = (UniqueConstraint("case_id", "dedupe_key"),)
     case_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("cases.id"), index=True)
     dedupe_key: Mapped[str] = mapped_column(String(200))
+    raised_by: Mapped[str] = mapped_column(String(30), default="system")  # evaluator that owns this issue
     code: Mapped[str] = mapped_column(String(60))
     severity: Mapped[str] = mapped_column(String(10))  # CRITICAL | WARNING | INFO
     category: Mapped[str] = mapped_column(String(30))  # DOCUMENT_CONFLICT | HS | POLICY | VALUATION | CO | MISSING_DATA | VALIDATION | LEARNING

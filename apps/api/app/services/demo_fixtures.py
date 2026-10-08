@@ -31,3 +31,52 @@ HS_RULES_DEMO = {
          "required_attributes": ["power", "voltage"], "base_confidence": 0.80},
     ],
 }
+
+# Illustrative percentages only. NOT a tariff schedule. Replace via BLOCKED_OWNER B-02.
+TARIFF_DEMO = {
+    "version": "demo-tariff-2026.10",
+    "effective_from": "2026-01-01",
+    "rates": {  # heading → {mfn_duty_pct, vat_pct}
+        "8413": {"mfn_duty_pct": 10.0, "vat_pct": 10.0},
+        "8414": {"mfn_duty_pct": 10.0, "vat_pct": 10.0},
+        "3917": {"mfn_duty_pct": 5.0, "vat_pct": 10.0},
+        "7304": {"mfn_duty_pct": 10.0, "vat_pct": 10.0},
+        "8537": {"mfn_duty_pct": 3.0, "vat_pct": 10.0},
+        "8536": {"mfn_duty_pct": 5.0, "vat_pct": 10.0},
+        "8481": {"mfn_duty_pct": 10.0, "vat_pct": 10.0},
+        "8501": {"mfn_duty_pct": 5.0, "vat_pct": 10.0},
+    },
+}
+
+FTA_DEMO = {
+    "version": "demo-fta-2026.10",
+    "effective_from": "2026-01-01",
+    "forms": {
+        "E": {
+            "agreement": "ACFTA (demo)",
+            "origin_countries": ["CN"],
+            "allowed_criteria": ["WO", "PE", "RVC40", "CTH", "PSR"],
+            "preferential_duty_pct": {"8413": 0.0, "3917": 0.0, "8537": 0.0, "8536": 0.0, "8501": 0.0, "8414": 0.0, "8481": 0.0, "7304": 5.0},
+            "checks": ["exporter_matches_invoice", "importer_matches_invoice", "invoice_ref_matches", "origin_country_allowed",
+                       "line_description_matches", "origin_criterion_allowed"],
+        },
+        "D": {"agreement": "ATIGA (demo)", "origin_countries": ["TH", "MY", "ID", "SG", "PH", "KH", "LA", "MM", "BN"],
+              "allowed_criteria": ["WO", "PE", "RVC40", "CTC"], "preferential_duty_pct": {}, "checks": []},
+    },
+}
+
+POLICY_DEMO = {
+    "version": "demo-policy-2026.10",
+    "effective_from": "2026-01-01",
+    "requirements": {  # heading → list of demo specialized-management requirements
+        "8537": [{"code": "QC-ELEC", "title": "Kiểm tra chất lượng thiết bị điện (DEMO)",
+                  "evidence_doc_types": ["CATALOGUE"], "needs_reviewer_confirmation": True,
+                  "notes": "Demo rule: electrical control equipment may be subject to quality inspection; confirm scope by function/voltage."}],
+        "8536": [{"code": "QC-ELEC", "title": "Kiểm tra chất lượng thiết bị điện (DEMO)", "evidence_doc_types": ["CATALOGUE"],
+                  "needs_reviewer_confirmation": True}],
+        "8413": [{"code": "EE-CHECK", "title": "Rà soát hiệu suất năng lượng động cơ bơm (DEMO)", "evidence_doc_types": [],
+                  "needs_reviewer_confirmation": True}],
+        "8501": [{"code": "EE-LABEL", "title": "Nhãn năng lượng động cơ điện (DEMO)", "evidence_doc_types": ["CATALOGUE"],
+                  "needs_reviewer_confirmation": True}],
+    },
+}
