@@ -26,7 +26,7 @@ See `PROJECT_STATUS.md` (gate log), `docs/G16_PRODUCTION_REVIEW.md` (**current g
 - G16 re-verified the staging-accepted code in a clean checkout: the only drift between
   `9649ec7` (accepted) and `c7fdafd` is documentation — every code subtree hash is identical,
   so staging runs exactly the reviewed code and was not redeployed
-- Tests (RC, fresh execution 2026-10-09 on PR head `52d8fe1` and clean checkout of `d21fd77`): **72 api pytest** · **70 infra pytest** (now also in CI job `infra`) ·
+- Tests (RC, fresh execution 2026-10-09 on PR head `52d8fe1` and clean checkout of `d21fd77`): **72 api pytest** · **71 infra pytest** (now also in CI job `infra`) ·
   3 vitest · 2 Playwright E2E · HTTP acceptance 17/17 · negative/security 18/18 ·
   `VERIFY: ALL CHECKS PASSED`
 - CI: **green 4/4** (`api`, `web`, `infra`, `secrets`) — GitHub Actions run `37906023466` on PR #1 head `52d8fe1`; re-run on `develop` after merge.

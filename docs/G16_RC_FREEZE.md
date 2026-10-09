@@ -6,7 +6,7 @@
 | | |
 |---|---|
 | **RC SHA** | **`origin/develop` after this freeze commit — the exact 40-char SHA is printed in the G16 final report and in PR #2.** A document cannot contain its own commit hash; verify with `git rev-parse origin/develop` and `git log -1 --format=%H -- docs/G16_RC_FREEZE.md` (they match). |
-| Code-verified SHA | `d21fd7756a9a148a96dd92711d97966e4e505b86` — merge of PR #1 into `develop`. The freeze commit changes **documentation only**; every code subtree (`apps`, `packages`, `infra`, `scripts`, `tests`, `.github`, `Makefile`, `.env.example`, `prototype`) is byte-identical to `d21fd77`. |
+| Code-verified SHA | `d21fd7756a9a148a96dd92711d97966e4e505b86` — merge of PR #1 into `develop`. The freeze commit changes **documentation only**; runtime subtrees (`apps`, `packages`, `infra`, `.github`, `Makefile`, `.env.example`, `prototype`) are byte-identical to `d21fd77`; the only code delta is the clean-clone fix to `scripts/e2e.sh` + its test (`ed7a4f1`, see below). |
 | PR #1 | `release/g16-rc1` → `develop`, head `4591b6285b585bb93122ac332f99a99b7e417ee4` (verified head `52d8fe17…` + one evidence-only commit), **merged** `--no-ff` as `d21fd77` |
 | PRE-DEVELOP SHA | `c7fdafdbba139991cd537d5093b4af46d3a61052` |
 | MAIN SHA | `2afdf6b49112f5db3f2962fcc3345c4c5b9055a0` — unchanged |
@@ -34,7 +34,27 @@ Gap closed in this gate: the root `tests/` suite was not run by CI → added job
 | Docker acceptance dry-run | A–P **17/17** · negative **18/18** · restart + down/up persistence (cases 17→17, uploads 53) · backup 342,640 B + restore (cases 17, audit 998) · logs 0 errors / 0 secrets |
 
 ## Clean checkout of `d21fd77` from zero
-_IN PROGRESS — results of the from-zero clean checkout are being collected and will replace this line before the freeze branch is merged._
+Fresh `git clone` of `origin/develop` at `d21fd7756a9a148a96dd92711d97966e4e505b86` into an empty directory, Node v22.22.0, Python 3.12, empty PostgreSQL database `vip_customs_rc`. Everything below was executed from the clone, not from the working checkout; evidence in the clone's `artifacts/test-results/clean-checkout.txt`, `docker-smoke.txt`, `docker-acceptance.txt`.
+
+| Step | Result |
+|---|---|
+| `pip install` (api) | OK |
+| `alembic upgrade head` from empty DB | `0010_copilot_meta (head)`, heads=1 |
+| seed demo tenant + demo case | tenant DEMO, 4 datasets (HS_RULES, TARIFF, FTA, POLICY), case `VIP-HQ-261008-001` → 4 docs parsed, status **BLOCKED** (fail-closed) |
+| ruff | OK |
+| backend pytest | **72 passed** |
+| infra pytest (root `tests/`) | **70 passed** |
+| `npm ci` | 194 packages |
+| tsc | OK |
+| vitest | **3 passed** (2 files) |
+| vite build | OK |
+| Playwright, native stack | **2 passed** — *after* the clean-clone fix below; the unfixed `scripts/e2e.sh` aborted silently before Playwright in a fresh clone |
+| Docker from clean clone: build, boot from zero, `/health`, `/ready` | 200 / 200 (`database ok`, migrations `0010_copilot_meta`, `ai_provider mock`), web 200, 21 tables on fresh volume, 0 secret leaks in logs, 0 restarts |
+| Docker acceptance A–P | **17/17 PASS**, 0 restarts after flow, 11 uploaded documents in volume |
+| Playwright, Docker stack | **2 passed** |
+
+### Clean-clone finding and fix (only code delta after `d21fd77`)
+`scripts/e2e.sh` redirected API/web logs into the gitignored `local-data/` directory, which does not exist in a fresh clone; under `set -e` the script exited right after seeding and Playwright never ran. Fix: `mkdir -p "$ROOT/local-data"` before the first redirection, plus contract test `test_e2e_script_creates_its_log_directory_before_use` (root infra suite → **71 tests**). Commit `9446db2` on `feature/g16-e2e-clean-clone-fix`, merged `--no-ff` into `develop` as `ed7a4f17dace81b69ecf83a33fbac60788ea1bba`. `git diff d21fd77 ed7a4f1 -- apps infra packages Makefile .env.example .github` is **empty**: no runtime, image, migration or deployment change, so every runtime result above and the staging status below still apply.
 
 ## Staging status (read-only, this session)
 Egress from the build session cannot reach `hq.vipgroup.com.vn` (CONNECT via the environment proxy returns no response → `000`), so live health was **not re-probed from here**. Deployed SHA on the VPS per G15C record: `9649ec7` (containers healthy, 0 restarts, Let's Encrypt cert valid to 2027-01-07, behind the host's shared Caddy, `AI_PROVIDER=mock`). Runtime of the RC is identical to that SHA (see table above). An operator can re-check in seconds: `curl -fsS https://hq.vipgroup.com.vn/health && curl -fsS https://hq.vipgroup.com.vn/ready`.
