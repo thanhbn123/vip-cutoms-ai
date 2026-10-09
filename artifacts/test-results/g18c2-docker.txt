@@ -1,0 +1,16 @@
+e2e_exit=0
+  2 passed (3.7s)
+docker_smoke_exit=0
+## alembic in api container
+0012_ai_usage_events (head)
+heads=1
+## schema tables (fresh volume)
+secret leak check (POSTGRES_PASSWORD / APP_SECRET_KEY in logs): 0
+restart counts: /vip-customs-api-1=0 /vip-customs-postgres-1=0 
+docker_acceptance_exit=0
+  2 passed (3.8s)
+ACCEPTANCE_HTTP: 17/17 steps PASS against http://localhost:8000
+restart counts: /vip-customs-api-1=0 /vip-customs-postgres-1=0 
+DONE
+
+[exited with code 0]

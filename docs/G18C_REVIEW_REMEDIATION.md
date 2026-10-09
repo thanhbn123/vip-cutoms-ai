@@ -64,3 +64,7 @@ A second high-effort review of the G18C diff (`39e6444...develop`) found 14 foll
 | 12 | Duplicate HS_RULES shape check in `register` | removed (validate_payload is the single source) | package tests |
 | 13 | N+1 top-candidate query in `declaration.build` | one grouped query | declaration tests |
 | 14 | Reopen branch refreshed only some attributes | shared `_refresh` used by both branches | covered by 2/3 |
+
+### Verification (G18C-2, fresh)
+Backend pytest **161 passed**, 1 skipped · infra pytest **103** · vitest **5** · `VERIFY: ALL CHECKS PASSED` · Playwright native **2/2**
+(isolated DB) · Docker boot from zero to `0012_ai_usage_events`, 0 restarts, 0 leaks · Docker acceptance A–P **17/17** + Playwright **2/2**.
