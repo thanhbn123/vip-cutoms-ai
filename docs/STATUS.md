@@ -5,13 +5,13 @@ See `PROJECT_STATUS.md` (gate log), `docs/G16_PRODUCTION_REVIEW.md` (**current g
 `docs/PRODUCTION_RUNBOOK.md`, `docs/G15_STAGING_ACCEPTANCE_REPORT.md` (real staging evidence),
 `docs/G15_DEPLOY_RECORD.md` (deployed SHA + rollback), `docs/STAGING_ROLLBACK.md`.
 
-- Current gate: **G16 — production review / release-candidate freeze: PASS_LIMITED_MODE.**
+- Current gate: **G16 — RC closeout: PR #1 merged into `develop` (`d21fd77`), RC frozen (`docs/G16_RC_FREEZE.md`), PR #2 `develop → main` open for OWNER review. PASS_LIMITED_MODE. `main` not merged, production not deployed.**
   `READY_TO_MERGE_MAIN = NO` · `READY_TO_DEPLOY_PRODUCTION = NO`. Merging to `main` waits on the
   G16 additions being reviewed into `develop` (draft PR #1) and `develop` being verified and
   frozen; the owner's limited-mode review is also open. **Nothing deployed by this gate.**
   `PASS_FULL_MODE` is blocked on B-01 and B-02 — the system's tariff/FTA/policy data is demo
   fixture data, so it must not be used to prepare a real customs filing.
-- Gates passed: G00 … G14 (local + Docker scope) · G15C (real staging) · **G16 (production review)**
+- Gates passed: G00 … G14 (local + Docker scope) · G15C (real staging) · **G16 (production review + RC closeout)**
 - Staging: deploy SHA `9649ec79db189857628ced0b11eaeaf6635fb42c` (code-identical to
   `origin/develop` `c7fdafd`; the newer commits are documentation only) · migration head
   `0010_copilot_meta` (single) · containers healthy, 0 restarts · TLS valid (Let's Encrypt,
@@ -26,10 +26,10 @@ See `PROJECT_STATUS.md` (gate log), `docs/G16_PRODUCTION_REVIEW.md` (**current g
 - G16 re-verified the staging-accepted code in a clean checkout: the only drift between
   `9649ec7` (accepted) and `c7fdafd` is documentation — every code subtree hash is identical,
   so staging runs exactly the reviewed code and was not redeployed
-- Tests: **72 pytest** (PostgreSQL) · **64 infra pytest** (no DB/Docker; 21 → 64 in G16, 13 of them executing `backup.sh` against a mocked `docker`) ·
+- Tests (RC, fresh execution 2026-10-09 on PR head `52d8fe1` and clean checkout of `d21fd77`): **72 api pytest** · **71 infra pytest** (now also in CI job `infra`) ·
   3 vitest · 2 Playwright E2E · HTTP acceptance 17/17 · negative/security 18/18 ·
   `VERIFY: ALL CHECKS PASSED`
-- CI: **observed green** — GitHub Actions run `37900514439` on `release/g16-rc1` @ `6768a17`,
+- CI: **green 4/4** (`api`, `web`, `infra`, `secrets`) — GitHub Actions run `37906023466` on PR #1 head `52d8fe1`; re-run on `develop` after merge.
   jobs `api`/`web`/`secrets` all success (this supersedes the old `CI_EXTERNAL_UNVERIFIED`;
   D-004 no longer holds). Caveat: `ci.yml`'s `api` job runs only `apps/api/tests`, so the root
   `tests/` infra suite is not covered by CI · LOCAL_VERIFICATION = PASS (`artifacts/test-results/`)
