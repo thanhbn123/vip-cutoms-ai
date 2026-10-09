@@ -54,3 +54,15 @@ test("a reviewer sees provenance but no management actions", async () => {
   expect(screen.queryByText("Import gói dữ liệu (JSON)")).toBeNull();
   expect(screen.queryByText("thay thế")).toBeNull();
 });
+
+test("the demo warning stays when the notice endpoint fails (fail closed)", async () => {
+  globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.includes("/knowledge/notice")) return new Response("boom", { status: 500 });
+    if (url.includes("/knowledge/datasets")) return new Response(JSON.stringify([datasets[2]]), { status: 200 });  // only an authoritative POLICY set
+    return new Response("{}", { status: 200 });
+  }) as unknown as typeof fetch;
+  render(<Knowledge ctx={ctxWith(["case.read"])} />);
+  await waitFor(() => expect(screen.getByText("authoritative")).toBeInTheDocument());
+  expect(screen.getByText("DEMO DATA — NON-AUTHORITATIVE — NOT FOR CUSTOMS FILING")).toBeInTheDocument();
+});

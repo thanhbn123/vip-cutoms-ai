@@ -1,0 +1,16 @@
+pip_exit=0
+INFO  [alembic.runtime.migration] Running upgrade 0011_dataset_provenance -> 0012_ai_usage_events, G18B persistent AI usage ledger (cost control survives restarts)
+MIGRATE: 0012_ai_usage_events (head) heads=1
+demo case VIP-HQ-261008-001: {'documents_parsed': 4, 'status': 'BLOCKED'}
+RUFF_OK
+166 passed, 1 skipped, 1 warning in 78.91s (0:01:18)
+106 passed in 2.20s
+added 194 packages in 5s
+TSC_OK
+      Tests  8 passed (8)
+✓ built in 12.69s
+  2 passed (4.5s)
+SECRET SCAN: clean
+CLEAN_DONE
+
+[exited with code 0]

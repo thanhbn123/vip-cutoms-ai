@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import current_user, require
 from app.api.schemas import LoginIn, TokenOut, UserCreate, UserOut
-from app.core.ratelimit import login_limiter
+from app.core.ratelimit import login_limiters
 from app.core.rbac import ROLE_PERMISSIONS, Perm, Role
 from app.core.security import hash_password, issue_token, verify_password
 from app.db import get_db
@@ -31,24 +31,34 @@ def _throttled(retry_after: int) -> JSONResponse:
 
 @router.post("/auth/login", response_model=TokenOut, responses={429: {"description": "throttled"}})
 def login(body: LoginIn, request: Request, db: Session = Depends(get_db)):
-    limiter = login_limiter()
+    lims = login_limiters()
     email = body.email.lower()
-    ip_key, email_key = f"ip:{_client_ip(request)}", f"email:{email}"
-    for key in (ip_key, email_key):  # refused BEFORE any password work (G18D)
-        v = limiter.check(key)
+    ip = _client_ip(request)
+    dims = (("pair", lims.pair, f"{ip}|{email}"), ("email", lims.email, email), ("ip", lims.ip, ip))
+    for kind, lim, key in dims:  # refused BEFORE any password work (G18D)
+        v = lim.check(key)
         if not v.allowed:
-            log.warning("login_throttled key_kind=%s retry_after=%d", key.split(":", 1)[0], v.retry_after)
+            log.warning("login_throttled dimension=%s retry_after=%d", kind, v.retry_after)
             return _throttled(v.retry_after)
     user = db.execute(select(User).where(User.email == email)).scalar_one_or_none()
     if not user or not user.is_active or not verify_password(body.password, user.password_hash):
-        worst = 0
-        for key in (ip_key, email_key):
-            r = limiter.record_failure(key)
-            worst = max(worst, r.retry_after)
-        if worst:
+        worst, locked = 0, []
+        for kind, lim, key in dims:
+            r = lim.record_failure(key)
+            if r.locked_now:
+                locked.append(kind)
+                worst = max(worst, r.retry_after)
+        if locked:
+            log.warning("login_locked dimensions=%s", ",".join(locked))
+            if user is not None:  # a known account entering the locked state is a security transition → audit (G18E)
+                audit.record(db, tenant_id=user.tenant_id, actor=audit.Actor.system(), action="auth.login_locked", entity_type="user",
+                             entity_id=user.id, after={"dimensions": locked, "retry_after_seconds": worst},
+                             reason="repeated failed login attempts")
+                db.commit()
             return _throttled(worst)
         raise HTTPException(status_code=401, detail={"code": "INVALID_CREDENTIALS", "message": "invalid email or password"})
-    limiter.record_success(email_key)
+    lims.pair.record_success(f"{ip}|{email}")
+    lims.email.record_success(email)
     return TokenOut(access_token=issue_token(str(user.id), str(user.tenant_id), user.role), user=UserOut.model_validate(user))
 
 

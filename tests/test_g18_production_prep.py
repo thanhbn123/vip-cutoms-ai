@@ -68,7 +68,8 @@ def test_offsite_units_reference_existing_script_and_local_backup_unit():
                                  "COPILOT_PROVIDER", "AI_PROVIDER_BASE_URL", "AI_PROVIDER_API_KEY", "AI_PROVIDER_MODEL", "AI_DAILY_BUDGET_USD",
                                  "OFFSITE_METHOD", "OFFSITE_TARGET", "OFFSITE_ENCRYPT_RECIPIENT", "OFFSITE_RETENTION_DAILY",
                                  "OFFSITE_RETENTION_WEEKLY", "OFFSITE_RETENTION_MONTHLY", "BACKUP_STATUS_FILE",
-                                 "LOGIN_MAX_ATTEMPTS", "LOGIN_WINDOW_SECONDS", "LOGIN_LOCKOUT_SECONDS"])
+                                 "LOGIN_MAX_ATTEMPTS", "LOGIN_WINDOW_SECONDS", "LOGIN_LOCKOUT_SECONDS",
+                                 "LOGIN_EMAIL_MAX_ATTEMPTS", "LOGIN_IP_MAX_ATTEMPTS"])
 def test_production_template_documents_g18_keys(key):
     assert key in _env(PROD_ENV)
 

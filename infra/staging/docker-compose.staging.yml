@@ -31,6 +31,8 @@ services:
   api:
     image: ${API_IMAGE:-vip-customs-api:${IMAGE_TAG:-latest}}
     build: { context: ../../apps/api, dockerfile: Dockerfile, secrets: [ca_bundle] }
+    # --forwarded-allow-ips "*": the api is reachable ONLY on the compose-internal network, where the sole caller is the stack's
+    # own proxy, which sets X-Forwarded-For itself. Never publish api:8000 on a host interface with this flag in place (G18E).
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips", "*"]
     restart: unless-stopped
     env_file: [{ path: .env, required: false }]  # deploy.sh guarantees the file; optional here so `config` validates without it
@@ -52,6 +54,8 @@ services:
       AI_DAILY_BUDGET_USD: ${AI_DAILY_BUDGET_USD:-}
       BACKUP_STATUS_FILE: ${BACKUP_STATUS_FILE:-}
       LOGIN_MAX_ATTEMPTS: ${LOGIN_MAX_ATTEMPTS:-10}
+      LOGIN_EMAIL_MAX_ATTEMPTS: ${LOGIN_EMAIL_MAX_ATTEMPTS:-50}
+      LOGIN_IP_MAX_ATTEMPTS: ${LOGIN_IP_MAX_ATTEMPTS:-100}
       LOGIN_WINDOW_SECONDS: ${LOGIN_WINDOW_SECONDS:-300}
       LOGIN_LOCKOUT_SECONDS: ${LOGIN_LOCKOUT_SECONDS:-300}
       CORS_ORIGINS: ${PUBLIC_WEB_ORIGIN:?}

@@ -49,7 +49,12 @@ export function Manage({ ctx }: { ctx: Ctx }) {
               <p className="mini"><b>Database:</b> {String(ready.checks.database ?? "?")} · migration {String(ready.checks.migrations ?? "?")}{ready.checks.migration_in_sync === false ? ` ≠ head ${ready.checks.migration_head}` : " (= head)"}</p>
               <p className="mini"><b>AI providers:</b> {ready.checks.providers ? Object.entries(ready.checks.providers).map(([cap, h]) => `${CAP[cap] ?? cap}: ${h.name}${h.is_mock ? " (mock)" : h.healthy ? " ✓" : " ✗"}`).join(" · ") : "?"}</p>
               <p className="mini"><b>Dữ liệu hải quan:</b> {ready.checks.customs_data_authoritative
-                ? Object.entries(ready.checks.customs_data_authoritative).filter(([k]) => k !== "all_authoritative").map(([k, v]) => `${k}: ${(v as { authoritative?: boolean }).authoritative ? "authoritative" : "demo/chưa xác minh"}`).join(" · ")
+                ? (() => {
+                  const cds = ready.checks.customs_data_authoritative as Record<string, unknown>;
+                  const kinds = Object.entries(cds).filter(([, v]) => typeof v === "object" && v !== null && "authoritative" in (v as object));
+                  const note = typeof cds.reason === "string" ? cds.reason : typeof cds.error === "string" ? `lỗi ${cds.error}` : null;
+                  return (kinds.length ? kinds.map(([k, v]) => `${k}: ${(v as { authoritative?: boolean }).authoritative ? "authoritative" : "demo/chưa xác minh"}`).join(" · ") : "không đọc được") + (note ? ` (${note})` : "");
+                })()
                 : "?"}</p>
               <p className="mini"><b>Backup off-host:</b> {ready.checks.backup_status?.state ?? "?"}{ready.checks.backup_status?.age_hours != null ? ` (${ready.checks.backup_status.age_hours} h)` : ""}</p>
             </div>

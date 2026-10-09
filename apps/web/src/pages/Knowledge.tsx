@@ -31,28 +31,31 @@ export function Knowledge({ ctx }: { ctx: Ctx }) {
     api<DemoNotice>("/knowledge/notice").then(setNotice).catch(() => setNotice(null));
   };
   useEffect(() => { load(); }, [ctx.bump]);
-  const run = (p: Promise<unknown>, msg: string) => p.then(() => { setErr(null); ctx.toast(msg); setDetail(null); load(); }).catch((e) => setErr(errMsg(e)));
+  // resolves true on success, false on failure (the error is shown; callers must not treat a failure as done)
+  const run = (p: Promise<unknown>, msg: string) => p.then(() => { setErr(null); ctx.toast(msg); setDetail(null); load(); return true; }).catch((e) => { setErr(errMsg(e)); return false; });
   const toggle = (d: Dataset) => { const r = ask(`Lý do ${d.is_active ? "tắt" : "bật"} ${d.kind} ${d.version}`); if (r) run(patch(`/knowledge/datasets/${d.id}`, { is_active: !d.is_active, reason: r }), "Đã cập nhật dataset"); };
-  const verify = (d: Dataset) => { const r = ask(`Xác minh ${d.kind} ${d.version} theo văn bản nào? (lý do, ≥3 ký tự)`); if (r) run(post(`/knowledge/datasets/${d.id}/verify`, { reason: r }), "Đã xác minh: dataset là AUTHORITATIVE"); };
+  const verify = (d: Dataset) => { const r = ask(`Xác minh ${d.kind} ${d.version} theo văn bản nào? (lý do, ≥5 ký tự)`); if (r) run(post(`/knowledge/datasets/${d.id}/verify`, { reason: r }), "Đã xác minh: dataset là AUTHORITATIVE"); else setErr("Cần lý do ≥5 ký tự"); };
   const supersede = (d: Dataset) => {
     const candidates = ds.filter((x) => x.kind === d.kind && x.id !== d.id && !x.superseded_at);
     if (!candidates.length) { setErr("Không có dataset cùng loại để thay thế"); return; }
-    const pick = ask(`Dataset thay thế (version): ${candidates.map((c) => c.version).join(" | ")}`, candidates[0].version);
-    const target = candidates.find((c) => c.version === pick);
-    if (!target) return;
+    const pick = window.prompt(`Dataset thay thế (version): ${candidates.map((c) => c.version).join(" | ")}`, candidates[0].version);
+    const target = candidates.find((c) => c.version === (pick ?? "").trim());
+    if (!target) { if (pick !== null) setErr(`Không có dataset version "${pick}" cùng loại`); return; }
     const r = ask(`Lý do thay thế ${d.version} bằng ${target.version}`); if (r) run(post(`/knowledge/datasets/${d.id}/supersede`, { new_dataset_id: target.id, reason: r }), "Đã ghi nhận thay thế (lineage giữ nguyên)");
   };
   const open = (d: Dataset) => api<DatasetDetail>(`/knowledge/datasets/${d.id}`).then(setDetail).catch((e) => setErr(errMsg(e)));
   const doImport = () => {
     let body: unknown;
     try { body = JSON.parse(importText); } catch { setErr("Gói dữ liệu không phải JSON hợp lệ"); return; }
-    run(post("/knowledge/datasets/import", body), "Đã import (INACTIVE, chưa xác minh)").then(() => setImportOpen(false));
+    run(post("/knowledge/datasets/import", body), "Đã import (INACTIVE, chưa xác minh)").then((ok) => { if (ok) setImportOpen(false); });
   };
   const canManage = ctx.can("knowledge.manage"), canVerify = ctx.can("knowledge.verify");
   const authoritative = ds.filter((d) => d.is_authoritative && d.is_active && !d.superseded_at).length;
+  // Fail closed (G18E): the warning stays unless the notice endpoint positively reports no demo data in use.
+  const demoWarning = notice ? notice.demo_active : ds.some((d) => d.is_demo && d.is_active && !d.superseded_at) || true;
   return (
     <div className="grid g2">
-      <Card title="Knowledge Hub" right={notice?.demo_active
+      <Card title="Knowledge Hub" right={demoWarning
         ? <span className="badge warn">DEMO DATA — NON-AUTHORITATIVE — NOT FOR CUSTOMS FILING</span>
         : <span className="badge pass">{authoritative} authoritative dataset(s) active</span>}>
         {err && <p className="err">{err}</p>}
@@ -62,8 +65,8 @@ export function Knowledge({ ctx }: { ctx: Ctx }) {
               {d.is_demo && <span className="badge warn">demo</span>}
               {d.is_authoritative ? <span className="badge pass">authoritative</span> : !d.is_demo && <span className="badge warn">chưa xác minh</span>}</>}>
             v{d.version} · hiệu lực {d.effective_from}{d.effective_to ? ` → ${d.effective_to}` : " → ∞"} · {d.rule_count} rules
-            <div className="mini">nguồn: {d.source_authority ? `${d.source_authority} · ${d.source_document ?? "?"} · ${d.source_reference ?? "?"}` : d.source}
-              {d.verified_at && ` · xác minh ${d.verified_at.slice(0, 10)}`}{d.checksum && ` · sha256 ${d.checksum.slice(0, 12)}`}{d.supersedes_id && " · thay thế bản trước"}</div>
+            <span className="mini" style={{ display: "block" }}>nguồn: {d.source_authority ? `${d.source_authority} · ${d.source_document ?? "?"} · ${d.source_reference ?? "?"}` : d.source}
+              {d.verified_at && ` · xác minh ${d.verified_at.slice(0, 10)}`}{d.checksum && ` · sha256 ${d.checksum.slice(0, 12)}`}{d.supersedes_id && " · thay thế bản trước"}</span>
             <a href="#" onClick={(e) => { e.preventDefault(); open(d); }}>chi tiết</a>
             {canManage && <> · <a href="#" onClick={(e) => { e.preventDefault(); toggle(d); }}>{d.is_active ? "tắt" : "bật"}</a></>}
             {canVerify && !d.is_authoritative && !d.is_demo && <> · <a href="#" onClick={(e) => { e.preventDefault(); verify(d); }}>xác minh</a></>}
