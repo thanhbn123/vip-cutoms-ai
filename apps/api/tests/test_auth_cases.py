@@ -22,7 +22,16 @@ def test_unauthenticated_and_tampered_token_rejected(world, client):
     assert client.get("/api/v1/cases").status_code == 401
     tok = world.tokens[("T1", "OPERATOR")]
     body, sig = tok.split(".")
-    assert client.get("/api/v1/cases", headers={"Authorization": f"Bearer {body}.x{sig[1:]}"}).status_code == 401
+    # Flip the first signature character to one that is guaranteed to differ. A fixed
+    # replacement ("x") made the "tampered" token identical to the real one whenever the
+    # signature already started with "x" (1/64 of runs) and the assertion failed by chance.
+    flipped = "y" if sig[0] == "x" else "x"
+    tampered = f"{body}.{flipped}{sig[1:]}"
+    assert tampered != tok
+    assert client.get("/api/v1/cases", headers={"Authorization": f"Bearer {tampered}"}).status_code == 401
+    # The full signature is verified, so the same holds for a flipped last character.
+    last = "y" if sig[-1] == "x" else "x"
+    assert client.get("/api/v1/cases", headers={"Authorization": f"Bearer {body}.{sig[:-1]}{last}"}).status_code == 401
 
 
 def test_create_case_assigns_number_status_owner_and_audits(world, client):
