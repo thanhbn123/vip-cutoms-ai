@@ -32,11 +32,11 @@ def test_unknown_ai_provider_fails_closed(monkeypatch):
 
     monkeypatch.setenv("AI_PROVIDER", "some-real-llm")
     config.get_settings.cache_clear()
-    gateway.get_provider.cache_clear()
+    gateway.reset_cache()
     try:
         with pytest.raises(gateway.ProviderNotConfigured):
             gateway.get_provider()
     finally:
         monkeypatch.setenv("AI_PROVIDER", "mock")
         config.get_settings.cache_clear()
-        gateway.get_provider.cache_clear()
+        gateway.reset_cache()

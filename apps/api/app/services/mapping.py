@@ -13,7 +13,9 @@ from dataclasses import dataclass
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.ai.base import ProviderError
 from app.ai.gateway import get_provider
+from app.ai.redaction import redact
 from app.core.rbac import Perm
 from app.models.base import utcnow
 from app.models.case import CustomsCase
@@ -84,7 +86,22 @@ def _valid_key(key: str) -> bool:
 def parse_document(db: Session, case: CustomsCase, doc: Document, actor: audit.Actor) -> int:
     provider = get_provider()
     data = get_storage().get(doc.storage_key)
-    result = provider.extract_document(doc.doc_type, doc.filename, data)
+    try:
+        result = provider.extract_document(doc.doc_type, doc.filename, data)
+    except ProviderError as exc:
+        # Fail closed (G18): a failed real provider yields NO extracted values, never a guess. The document is marked
+        # PARSE_FAILED, the pipeline raises a CRITICAL issue, and critical fields stay NEEDS_REVIEW with no value.
+        doc.status = "PARSE_FAILED"
+        doc.parse_provider = provider.name
+        doc.parse_provider_version = getattr(provider, "version", None)
+        doc.parsed_at = utcnow()
+        doc.parse_confidence = 0.0
+        doc.parse_warnings = [f"provider failure: {type(exc).__name__}: {redact(str(exc))}"]
+        db.flush()
+        audit.record(db, tenant_id=case.tenant_id, actor=actor, action="document.parse_failed", entity_type="document", entity_id=doc.id,
+                     case_id=case.id, after={"status": doc.status, "provider": provider.name, "error": type(exc).__name__},
+                     evidence={"warnings": doc.parse_warnings})
+        return 0
     run_id = uuid.uuid4()
     kept = 0
     rejected: list[str] = []

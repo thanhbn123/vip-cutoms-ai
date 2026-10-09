@@ -11,7 +11,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from app.ai.base import CopilotAnswer, ExtractedValue, ExtractionResult
+from app.ai.base import CopilotAnswer, ExtractedValue, ExtractionResult, OcrResult, ProviderHealth
 
 HEADER_PATTERNS: dict[str, list[tuple[str, str]]] = {
     # doc_type: [(field key, label regex)]
@@ -89,6 +89,23 @@ def _confidence_for(value: str, base: float) -> float:
 class MockProvider:
     name = "mock"
     version = "mock-1.0.0"
+
+    def __init__(self, capability: str = "document_ai"):
+        self.capability = capability
+
+    # ------------------------------------------------------------------ health / ocr
+    def health(self, *, live: bool = True) -> ProviderHealth:
+        return ProviderHealth(self.capability, self.name, self.version, configured=True, healthy=True, detail="deterministic mock",
+                              is_mock=True)
+
+    def ocr(self, filename: str, content: bytes, *, correlation_id: str | None = None) -> OcrResult:
+        """Text pass-through: the mock has no OCR. Binary input → empty text + warning (fail closed)."""
+        try:
+            text = content.decode("utf-8")
+        except UnicodeDecodeError:
+            return OcrResult(text="", pages=0, provider=self.name, provider_version=self.version, confidence=0.0,
+                             warnings=["Binary/scanned document: mock provider cannot OCR it; manual review required"])
+        return OcrResult(text=text, pages=max(1, text.count("\f") + 1), provider=self.name, provider_version=self.version, confidence=1.0)
 
     # ------------------------------------------------------------------ extraction
     def extract_document(self, doc_type: str, filename: str, content: bytes) -> ExtractionResult:

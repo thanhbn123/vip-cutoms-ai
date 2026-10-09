@@ -10,7 +10,7 @@ from app.models.extraction import CaseField
 from app.models.goods import GoodsItem, HsCandidate
 from app.services import assessments, audit
 from app.services.issues import IssueSpec, sync
-from app.services.knowledge import NoActiveDataset, dataset_payload, require_dataset
+from app.services.knowledge import ConflictingDatasets, NoActiveDataset, dataset_payload, require_dataset
 from app.services.mapping import current_extractions
 from app.services.normalize import norm_name, norm_text
 
@@ -28,6 +28,11 @@ def evaluate(db: Session, case: CustomsCase, actor: audit.Actor) -> None:
         return
     try:
         ds = require_dataset(db, "FTA")
+    except ConflictingDatasets as exc:
+        specs.append(IssueSpec("fta_dataset_conflict", "FTA_KNOWLEDGE_CONFLICT", "CRITICAL", "CO", "Xung đột bộ quy tắc FTA hiệu lực",
+                               f"Nhiều dataset cùng hiệu lực; reviewer phải giải quyết. {exc}", auto_resolvable=True))
+        sync(db, case, specs, "origin")
+        return
     except NoActiveDataset:
         specs.append(IssueSpec("fta_dataset", "FTA_KNOWLEDGE_UNAVAILABLE", "CRITICAL", "CO", "Không có bộ quy tắc FTA hiệu lực",
                                "Không đánh giá C/O khi thiếu dataset (fail-closed).", auto_resolvable=True))

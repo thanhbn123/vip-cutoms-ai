@@ -1,0 +1,14 @@
+# Example systemd timer (G18) — see vip-customs-backup-offsite.service for installation.
+[Unit]
+Description=VIP Customs AI — nightly off-host backup replication
+Documentation=file:/opt/vip-customs-ai/docs/G18_OFFHOST_BACKUP.md
+
+[Timer]
+# 03:15 UTC daily: after the 02:30 local backup (plus its randomized delay) has finished.
+OnCalendar=*-*-* 03:15:00 UTC
+RandomizedDelaySec=10m
+Persistent=true
+Unit=vip-customs-backup-offsite.service
+
+[Install]
+WantedBy=timers.target

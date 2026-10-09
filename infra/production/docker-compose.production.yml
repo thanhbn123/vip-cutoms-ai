@@ -44,6 +44,11 @@ services:
   api:
     logging: *logging
     restart: always
+    # G18: the API reads BACKUP_DIR/backup-status.json (written by scripts/production/backup_offsite.sh) to
+    # report backup freshness on /ready. Read-only: the container can never touch a dump.
+    volumes:
+      - uploads:/data/uploads
+      - ${BACKUP_DIR:-/var/backups/vip-customs}:/data/backups:ro
     deploy:
       resources:
         limits: { memory: 1g }

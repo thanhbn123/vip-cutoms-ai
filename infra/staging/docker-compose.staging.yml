@@ -39,6 +39,18 @@ services:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       LOCAL_STORAGE_DIR: /data/uploads
       AI_PROVIDER: ${AI_PROVIDER:-mock}
+      # G18 runtime mode + provider selection (defaults keep the stack in limited mode with the mock provider)
+      APP_MODE: ${APP_MODE:-limited}
+      RELEASE_SHA: ${IMAGE_TAG:-}
+      DOCUMENT_OCR_PROVIDER: ${DOCUMENT_OCR_PROVIDER:-}
+      DOCUMENT_AI_PROVIDER: ${DOCUMENT_AI_PROVIDER:-}
+      HS_AI_PROVIDER: ${HS_AI_PROVIDER:-}
+      COPILOT_PROVIDER: ${COPILOT_PROVIDER:-}
+      AI_PROVIDER_BASE_URL: ${AI_PROVIDER_BASE_URL:-}
+      AI_PROVIDER_API_KEY: ${AI_PROVIDER_API_KEY:-}
+      AI_PROVIDER_MODEL: ${AI_PROVIDER_MODEL:-}
+      AI_DAILY_BUDGET_USD: ${AI_DAILY_BUDGET_USD:-}
+      BACKUP_STATUS_FILE: ${BACKUP_STATUS_FILE:-}
       CORS_ORIGINS: ${PUBLIC_WEB_ORIGIN:?}
     volumes: [uploads:/data/uploads]
     depends_on:

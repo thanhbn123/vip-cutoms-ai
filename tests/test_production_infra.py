@@ -33,7 +33,7 @@ UNIT = PROD / "vip-customs-backup.service"
 TIMER = PROD / "vip-customs-backup.timer"
 
 # Providers actually implemented in this build (app/ai/gateway.py, app/storage/base.py).
-IMPLEMENTED_AI_PROVIDERS = {"mock"}
+IMPLEMENTED_AI_PROVIDERS = {"mock", "http-llm"}  # G18: http-llm is the vendor-neutral real adapter
 IMPLEMENTED_STORAGE_PROVIDERS = {"local"}
 # Modes the shipped Caddy mapping in docker-compose.staging.yml accepts.
 VALID_TLS_MODES = {"internal", "acme", "off"}
@@ -85,7 +85,7 @@ def test_the_real_production_env_file_stays_ignored():
 def test_secret_bearing_keys_are_empty_placeholders():
     """A template with a filled-in secret is how secrets get committed."""
     env = _env()
-    for key in ("POSTGRES_PASSWORD", "APP_SECRET_KEY"):
+    for key in ("POSTGRES_PASSWORD", "APP_SECRET_KEY", "AI_PROVIDER_API_KEY", "OFFSITE_TARGET"):
         assert key in env, f"{key} must be present so the operator knows it is required"
         assert env[key] == "", f"{key} must be an empty placeholder, found a value"
 

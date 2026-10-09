@@ -53,13 +53,14 @@ export function App() {
   return (
     <div className="app">
       <aside className="sidebar">
-        <div className="logo">VIP Customs AI<small>V12 · {env} · {me.user.role}</small></div>
+        <div className="logo">VIP Customs AI<small>V12 · {env}{demo?.app_mode ? ` · ${demo.app_mode.toUpperCase()}` : ""} · {me.user.role}</small></div>
         <div className="menu">
           {NAV.map((n) => (<button key={n.id} className={"nav" + (page === n.id ? " active" : "")} onClick={() => go(n.id)}>{n.label}</button>))}
           <button className="nav" onClick={() => { setToken(null); setMe(null); }}>Đăng xuất</button>
         </div>
       </aside>
       <main className="main">
+        {demo?.mode_notice && <div className="demo-banner mode-banner" role="status">🔒 {demo.mode_notice}{demo.mock_ai_active ? " · AI provider: mock" : ""}</div>}
         {demo?.demo_active && <div className="demo-banner" role="note">⚠ {demo.notice} · bộ quy tắc đang dùng: {demo.datasets.join(", ")} — mọi giá trị HS/thuế/C/O/chính sách chỉ để nghiệm thu quy trình.</div>}
         <div className="top">
           <div>

@@ -10,7 +10,7 @@ from app.models.document import Document
 from app.models.goods import GoodsItem
 from app.services import assessments, audit
 from app.services.issues import IssueSpec, sync
-from app.services.knowledge import NoActiveDataset, dataset_payload, require_dataset
+from app.services.knowledge import ConflictingDatasets, NoActiveDataset, dataset_payload, require_dataset
 
 BLOCK_BELOW = 0.70
 
@@ -21,6 +21,11 @@ def evaluate(db: Session, case: CustomsCase, actor: audit.Actor) -> None:
     doc_types = {d.doc_type for d in db.execute(select(Document).where(Document.case_id == case.id, Document.is_current.is_(True))).scalars()}
     try:
         ds = require_dataset(db, "POLICY")
+    except ConflictingDatasets as exc:
+        specs.append(IssueSpec("policy_dataset_conflict", "POLICY_KNOWLEDGE_CONFLICT", "CRITICAL", "POLICY",
+                               "Xung đột bộ quy tắc chính sách hiệu lực", f"Reviewer phải giải quyết. {exc}", auto_resolvable=True))
+        sync(db, case, specs, "policy")
+        return
     except NoActiveDataset:
         specs.append(IssueSpec("policy_dataset", "POLICY_KNOWLEDGE_UNAVAILABLE", "CRITICAL", "POLICY", "Không có bộ quy tắc chính sách hiệu lực",
                                auto_resolvable=True))

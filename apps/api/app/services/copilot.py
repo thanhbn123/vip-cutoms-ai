@@ -11,7 +11,9 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.ai.gateway import get_provider
+from app.ai.base import ProviderError
+from app.ai.gateway import get_capability
+from app.core.errors import DomainError
 from app.models.assessment import Assessment
 from app.models.base import utcnow
 from app.models.case import CustomsCase
@@ -74,8 +76,13 @@ def build_context(db: Session, case: CustomsCase) -> tuple[dict, set[str]]:
 
 def ask(db: Session, case: CustomsCase, user: User, question: str) -> dict:
     ctx, allowed = build_context(db, case)
-    provider = get_provider()
-    ans = provider.answer_case_question(question, ctx)
+    provider = get_capability("copilot")
+    try:
+        ans = provider.answer_case_question(question, ctx)
+    except ProviderError as exc:
+        # No fallback answer: the reviewer is told the assistant is unavailable (G18 fail-closed).
+        raise DomainError("AI_PROVIDER_UNAVAILABLE", "Copilot provider did not return a validated answer", status_code=503,
+                          details={"error": type(exc).__name__}) from exc
     # ---- validate untrusted provider output
     if not ans.answer or not ans.answer.strip():
         raise ValueError("provider returned an empty answer")
