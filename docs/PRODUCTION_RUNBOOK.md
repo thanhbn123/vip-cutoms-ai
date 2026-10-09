@@ -110,12 +110,73 @@ history — `audit_events` rejects UPDATE/DELETE via a database trigger.
 DEPLOY_PATH=/opt/vip-customs-ai ENV_FILE=infra/production/.env bash scripts/production/backup.sh
 ```
 
-Writes to `BACKUP_DIR`: `db-<stamp>.dump` (pg_dump `-Fc`), `uploads-<stamp>.tgz`, a `.sha256`
-beside each, and a line appended to `MANIFEST.txt` recording sizes, checksums and the deployed
-SHA. Exits non-zero on any failure, including an empty dump, so a timer reports it.
+Writes to `BACKUP_DIR` (mode 0700, every artifact 0600): `db-<stamp>.dump` (pg_dump `-Fc`),
+`uploads-<stamp>.tgz`, a `.sha256` beside each, and a line appended to `MANIFEST.txt` recording
+sizes, checksums and the deployed SHA. Exits non-zero on any failure, including an empty dump,
+so a timer reports it. It refuses to run if `BACKUP_DIR` is a symlink, is not a directory, or is
+not owned by the invoking user.
+
+A dump contains every customer document and every audit record in plaintext, so treat it as
+being exactly as sensitive as the database. The script sets `umask 077` and chmods each
+artifact rather than trusting the caller's umask, and the systemd unit sets `UMask=0077`; under
+a normal 022 the dumps would otherwise be world-readable. Keep that property when you copy
+them off-host — `scp` to a world-readable directory undoes all of it.
 
 **The database alone is not a complete backup.** Documents live in object storage and the
 database holds only keys; a database-only restore gives you cases whose documents 404.
+
+### These two files are not an atomic snapshot
+
+Be clear-eyed about what a live backup is worth. The dump and the archive are taken
+sequentially from a running stack, so they are two snapshots at two different instants:
+
+- `pg_dump` is internally consistent — it runs in one repeatable-read transaction, so the dump
+  reflects a single database instant.
+- The uploads archive is **not**. `tar` walks a live directory with no snapshot, so a file being
+  written while it walks may be captured whole, partially, or not at all.
+- The two are seconds apart. A document uploaded between them appears in the archive but not in
+  the dump (an orphan file); a case row committed between them may reference a document whose
+  bytes were archived, or — if the upload landed just after the `tar` — were not.
+
+So a restore from a live backup does not reproduce any single instant of the system. Expect a
+small number of dangling references around the backup window rather than silent corruption:
+the database is self-consistent, and the mismatch is confined to document bytes near the
+boundary. The audit hash chain is unaffected, because `audit_events` is append-only and the
+dump is transactionally consistent.
+
+**If the restore must be exact, quiesce writers first.** This is the only procedure here that
+produces a coherent pair:
+
+```bash
+$C stop api web                             # no new cases, no new uploads; postgres stays up
+DEPLOY_PATH=/opt/vip-customs-ai ENV_FILE=infra/production/.env bash scripts/production/backup.sh
+$C start api web
+```
+
+That costs a short write outage and is worth scheduling for a pre-deploy or pre-migration
+baseline, where a half-matched pair is exactly what you cannot afford. The nightly timer
+deliberately does **not** stop the stack: an unattended nightly outage is the wrong trade for a
+routine copy. If you need coherent backups with no outage, that is a volume- or
+filesystem-level snapshot (LVM, ZFS, or the hosting provider's disk snapshot) taken at one
+instant across both the database and the uploads volume — not something this script can do, and
+an infrastructure decision rather than an application one.
+
+After **any** restore, reconcile the two halves before trusting the result:
+
+```bash
+# documents whose stored bytes are missing from the restored uploads volume
+$C exec -T api python -c "
+from app.db import get_sessionmaker
+from app.models.document import Document
+from app.storage.base import get_storage
+db, st = get_sessionmaker()(), get_storage()
+missing = [str(d.id) for d in db.query(Document).all() if not st.exists(d.storage_key)]
+print(f'documents with missing bytes: {len(missing)}'); print(*missing[:20], sep=chr(10))
+"
+```
+
+A non-zero count localises the damage to specific documents, which an operator can re-request
+from the customer. Record the count and the affected ids in `docs/DECISIONS.md`.
 
 Automate it with the example units (installing them needs root — an owner decision):
 

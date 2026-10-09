@@ -19,6 +19,10 @@ WorkingDirectory=/opt/vip-customs-ai
 Environment=DEPLOY_PATH=/opt/vip-customs-ai
 Environment=ENV_FILE=infra/production/.env
 Environment=COMPOSE_PROJECT_NAME=vip-customs-ai-production
+# Belt and braces: the script sets `umask 077` itself and chmods every artifact, but a dump
+# holds every customer document and audit record in plaintext, so the unit does not rely on
+# the script alone. systemd's default is 0022, which would create world-readable files.
+UMask=0077
 ExecStart=/usr/bin/env bash scripts/production/backup.sh
 # A backup that hangs must not block the next one forever.
 TimeoutStartSec=3600

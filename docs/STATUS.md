@@ -6,8 +6,9 @@ See `PROJECT_STATUS.md` (gate log), `docs/G16_PRODUCTION_REVIEW.md` (**current g
 `docs/G15_DEPLOY_RECORD.md` (deployed SHA + rollback), `docs/STAGING_ROLLBACK.md`.
 
 - Current gate: **G16 — production review / release-candidate freeze: PASS_LIMITED_MODE.**
-  `READY_TO_MERGE_MAIN = YES` · `READY_TO_DEPLOY_PRODUCTION = NO` (owner decision + the
-  prerequisites in `docs/PRODUCTION_READINESS.md` §2.2). **Nothing deployed by this gate.**
+  `READY_TO_MERGE_MAIN = NO` · `READY_TO_DEPLOY_PRODUCTION = NO`. Merging to `main` waits on the
+  G16 additions being reviewed into `develop` (draft PR #1) and `develop` being verified and
+  frozen; the owner's limited-mode review is also open. **Nothing deployed by this gate.**
   `PASS_FULL_MODE` is blocked on B-01 and B-02 — the system's tariff/FTA/policy data is demo
   fixture data, so it must not be used to prepare a real customs filing.
 - Gates passed: G00 … G14 (local + Docker scope) · G15C (real staging) · **G16 (production review)**
@@ -21,14 +22,17 @@ See `PROJECT_STATUS.md` (gate log), `docs/G16_PRODUCTION_REVIEW.md` (**current g
 - G16 re-ran A–P **17/17**, negative/security **18/18** and Playwright **2/2** fresh against a
   local stack on an isolated database; live staging was checked read-only only
 - Branches: `main` = baseline `2afdf6b` (**unchanged, never pushed**) · `develop` = `c7fdafd` ·
-  release candidate `release/g16-rc1`
+  release candidate `release/g16-rc1` (draft PR #1 → `develop`, not merged)
 - G16 re-verified the staging-accepted code in a clean checkout: the only drift between
   `9649ec7` (accepted) and `c7fdafd` is documentation — every code subtree hash is identical,
   so staging runs exactly the reviewed code and was not redeployed
-- Tests: **72 pytest** (PostgreSQL) · **51 infra pytest** (no DB/Docker; 21 → 51 in G16) ·
+- Tests: **72 pytest** (PostgreSQL) · **64 infra pytest** (no DB/Docker; 21 → 64 in G16, 13 of them executing `backup.sh` against a mocked `docker`) ·
   3 vitest · 2 Playwright E2E · HTTP acceptance 17/17 · negative/security 18/18 ·
   `VERIFY: ALL CHECKS PASSED`
-- CI: `CI_EXTERNAL_UNVERIFIED` · LOCAL_VERIFICATION = PASS (`artifacts/test-results/`)
+- CI: **observed green** — GitHub Actions run `37900514439` on `release/g16-rc1` @ `6768a17`,
+  jobs `api`/`web`/`secrets` all success (this supersedes the old `CI_EXTERNAL_UNVERIFIED`;
+  D-004 no longer holds). Caveat: `ci.yml`'s `api` job runs only `apps/api/tests`, so the root
+  `tests/` infra suite is not covered by CI · LOCAL_VERIFICATION = PASS (`artifacts/test-results/`)
 - Local web unit tests need **Node 22** (CI's version); Node 26 breaks jsdom 25
   (`localStorage … undefined`) — toolchain mismatch, not a product defect
 

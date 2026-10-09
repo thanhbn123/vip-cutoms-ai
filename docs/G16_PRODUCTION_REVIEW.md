@@ -1,9 +1,24 @@
 # G16 — PRODUCTION REVIEW / RELEASE CANDIDATE FREEZE
 
 Date: 2026-10-09 · Reviewer: local Claude Code implementation controller
-Verdict: **PASS_LIMITED_MODE** · `READY_TO_MERGE_MAIN = YES` · `READY_TO_DEPLOY_PRODUCTION = NO`
+Verdict: **PASS_LIMITED_MODE** (application) · `READY_TO_MERGE_MAIN = NO` ·
+`READY_TO_DEPLOY_PRODUCTION = NO`
 
 Nothing was deployed by this gate. `main` was not merged or pushed. No production host exists.
+
+**`READY_TO_MERGE_MAIN` is NO, deliberately.** Three things must be true first, and none is yet:
+
+1. The G16 additions are **not in `develop`**. They live on `release/g16-rc1`, under review in
+   draft PR #1 → `develop` (project convention D-003: feature → `develop` → `main`). `main`
+   cannot be a sensible merge target before `develop` holds the reviewed content.
+2. The owner's limited-mode review is **open**. This gate produced the evidence for that
+   decision; it is not a substitute for it.
+3. CI had not been observed when the first draft of this report was written. It has now been
+   checked and is green (§2.4) — but a green pipeline on a feature branch is not the same as a
+   verified, frozen `develop`.
+
+GitHub reporting a PR as `MERGEABLE` means only that the merge has no textual conflict. It is
+not a readiness signal and was wrong to cite as one.
 
 ## 1. SHAs
 
@@ -47,6 +62,23 @@ source.
 All of the following was executed during this gate. Where a number matches the G15C report,
 it was re-measured, not copied.
 
+### Which SHA each check actually covered
+
+Stated precisely, because the gate produced three commits and the checks do not all cover the
+same one:
+
+| Check | SHA covered |
+|---|---|
+| Full suite + A–P + negative + fail-closed probes (clean checkout) | `c7fdafd` (baseline — the code under review) |
+| `scripts/verify.sh` locally in the clean checkout | **`08ff835`** |
+| GitHub Actions `ci` run 37900514439, 3/3 jobs green | **`6768a17`** (final SHA) |
+
+`6768a17` and `08ff835` differ only by `artifacts/test-results/g16-production-review.txt`, an
+evidence file — no code, config, script, test or doc logic. A later correction commit (§2.5)
+adds the backup hardening and its tests on top. An earlier draft of this report said
+"`VERIFY: ALL CHECKS PASSED` at the final SHA"; that was inaccurate — `verify.sh` ran at
+`08ff835`, and the final SHA's independent coverage is the CI run, not the local verify.
+
 ### Regression, clean checkout at `c7fdafd`
 
 Isolated clone under a work directory, its own virtualenv (Python 3.13.16), its own
@@ -59,7 +91,7 @@ PostgreSQL 16.15 database `vip_customs_g16`. The live staging database was never
 | `alembic heads` | `0010_copilot_meta` — exactly one head |
 | Schema from zero | `0001` → `0010` applied cleanly |
 | `pytest` (apps/api) | **72 passed** |
-| `pytest tests` (infra) | **21 passed** (45 after this gate's additions — see §4) |
+| `pytest tests` (infra) | **21 passed** at baseline (**64** after this gate's additions — see §4) |
 | `tsc -b` | clean |
 | `vitest run` | **3 passed** (2 files) |
 | `vite build` | success |
@@ -94,6 +126,30 @@ bought nothing.
 Read-only throughout: `git` was invoked with per-command `-c safe.directory=...` (no persisted
 exception), and no service on the shared host was started, stopped or reconfigured.
 
+### 2.4 CI — observed, not assumed
+
+The project status had carried `CI_EXTERNAL_UNVERIFIED` since G12 (D-004: "cannot be observed
+from this session"). That is **no longer true** and should not have been repeated without
+checking. `gh` is authenticated here and GitHub Actions is readable:
+
+| | |
+|---|---|
+| Run | `37900514439`, workflow `ci`, event `pull_request`, branch `release/g16-rc1` |
+| Head SHA | `6768a17e6dda273d3332d7c87c007b44003d40ab` (the final SHA) |
+| Conclusion | **success** · status completed · 1m08s · 2026-10-09T07:41:58Z |
+| Jobs | `api` **success** · `web` **success** · `secrets` **success** (3/3) |
+
+The `api` job runs ruff, pytest and the single-head assertion on Python 3.12 against a real
+PostgreSQL 16 service; `web` runs `tsc -b`, vitest and `vite build` on Node 22; `secrets` runs
+`scripts/secret_scan.sh`. Every prior run on `develop` is also green.
+
+**Gap worth the owner's attention:** `ci.yml`'s `api` job runs `pytest` with
+`working-directory: apps/api`, so it executes `apps/api/tests` **only**. The root `tests/`
+suite — `test_staging_infra.py` and `test_production_infra.py`, 64 tests including every backup
+permission test added in §2.5 — is **not run by CI**. `scripts/verify.sh` does run it locally.
+Adding one step to `ci.yml` would close this, but changing the CI workflow was outside the
+scope of these corrections, so it is reported rather than done.
+
 ### Fail-closed probes
 
 | Probe | Result |
@@ -106,6 +162,59 @@ exception), and no service on the shared host was started, stopped or reconfigur
 
 No silent fallback to the mock provider in any case. A half-configured provider cannot serve
 traffic, because readiness fails.
+
+### 2.5 Backup hardening (supervisor correction)
+
+Review of the first version of `scripts/production/backup.sh` found a real defect: it created
+the dump and the uploads archive under the **caller's ambient umask**. Under a normal `022` —
+what cron, a shell or a default systemd unit hands a script — both artifacts and the manifest
+would have been written **0644, world-readable**, on a host shared with eleven unrelated
+services. A dump contains every customer document and every audit record in plaintext, so that
+is a confidentiality failure, not a style issue.
+
+Fixed:
+
+- `umask 077` set before anything is created, and each artifact explicitly `chmod 600`. The two
+  are not redundant: the chmods are the guarantee, the umask closes the window between a file
+  being created and being chmod-ed.
+- `BACKUP_DIR` secured to `0700` and **validated before use** — refuses a symlink (which would
+  redirect every dump to a path someone else chose, and apply `chmod 700` to its target),
+  refuses a non-directory, and refuses a directory not owned by the invoking uid.
+- A self-check after writing: if any artifact is not `600`, the run dies rather than leaving a
+  readable dump behind.
+- `UMask=0077` on the systemd service, so the unit does not depend on the script alone.
+- `MANIFEST.txt` re-chmod-ed every run, because appending to an existing file keeps its old mode.
+- Retention narrowed to this script's own artifact patterns and `MANIFEST.txt` exempted — it is
+  the only record of what was taken and already deleted.
+- Portability fix found by the tests: `sha256sum` does not exist on macOS, so checksumming now
+  falls back to `shasum -a 256`.
+
+**13 tests** were added (`tests/test_production_infra.py`), which run the real script
+with a **mocked `docker`** under a deliberately hostile `umask 022`, entirely inside
+`tmp_path`. No real stack, database, volume or live data is touched, and retention only ever
+prunes files the test itself created. They assert artifacts are `600` and the directory `700`
+(including tightening a pre-existing world-readable directory and manifest), that recorded
+checksums match the bytes written, and the failure paths: symlinked `BACKUP_DIR`, non-directory
+`BACKUP_DIR`, non-integer retention, empty dump, empty archive, stack not running — each must
+exit non-zero and leave no manifest entry, because a backup job that fails quietly is worse
+than none.
+
+Mutation-checked rather than assumed: removing the permission hardening fails 9 tests; removing
+only the symlink guard fails exactly the symlink test. Honest limit, also recorded in the test
+file: removing `umask 077` **alone** keeps the suite green, because the chmods still correct the
+final mode. The umask's value is the creation-to-chmod race, which a test cannot observe from
+outside the process.
+
+**Consistency documented, not papered over.** The dump and archive are taken sequentially from
+a live stack, so they are not an atomic snapshot: `pg_dump` is internally consistent, `tar` over
+a live directory is not, and the two are seconds apart. `docs/PRODUCTION_RUNBOOK.md` §4 now
+states this plainly, explains the realistic failure mode (a few dangling document references
+near the backup window, not silent corruption), gives the quiesced procedure that does produce
+a coherent pair (`stop api web` → backup → `start`), says why the nightly timer deliberately
+does not do that, points at filesystem/volume snapshots for coherence without an outage, and
+supplies a post-restore reconciliation command. That command was executed against a seeded
+database to confirm it works: `missing=0` with all bytes present, and `missing=1` naming the
+exact document id after one stored object was removed.
 
 ## 3. Security / auth / RBAC / tenant isolation / uploads / secrets review
 
@@ -204,12 +313,12 @@ ports. It was also confirmed that the overlay **alone** is rejected
 (`service "postgres" has neither an image nor a build context specified`), which is why the
 runbook always passes both files. No compose project was created and no container was started.
 
-**30 new contract tests** (`tests/test_production_infra.py`) lock these invariants down: no
+**43 new tests** (`tests/test_production_infra.py`) lock these invariants down: no
 filled secret in the template, only implemented provider names, no key implying a
 customs integration, no `IMAGE_TAG=latest`, overlay service names matching the staging compose,
 `migrate` never given a restart policy, log bounds on every long-running service, every
 artifact actually tracked by git, and the backup script failing loudly without config.
-Root infra suite: **21 → 51 tests**.
+Root infra suite: **21 → 64 tests**: 43 in `test_production_infra.py` (30 contract assertions plus the 13 added with the backup hardening in §2.5), of which **13 actually execute `backup.sh`** against a mocked `docker`.
 
 One of those tests immediately earned its place. The first final-verify run in the clean
 checkout failed 7 tests because `infra/production/.env.production.example` **was not in the
@@ -254,7 +363,17 @@ not observable from this session; full local verification is the evidence).
 
 ## 8. Next step
 
-Owner reviews this report and `docs/PRODUCTION_READINESS.md`, then merges the release-candidate
-PR `release/g16-rc1` → `develop` → `main`. Merging freezes the release candidate; it deploys
-nothing. Production deployment and any customs-system integration remain separate, explicitly
-gated decisions.
+**Review draft PR #1, `release/g16-rc1` → `develop`.** No merge is authorised in this gate.
+
+Then, in order:
+
+1. Owner reviews this report and `docs/PRODUCTION_READINESS.md` and decides the limited-mode
+   question.
+2. Merge PR #1 into `develop` once reviewed, so `develop` holds the G16 additions.
+3. Verify and freeze `develop` at that merge commit — re-run `scripts/verify.sh` and confirm
+   the CI run on `develop` is green at the frozen SHA.
+4. Only then prepare `develop` → `main`. `READY_TO_MERGE_MAIN` stays **NO** until steps 1–3 are
+   done.
+
+Production deployment and any customs-system integration remain separate, explicitly gated
+decisions (product rule #7).

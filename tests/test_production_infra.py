@@ -210,3 +210,219 @@ def test_systemd_units_point_at_files_that_exist_and_reference_each_other():
     assert f"Unit={UNIT.name}" in timer, "timer must reference the service unit"
     assert "Persistent=true" in timer, "a missed nightly backup must still run"
     assert "Type=oneshot" in unit
+
+
+# ──────────────────────────────────────────────────────────────────────────────────────────────
+# Execution tests for scripts/production/backup.sh.
+#
+# A dump holds every customer document and audit record in plaintext, so the permissions it
+# creates are a security property and are asserted by actually running the script — reading the
+# source for the string "umask 077" would not prove the artifacts end up 0600.
+#
+# `docker` is mocked, so nothing touches a real stack, a real database or real data. Every run
+# happens inside pytest's tmp_path, and the deliberately hostile umask 022 (which would
+# otherwise yield world-readable 0644 dumps) is set for the subprocess.
+#
+# Scope limit, stated so the coverage is not overread: these tests pin the END STATE — mode 600
+# artifacts and a mode 700 directory. They do not isolate `umask 077` from the explicit chmods;
+# removing the umask line alone keeps them green, because the chmods still correct the mode.
+# The umask is nonetheless not redundant: it closes the window between a file being created and
+# being chmod-ed, during which it would otherwise exist as 0644. A test cannot observe that race
+# from outside the process, so it is defence-in-depth that rests on review, not on these tests.
+# ──────────────────────────────────────────────────────────────────────────────────────────────
+
+FAKE_DUMP = b"PGDMP-fake-not-a-real-dump\n"
+FAKE_TGZ = b"\x1f\x8b-fake-not-a-real-archive\n"
+
+# Mock `docker`, dispatching on the full argument string the script builds.
+#   <compose...> ps -q postgres      -> a container id, so the "is it running" probe passes
+#   <compose...> exec -T postgres …  -> dump bytes on stdout
+#   <compose...> exec -T api …       -> archive bytes on stdout
+FAKE_DOCKER = r"""#!/bin/sh
+case "$*" in
+  *"ps -q postgres"*)   echo fakecontainerid ;;
+  *"exec -T postgres"*) printf '%s' '__DUMP__' ;;
+  *"exec -T api"*)      printf '%s' '__TGZ__' ;;
+  *) echo "fake docker: unexpected invocation: $*" >&2; exit 2 ;;
+esac
+"""
+
+
+def _backup_sandbox(tmp_path, *, dump="PGDMP-fake-not-a-real-dump", tgz="GZIP-fake-not-a-real-archive",
+                    retention="14", backup_dir=None):
+    """Build an isolated DEPLOY_PATH + env file + mocked `docker` on PATH."""
+    deploy = tmp_path / "deploy"
+    (deploy / "infra" / "production").mkdir(parents=True)
+    backups = backup_dir if backup_dir is not None else tmp_path / "backups"
+    (deploy / "infra" / "production" / ".env").write_text(
+        f"BACKUP_DIR={backups}\nBACKUP_RETENTION_DAYS={retention}\n"
+        "POSTGRES_USER=unused\nPOSTGRES_DB=unused\n"
+    )
+    bindir = tmp_path / "bin"
+    bindir.mkdir()
+    docker = bindir / "docker"
+    docker.write_text(FAKE_DOCKER.replace("__DUMP__", dump).replace("__TGZ__", tgz))
+    docker.chmod(0o755)
+    return deploy, pathlib.Path(str(backups)), bindir
+
+
+def _run_backup(deploy, bindir, umask="022"):
+    """Run the real script with the mocked docker, under a deliberately permissive umask."""
+    # `umask 022` in the wrapper is the point of the test: it is what a cron job or an
+    # interactive shell would hand the script, and it must not leak into the artifacts.
+    return subprocess.run(
+        ["/bin/sh", "-c", f'umask {umask}; exec bash "{BACKUP}"'],
+        cwd=str(deploy),
+        env={
+            "DEPLOY_PATH": str(deploy),
+            "ENV_FILE": "infra/production/.env",
+            "PATH": f"{bindir}:/usr/bin:/bin:/usr/sbin:/sbin",
+            "HOME": str(deploy),
+        },
+        capture_output=True, text=True,
+    )
+
+
+def _mode(path: pathlib.Path) -> str:
+    return oct(path.stat().st_mode & 0o777)[2:]
+
+
+def test_backup_run_creates_private_artifacts_despite_a_permissive_umask(tmp_path):
+    """The whole point: under umask 022 these would default to 0644 (world-readable)."""
+    deploy, backups, bindir = _backup_sandbox(tmp_path)
+    proc = _run_backup(deploy, bindir, umask="022")
+    assert proc.returncode == 0, f"backup failed:\n{proc.stdout}\n{proc.stderr}"
+
+    dumps = list(backups.glob("db-*.dump"))
+    archives = list(backups.glob("uploads-*.tgz"))
+    assert len(dumps) == 1 and len(archives) == 1, f"unexpected artifacts: {list(backups.iterdir())}"
+
+    for artifact in [dumps[0], archives[0], backups / f"{dumps[0].name}.sha256",
+                     backups / f"{archives[0].name}.sha256", backups / "MANIFEST.txt"]:
+        assert artifact.is_file(), f"{artifact.name} was not created"
+        assert _mode(artifact) == "600", f"{artifact.name} is mode {_mode(artifact)}, expected 600"
+
+
+def test_backup_run_secures_the_backup_directory_to_700(tmp_path):
+    deploy, backups, bindir = _backup_sandbox(tmp_path)
+    assert _run_backup(deploy, bindir, umask="022").returncode == 0
+    assert _mode(backups) == "700", f"BACKUP_DIR is mode {_mode(backups)}, expected 700"
+
+
+def test_backup_run_tightens_a_preexisting_world_readable_directory_and_manifest(tmp_path):
+    """Appending to an existing MANIFEST.txt keeps its old mode, so it is chmod-ed every run."""
+    deploy, backups, bindir = _backup_sandbox(tmp_path)
+    backups.mkdir(parents=True)
+    backups.chmod(0o755)
+    manifest = backups / "MANIFEST.txt"
+    manifest.write_text("2026-01-01 earlier-run\n")
+    manifest.chmod(0o644)
+
+    assert _run_backup(deploy, bindir, umask="022").returncode == 0
+    assert _mode(backups) == "700", "a pre-existing loose directory must be tightened"
+    assert _mode(manifest) == "600", "a pre-existing loose manifest must be tightened"
+    assert "earlier-run" in manifest.read_text(), "the manifest must be appended to, not replaced"
+    assert len(manifest.read_text().strip().splitlines()) == 2
+
+
+def test_backup_run_records_both_artifacts_and_the_non_atomic_nature_in_the_manifest(tmp_path):
+    deploy, backups, bindir = _backup_sandbox(tmp_path)
+    assert _run_backup(deploy, bindir).returncode == 0
+    line = (backups / "MANIFEST.txt").read_text().strip()
+    assert "db=" in line and "uploads=" in line
+    assert "not_atomic=sequential" in line, "the manifest must not imply a coherent snapshot"
+
+
+def test_backup_run_checksums_match_the_bytes_written(tmp_path):
+    """A checksum that does not match its artifact makes the whole exercise pointless."""
+    deploy, backups, bindir = _backup_sandbox(tmp_path)
+    assert _run_backup(deploy, bindir).returncode == 0
+    for artifact in list(backups.glob("db-*.dump")) + list(backups.glob("uploads-*.tgz")):
+        recorded = (backups / f"{artifact.name}.sha256").read_text().split()[0]
+        import hashlib
+        assert recorded == hashlib.sha256(artifact.read_bytes()).hexdigest()
+
+
+def test_backup_refuses_when_the_backup_dir_is_a_symlink(tmp_path):
+    """Otherwise every dump is redirected to a path someone else chose, and chmod 700 follows it."""
+    elsewhere = tmp_path / "attacker-controlled"
+    elsewhere.mkdir()
+    link = tmp_path / "backups-link"
+    link.symlink_to(elsewhere, target_is_directory=True)
+    deploy, _, bindir = _backup_sandbox(tmp_path, backup_dir=link)
+
+    proc = _run_backup(deploy, bindir)
+    assert proc.returncode != 0, "a symlinked BACKUP_DIR must be refused"
+    assert "symlink" in proc.stderr.lower()
+    assert not list(elsewhere.iterdir()), "nothing may be written through the symlink"
+
+
+def test_backup_refuses_when_the_backup_dir_path_is_a_regular_file(tmp_path):
+    occupied = tmp_path / "backups-is-a-file"
+    occupied.write_text("not a directory")
+    deploy, _, bindir = _backup_sandbox(tmp_path, backup_dir=occupied)
+
+    proc = _run_backup(deploy, bindir)
+    assert proc.returncode != 0
+    assert "not a directory" in proc.stderr.lower()
+
+
+def test_backup_refuses_a_non_integer_retention(tmp_path):
+    """`find -mtime +<garbage>` would otherwise fail obscurely, mid-run, after writing dumps."""
+    deploy, _, bindir = _backup_sandbox(tmp_path, retention="not-a-number")
+    proc = _run_backup(deploy, bindir)
+    assert proc.returncode != 0
+    assert "integer" in proc.stderr.lower()
+
+
+def test_backup_fails_loudly_on_an_empty_dump_instead_of_reporting_success(tmp_path):
+    """An empty dump that exits 0 is the worst outcome: a backup job that is silently useless."""
+    deploy, backups, bindir = _backup_sandbox(tmp_path, dump="")
+    proc = _run_backup(deploy, bindir)
+    assert proc.returncode != 0
+    assert "empty" in proc.stderr.lower()
+    assert not (backups / "MANIFEST.txt").exists(), "a failed run must not be recorded as taken"
+
+
+def test_backup_fails_loudly_on_an_empty_uploads_archive(tmp_path):
+    deploy, backups, bindir = _backup_sandbox(tmp_path, tgz="")
+    proc = _run_backup(deploy, bindir)
+    assert proc.returncode != 0
+    assert "empty" in proc.stderr.lower()
+    assert not (backups / "MANIFEST.txt").exists()
+
+
+def test_backup_retention_prunes_only_its_own_stale_artifacts(tmp_path):
+    """Must not delete the manifest, a fresh backup, or anything it did not create."""
+    deploy, backups, bindir = _backup_sandbox(tmp_path, retention="1")
+    backups.mkdir(parents=True)
+    stale = backups / "db-2000-01-01-000000.dump"
+    fresh = backups / "db-2099-01-01-000000.dump"
+    unrelated = backups / "please-keep-me.txt"
+    for f in (stale, fresh, unrelated):
+        f.write_bytes(b"x")
+    # Only `stale` is backdated past the 1-day retention window.
+    subprocess.run(["touch", "-t", "200001010000", str(stale)], check=True)
+
+    assert _run_backup(deploy, bindir).returncode == 0
+    assert not stale.exists(), "a stale artifact should have been pruned"
+    assert fresh.exists(), "a recent artifact must be kept"
+    assert unrelated.exists(), "retention must not touch files this script did not create"
+    assert (backups / "MANIFEST.txt").exists(), "the manifest must never be pruned"
+
+
+def test_backup_never_runs_against_a_stack_that_is_not_up(tmp_path):
+    """With no postgres container the script must stop before creating anything."""
+    deploy, backups, bindir = _backup_sandbox(tmp_path)
+    (bindir / "docker").write_text("#!/bin/sh\nexit 0\n")  # `ps -q postgres` yields nothing
+    (bindir / "docker").chmod(0o755)
+
+    proc = _run_backup(deploy, bindir)
+    assert proc.returncode != 0
+    assert "nothing to back up" in proc.stderr.lower()
+    assert not list(backups.glob("db-*")), "no artifact may be created when the stack is down"
+
+
+def test_systemd_unit_sets_a_restrictive_umask():
+    """systemd's default UMask is 0022; the unit must not depend on the script alone."""
+    assert re.search(r"^UMask=0?077$", UNIT.read_text(), re.M), "service must set UMask=0077"
