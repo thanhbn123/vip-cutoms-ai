@@ -29,10 +29,13 @@ class Settings(BaseSettings):
     # (tokens are invalidated on restart) so that no default secret ever exists in the repo.
     app_secret_key: str | None = Field(default=None)
     token_ttl_seconds: int = Field(default=8 * 3600)
-    # Login throttling (G18D): failed attempts per client IP and per e-mail inside the window → 429 for the lockout.
-    login_max_attempts: int = Field(default=10)
+    # Login throttling (G18D/G18E): failed attempts inside the window → 429 for the lockout, per dimension.
+    login_max_attempts: int = Field(default=10)  # per (client IP, e-mail) pair — the ordinary brute-force brake
+    login_email_max_attempts: int = Field(default=50)  # per e-mail across all addresses (distributed brute force); 0 disables
+    login_ip_max_attempts: int = Field(default=100)  # per client IP across all accounts; 0 disables (shared NAT / upstream proxy)
     login_window_seconds: int = Field(default=300)
     login_lockout_seconds: int = Field(default=300)
+    login_max_tracked_keys: int = Field(default=20_000)  # memory bound per dimension
 
     # --- AI providers -------------------------------------------------------------------------
     # AI_PROVIDER is the default for every capability; the four specific variables override it.

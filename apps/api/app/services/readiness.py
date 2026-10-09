@@ -184,9 +184,15 @@ def metrics_lines(db: Session | None) -> list[str]:
 
     s = get_settings()
     lines = ["# TYPE vip_app_mode_info gauge", f'vip_app_mode_info{{mode="{s.app_mode}"}} 1']
-    from app.core.ratelimit import login_limiter
+    from app.core.ratelimit import login_limiters
 
-    lines += ["# TYPE vip_login_throttled_total counter", f"vip_login_throttled_total {login_limiter().throttled_total}"]
+    lims = login_limiters()
+    lines += ["# TYPE vip_login_throttled_total counter", f"vip_login_throttled_total {lims.throttled_total}",
+              "# TYPE vip_login_locks_total counter", f"vip_login_locks_total {lims.locks_total}",
+              "# TYPE vip_login_tracked_keys gauge",
+              f'vip_login_tracked_keys{{dimension="pair"}} {lims.pair.tracked_keys()}',
+              f'vip_login_tracked_keys{{dimension="email"}} {lims.email.tracked_keys()}',
+              f'vip_login_tracked_keys{{dimension="ip"}} {lims.ip.tracked_keys()}']
     led = ACCOUNTANT.snapshot()
     lines += ["# TYPE vip_ai_calls_total counter", f"vip_ai_calls_total {led.calls}", "# TYPE vip_ai_failures_total counter",
               f"vip_ai_failures_total {led.failures}", "# TYPE vip_ai_cost_usd_today gauge", f"vip_ai_cost_usd_today {led.cost_usd}",
