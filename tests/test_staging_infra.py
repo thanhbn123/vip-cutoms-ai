@@ -157,3 +157,14 @@ def test_env_template_ships_no_secret_values():
 
 def test_env_template_defaults_to_mock_ai_provider():
     assert re.search(r"^AI_PROVIDER=mock$", ENV_EXAMPLE.read_text(), re.M)
+
+
+# G16 clean-checkout finding: scripts/e2e.sh redirected server logs into local-data/ without creating it. local-data/ is
+# gitignored, so in a fresh clone the redirection failed under `set -e` and Playwright never ran — the directory happened
+# to exist in every developer checkout, which hid the defect until the from-zero RC verification.
+def test_e2e_script_creates_its_log_directory_before_use():
+    text = (REPO / "scripts" / "e2e.sh").read_text(encoding="utf-8")
+    mk = text.find('mkdir -p "$ROOT/local-data"')
+    first_use = text.find('"$ROOT/local-data/e2e-api.log"')
+    assert mk != -1, "e2e.sh must create $ROOT/local-data (it is gitignored and absent in a clean clone)"
+    assert first_use != -1 and mk < first_use, "local-data must be created before the first log redirection"
