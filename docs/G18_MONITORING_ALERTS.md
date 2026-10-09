@@ -12,8 +12,8 @@ the monitoring host are OWNER INPUTS.** No paid service required.
 | `GET /metrics` | Prometheus text: `vip_http_requests_total{method,status_class}`, `vip_http_5xx_total`, `vip_app_mode_info{mode}`, `vip_ai_calls_total`, `vip_ai_failures_total`, `vip_ai_cost_usd_today`, `vip_ai_tokens_today{direction}`, `vip_ai_provider_configured{capability,provider}`, `vip_customs_dataset_age_days{kind,authoritative}`, `vip_backup_age_hours` |
 
 No label carries tenant, user, case or document identifiers; no secret appears. `/metrics` is unauthenticated
-like `/health`; restrict it at the proxy to the monitoring host's IP in production (Caddyfile `remote_ip`
-matcher — follow-up when B-06 is decided).
+like `/health`; the proxy serves it only to `METRICS_ALLOW_FROM` (default closed). Set it to the monitoring host's CIDR in
+`infra/production/.env`; never to an upstream proxy's address when `TLS_MODE=off`.
 
 ## 2. Requirements → signal → threshold (PROPOSED)
 

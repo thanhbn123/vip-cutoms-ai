@@ -15,6 +15,10 @@ def create_app() -> FastAPI:
         title="VIP Customs AI API",
         version="0.1.0",
         description="Fail-closed customs declaration drafting. Produces internal DRAFTS only — never submits to customs.",
+        # Interactive docs only in development: the schema enumerates every role-gated endpoint (G18C).
+        docs_url="/docs" if settings.is_development else None,
+        redoc_url=None,
+        openapi_url="/openapi.json" if settings.is_development else None,
     )
     app.add_middleware(
         CORSMiddleware,

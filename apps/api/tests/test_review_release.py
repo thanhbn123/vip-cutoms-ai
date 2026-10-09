@@ -48,8 +48,12 @@ def drive_to_reviewed(client, world, cid):
     r = api(client, world, "post", f"/cases/{cid}/fields/approve-all", role="REVIEWER", json={"reason": "header fields verified"})
     assert r.status_code == 200, r.text
     for i in open_issues(client, world, cid):
-        role = "SENIOR_REVIEWER" if i["severity"] == "CRITICAL" else "REVIEWER"
-        r = api(client, world, "post", f"/cases/{cid}/issues/{i['id']}/resolve", role=role, json={"reason": "reviewed and confirmed by reviewer"})
+        if i["severity"] == "CRITICAL":
+            # G18C: system-detected critical conditions cannot be "resolved" by hand — a Senior waives them with evidence (D-009)
+            r = api(client, world, "post", f"/cases/{cid}/issues/{i['id']}/waive", role="SENIOR_REVIEWER",
+                    json={"reason": "reviewed and confirmed by senior reviewer", "evidence": ["review-memo"]})
+        else:
+            r = api(client, world, "post", f"/cases/{cid}/issues/{i['id']}/resolve", role="REVIEWER", json={"reason": "reviewed and confirmed by reviewer"})
         assert r.status_code == 200, r.text
     return its
 

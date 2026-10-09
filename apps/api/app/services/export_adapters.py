@@ -24,6 +24,15 @@ class InternalJsonAdapter:
         return json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True).encode("utf-8")
 
 
+_FORMULA_PREFIXES = ("=", "+", "-", "@", "\t", "\r")
+
+
+def csv_safe(value) -> str:
+    """Neutralise spreadsheet formula injection: a leading =,+,-,@ (or tab/CR) gets a quote prefix (G18C)."""
+    s = "" if value is None else str(value)
+    return "'" + s if s.startswith(_FORMULA_PREFIXES) else s
+
+
 class InternalCsvAdapter:
     """Line-item CSV (UTF-8 BOM for spreadsheet tools). Header row carries the watermark."""
 
@@ -40,11 +49,12 @@ class InternalCsvAdapter:
                     "origin_criterion", "fta_decision", "duty_pct", "import_duty", "vat", "policy_status"])
         for it in payload["items"]:
             tax = it.get("tax") or {}
-            w.writerow([it["line_no"], it["description"], it.get("description_vn") or "", it.get("model") or "", it.get("quantity") or "",
-                        it.get("unit") or "", it.get("unit_price") or "", it.get("amount") or "", it["hs"]["code"] or "", it["hs"]["status"],
-                        it["origin"].get("criterion") or "", (it["origin"].get("reviewer_decision") or {}).get("decision") or "",
-                        (tax.get("inputs") or {}).get("duty_pct") or "", (tax.get("result") or {}).get("import_duty") or "",
-                        (tax.get("result") or {}).get("vat") or "", (it.get("policy") or {}).get("status") or ""])
+            w.writerow([csv_safe(v) for v in (
+                it["line_no"], it["description"], it.get("description_vn") or "", it.get("model") or "", it.get("quantity") or "",
+                it.get("unit") or "", it.get("unit_price") or "", it.get("amount") or "", it["hs"]["code"] or "", it["hs"]["status"],
+                it["origin"].get("criterion") or "", (it["origin"].get("reviewer_decision") or {}).get("decision") or "",
+                (tax.get("inputs") or {}).get("duty_pct") or "", (tax.get("result") or {}).get("import_duty") or "",
+                (tax.get("result") or {}).get("vat") or "", (it.get("policy") or {}).get("status") or "")])
         return ("﻿" + buf.getvalue()).encode("utf-8")
 
 

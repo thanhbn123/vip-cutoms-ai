@@ -18,9 +18,10 @@ def current_user(authorization: str | None = Header(default=None), db: Session =
         raise HTTPException(status_code=401, detail={"code": "UNAUTHENTICATED", "message": "Bearer token required"})
     try:
         payload = decode_token(authorization.split(" ", 1)[1])
-    except (InvalidToken, ValueError) as exc:
+        subject = uuid.UUID(payload["sub"])  # a signed token with a non-UUID subject is still just an invalid token (401, not 500)
+    except (InvalidToken, ValueError, KeyError) as exc:
         raise HTTPException(status_code=401, detail={"code": "UNAUTHENTICATED", "message": str(exc)}) from exc
-    user = db.get(User, uuid.UUID(payload["sub"]))
+    user = db.get(User, subject)
     if not user or not user.is_active or str(user.tenant_id) != payload["tid"]:
         raise HTTPException(status_code=401, detail={"code": "UNAUTHENTICATED", "message": "inactive or unknown user"})
     return user

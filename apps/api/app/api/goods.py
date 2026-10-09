@@ -15,7 +15,7 @@ from app.models.base import utcnow
 from app.models.goods import ClassificationDecision, GoodsItem, HsCandidate
 from app.models.identity import User
 from app.services import audit, evaluators
-from app.services.release import recompute_case_status
+from app.services.release import recompute_case_status, reopen_if_exported
 from app.services.workflow import CaseStatus
 
 router = APIRouter(tags=["goods"])
@@ -106,12 +106,15 @@ def _item(db: Session, user: User, case_id: uuid.UUID, item_id: uuid.UUID) -> Go
 
 
 def _with_candidates(db: Session, items: list[GoodsItem]) -> list[ItemOut]:
+    by_item: dict = {}
+    if items:  # one query for all items (G18C)
+        for c in db.execute(select(HsCandidate).where(HsCandidate.item_id.in_([it.id for it in items]), HsCandidate.status != "SUPERSEDED")
+                            .order_by(HsCandidate.item_id, HsCandidate.rank)).scalars():
+            by_item.setdefault(c.item_id, []).append(c)
     out = []
     for it in items:
-        cands = db.execute(select(HsCandidate).where(HsCandidate.item_id == it.id, HsCandidate.status != "SUPERSEDED")
-                           .order_by(HsCandidate.rank)).scalars().all()
         o = ItemOut.model_validate(it)
-        o.candidates = [CandidateOut.model_validate(c) for c in cands]
+        o.candidates = [CandidateOut.model_validate(c) for c in by_item.get(it.id, [])]
         out.append(o)
     return out
 
@@ -160,6 +163,7 @@ def patch_item(case_id: uuid.UUID, item_id: uuid.UUID, body: ItemPatch, user: Us
 def hs_decision(case_id: uuid.UUID, item_id: uuid.UUID, body: DecisionIn, user: User = Depends(require(Perm.HS_DECIDE)),
                 db: Session = Depends(get_db)):
     case = load_case(db, user, case_id, for_update=True)
+    reopen_if_exported(db, case, audit.Actor.user(user), "HS decision")
     it = _item(db, user, case_id, item_id)
     cands = db.execute(select(HsCandidate).where(HsCandidate.item_id == it.id, HsCandidate.status.in_(("PROPOSED", "REJECTED")))).scalars().all()
     cand = None
@@ -179,6 +183,9 @@ def hs_decision(case_id: uuid.UUID, item_id: uuid.UUID, body: DecisionIn, user: 
                 raise HTTPException(status_code=422, detail={"code": "EVIDENCE_REQUIRED", "message": "override requires evidence refs"})
         if cand is None:
             cand = next((c for c in cands if c.heading == body.hs_code[:4]), None)
+        elif cand.heading != body.hs_code[:4]:
+            raise HTTPException(status_code=422, detail={"code": "INVALID_CANDIDATE",
+                                                         "message": f"candidate heading {cand.heading} does not match hs_code {body.hs_code}"})
     dec = ClassificationDecision(tenant_id=case.tenant_id, item_id=it.id, case_id=case.id, candidate_id=cand.id if cand else None,
                                  decision=body.decision, hs_code=body.hs_code if body.decision == "APPROVE" else None,
                                  is_override=is_override, reason=body.reason, evidence=body.evidence, decided_by=user.id,
@@ -210,6 +217,8 @@ def hs_decision(case_id: uuid.UUID, item_id: uuid.UUID, body: DecisionIn, user: 
     else:
         if cand:
             cand.status = "REJECTED"
+        it.hs_code = None  # a rejected classification must not linger in declaration/exports (G18C)
+        it.hs_decision_id = dec.id
         it.hs_status = "BLOCKED" if (it.hs_confidence or 0) < 0.70 else "NEEDS_REVIEW"
     it.row_version += 1
     audit.record(db, tenant_id=case.tenant_id, actor=audit.Actor.user(user), action=f"hs.{body.decision.lower()}", entity_type="goods_item",

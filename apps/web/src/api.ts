@@ -27,8 +27,10 @@ export async function api<T = unknown>(path: string, init: RequestInit = {}): Pr
   const res = await fetch(`/api/v1${path}`, { ...init, headers });
   if (res.status === 204) return undefined as T;
   const text = await res.text();
-  const body = text ? JSON.parse(text) : null;
+  let body: any = null;
+  try { body = text ? JSON.parse(text) : null; } catch { body = null; }  // proxy HTML (502/504/413) is not JSON
   if (!res.ok) {
+    if (body === null) throw new ApiError(res.status, "UPSTREAM", text ? `Máy chủ trả về lỗi ${res.status} (không phải JSON)` : res.statusText);
     const d = body?.detail;
     if (Array.isArray(d)) throw new ApiError(res.status, "VALIDATION", d.map((e: { msg: string; loc: string[] }) => `${e.loc?.slice(-1)[0]}: ${e.msg}`).join("; "), d);
     throw new ApiError(res.status, d?.code ?? "ERROR", d?.message ?? res.statusText, d?.details);

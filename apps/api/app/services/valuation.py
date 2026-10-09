@@ -108,8 +108,10 @@ def evaluate(db: Session, case: CustomsCase, actor: audit.Actor) -> None:
             continue
         duty_pct = Decimal(str(rate["mfn_duty_pct"]))
         pref = None
-        if fta_applied and co.result.get("preferential_duty_pct") is not None:
-            pref = Decimal(str(co.result["preferential_duty_pct"]))
+        decided_pref = (co.reviewer_decision or {}).get("preferential_duty_pct") if fta_applied else None
+        if fta_applied and (decided_pref if decided_pref is not None else co.result.get("preferential_duty_pct")) is not None:
+            # the rate the reviewer actually approved (recorded in the decision) wins over a later recomputation (G18C)
+            pref = Decimal(str(decided_pref if decided_pref is not None else co.result["preferential_duty_pct"]))
             duty_pct = pref
             r.append(f"Áp dụng thuế suất ưu đãi {pref}% theo quyết định reviewer trên C/O (form {co.inputs.get('form')}).")
         else:

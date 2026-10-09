@@ -64,8 +64,17 @@ def build_items(db: Session, case: CustomsCase, actor: audit.Actor) -> list[Issu
         item = existing.get(line_no)
         if inv is None:
             if item and "description" not in item.manual_fields:
-                specs.append(IssueSpec(f"item_missing:{line_no}", "ITEM_NOT_ON_INVOICE", "WARNING", "DOCUMENT_CONFLICT",
-                                       f"Item {line_no} không còn trên Invoice hiện tại", target_ref=f"item:{line_no}", auto_resolvable=True))
+                # CRITICAL (G18C): a line that is no longer on the invoice must not ride into a release draft; a Senior may waive
+                # with evidence if the line is legitimately kept (e.g. manual item).
+                specs.append(IssueSpec(f"item_missing:{line_no}", "ITEM_NOT_ON_INVOICE", "CRITICAL", "DOCUMENT_CONFLICT",
+                                       f"Item {line_no} không còn trên Invoice hiện tại", "Dòng hàng không có trên Invoice hiện tại; "
+                                       "không phát hành khi còn dòng mồ côi.", target_ref=f"item:{line_no}", auto_resolvable=True))
+            continue
+        if "description" not in inv:
+            # provider returned other columns but no description → cannot classify; fail closed instead of KeyError (G18C)
+            specs.append(IssueSpec(f"item_nodesc:{line_no}", "ITEM_DESCRIPTION_MISSING", "CRITICAL", "DOCUMENT",
+                                   f"Item {line_no}: Invoice không có mô tả hàng", "Không thể phân loại khi thiếu mô tả; nhập thủ công hoặc tải lại Invoice.",
+                                   target_ref=f"item:{line_no}", auto_resolvable=True))
             continue
         desc_f, desc_doc = inv["description"]
         new = item is None

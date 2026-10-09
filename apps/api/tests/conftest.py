@@ -36,6 +36,8 @@ def clean_tables(migrated_db):
     tables = [t.name for t in reversed(Base.metadata.sorted_tables)]
     if tables:
         with migrated_db.begin() as conn:
+            # A test that leaks a session with an open transaction would block this ALTER forever; fail loudly instead (G18C).
+            conn.execute(text("SET LOCAL lock_timeout = '10s'"))
             # Test-only cleanup: the table owner temporarily disables the append-only trigger.
             conn.execute(text("ALTER TABLE audit_events DISABLE TRIGGER USER"))
             conn.execute(text("TRUNCATE " + ", ".join(tables) + " RESTART IDENTITY CASCADE"))

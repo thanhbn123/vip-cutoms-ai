@@ -26,13 +26,16 @@
 	# network / the host itself. Everything else gets 404 (not 403, to avoid advertising the endpoint).
 	@metrics_private path /metrics
 	handle @metrics_private {
-		@allowed remote_ip private_ranges 127.0.0.1/8 ::1
+		# METRICS_ALLOW_FROM = CIDR(s) of the monitoring host. Default 127.0.0.1/32 means "nobody through the proxy"
+		# (the proxy container's own loopback never originates a request) — safe when TLS_MODE=off puts an upstream
+		# proxy in front, because remote_ip would then be the upstream's private address for EVERY client.
+		@allowed remote_ip {$METRICS_ALLOW_FROM:127.0.0.1/32}
 		handle @allowed {
 			reverse_proxy api:8000
 		}
 		respond 404
 	}
-	@api path /api/* /health /ready /docs /openapi.json
+	@api path /api/* /health /ready
 	handle @api {
 		reverse_proxy api:8000 {
 			# route only to a live api (G18B); /health is dependency-free so a DB outage does not flap the proxy

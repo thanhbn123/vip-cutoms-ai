@@ -127,9 +127,72 @@ def package_from_dict(d: dict[str, Any]) -> DatasetPackage:
                           notes=d.get("notes"))
 
 
+# --- payload validation (fail at import, not in the evaluators) ------------------------------------
+def _num(v) -> bool:
+    return isinstance(v, (int, float)) and not isinstance(v, bool)
+
+
+def validate_payload(kind: str, payload: dict[str, Any]) -> None:
+    """Shape rules per kind (docs/G18_CUSTOMS_DATA_SCHEMA.md). Raises 422 INVALID_PACKAGE; evaluators then never KeyError (G18C)."""
+    problems: list[str] = []
+    if kind == "HS_RULES":
+        rules = payload.get("rules")
+        if not isinstance(rules, list) or not rules:
+            problems.append("rules: non-empty list required")
+        else:
+            for i, r in enumerate(rules):
+                if not isinstance(r, dict) or not all(k in r for k in ("heading", "title", "keywords", "base_confidence")):
+                    problems.append(f"rules[{i}]: heading, title, keywords, base_confidence required")
+                elif not str(r["heading"]).isdigit() or not isinstance(r["keywords"], list) or not _num(r["base_confidence"]):
+                    problems.append(f"rules[{i}]: heading must be digits, keywords a list, base_confidence numeric")
+    elif kind == "TARIFF":
+        rates = payload.get("rates")
+        if not isinstance(rates, dict) or not rates:
+            problems.append("rates: non-empty object required")
+        else:
+            for code, r in rates.items():
+                if not str(code).isdigit() or len(str(code)) < 4:
+                    problems.append(f"rates.{code}: key must be an HS code (>= 4 digits)")
+                if not isinstance(r, dict) or not _num(r.get("mfn_duty_pct")) or not _num(r.get("vat_pct")):
+                    problems.append(f"rates.{code}: numeric mfn_duty_pct and vat_pct required")
+    elif kind == "FTA":
+        forms = payload.get("forms")
+        if not isinstance(forms, dict) or not forms:
+            problems.append("forms: non-empty object required")
+        else:
+            for name, f in forms.items():
+                if not isinstance(f, dict):
+                    problems.append(f"forms.{name}: object required")
+                    continue
+                if not isinstance(f.get("agreement"), str) or not isinstance(f.get("origin_countries"), list) \
+                        or not isinstance(f.get("allowed_criteria"), list) or not isinstance(f.get("checks"), list):
+                    problems.append(f"forms.{name}: agreement (str), origin_countries, allowed_criteria, checks (lists) required")
+                pref = f.get("preferential_duty_pct")
+                if not isinstance(pref, dict) or not all(str(k).isdigit() and _num(v) for k, v in pref.items()):
+                    problems.append(f"forms.{name}.preferential_duty_pct: object of HS code → numeric rate required")
+    elif kind == "POLICY":
+        reqs = payload.get("requirements")
+        if not isinstance(reqs, dict):
+            problems.append("requirements: object required (may be empty)")
+        else:
+            for heading, lst in reqs.items():
+                if not str(heading).isdigit() or not isinstance(lst, list):
+                    problems.append(f"requirements.{heading}: key must be an HS code and value a list")
+                    continue
+                for i, r in enumerate(lst):
+                    if not isinstance(r, dict) or not isinstance(r.get("code"), str) or not isinstance(r.get("title"), str) \
+                            or not isinstance(r.get("evidence_doc_types", []), list):
+                        problems.append(f"requirements.{heading}[{i}]: code, title (str) and evidence_doc_types (list) required")
+    else:
+        problems.append(f"unknown kind {kind}")
+    if problems:
+        raise DomainError("INVALID_PACKAGE", f"{kind} payload failed validation", status_code=422, details={"problems": problems[:20]})
+
+
 # --- registration / verification / supersession ---------------------------------------------------
 def register(db: Session, pkg: DatasetPackage, actor_user: User, *, reason: str) -> KnowledgeDataset:
     """Store a package as an INACTIVE, UNVERIFIED dataset. Activation (PATCH) and verification are separate, audited steps."""
+    validate_payload(pkg.kind, pkg.payload)
     if db.execute(select(KnowledgeDataset).where(KnowledgeDataset.kind == pkg.kind, KnowledgeDataset.version == pkg.version)).scalar():
         raise DomainError("DUPLICATE_DATASET", f"{pkg.kind} {pkg.version} already exists")
     ds = KnowledgeDataset(kind=pkg.kind, version=pkg.version, label=pkg.label, source=pkg.source_reference or pkg.source_document or "unspecified",
@@ -194,6 +257,12 @@ def verify(db: Session, ds: KnowledgeDataset, verifier: User, *, reason: str) ->
 def supersede(db: Session, old: KnowledgeDataset, new: KnowledgeDataset, actor_user: User, *, reason: str) -> None:
     if old.kind != new.kind:
         raise DomainError("INVALID_SUPERSESSION", "datasets of different kinds cannot supersede each other")
+    if old.id == new.id:
+        raise DomainError("INVALID_SUPERSESSION", "a dataset cannot supersede itself")
+    if old.superseded_at is not None:
+        raise DomainError("INVALID_SUPERSESSION", f"{old.kind} {old.version} is already superseded")
+    if new.superseded_at is not None:
+        raise DomainError("INVALID_SUPERSESSION", f"{new.kind} {new.version} is itself superseded and cannot replace another dataset")
     old.superseded_at = datetime.now(UTC)
     new.supersedes_id = old.id
     audit.record(db, tenant_id=actor_user.tenant_id, actor=audit.Actor.user(actor_user), action="knowledge.dataset_superseded",

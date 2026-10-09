@@ -20,7 +20,7 @@ from app.models.identity import User
 from app.models.knowledge import HsRule, KnowledgeDataset
 from app.services import assessments, audit, customs_data, evaluators
 from app.services.knowledge import dataset_payload
-from app.services.release import recompute_case_status
+from app.services.release import recompute_case_status, reopen_if_exported
 
 router = APIRouter(tags=["knowledge"])
 
@@ -212,6 +212,7 @@ def list_assessments(case_id: uuid.UUID, user: User = Depends(require(Perm.CASE_
 def co_decision(case_id: uuid.UUID, item_id: uuid.UUID, body: CoDecisionIn, user: User = Depends(require(Perm.PROPOSAL_DECIDE)),
                 db: Session = Depends(get_db)):
     case = load_case(db, user, case_id, for_update=True)
+    reopen_if_exported(db, case, audit.Actor.user(user), "C/O decision")
     it = _item(db, user, case_id, item_id)
     a = assessments.get(db, case.id, "CO", it.id)
     if a is None:

@@ -111,8 +111,10 @@ def main() -> None:
             rv.post(f"/cases/{cid}/issues/{i['id']}/resolve", json={"reason": "verified against source documents"})
     rv.post(f"/cases/{cid}/fields/approve-all", json={"reason": "header fields verified"})
     for i in op.get(f"/cases/{cid}/issues", params={"status": "OPEN"}).json():
-        who = sr if i["severity"] == "CRITICAL" else rv
-        r = who.post(f"/cases/{cid}/issues/{i['id']}/resolve", json={"reason": "reviewed and confirmed by reviewer"})
+        if i["severity"] == "CRITICAL":  # G18C: system-detected criticals are waived by a Senior with evidence, never "resolved"
+            r = sr.post(f"/cases/{cid}/issues/{i['id']}/waive", json={"reason": "reviewed and confirmed by senior reviewer", "evidence": ["review-memo"]})
+        else:
+            r = rv.post(f"/cases/{cid}/issues/{i['id']}/resolve", json={"reason": "reviewed and confirmed by reviewer"})
         assert r.status_code == 200, r.text
     audit = op.get(f"/cases/{cid}/audit").json()
     hs = next(e for e in audit if e["action"] == "hs.approve")
