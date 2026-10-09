@@ -18,7 +18,7 @@ from app.models.knowledge import HsRule
 from app.services import audit
 from app.services.goods import build_items
 from app.services.issues import IssueSpec, sync
-from app.services.knowledge import NoActiveDataset, require_dataset
+from app.services.knowledge import ConflictingDatasets, NoActiveDataset, require_dataset
 
 BLOCK_BELOW = 0.70
 REVIEW_BELOW = 0.90
@@ -58,6 +58,11 @@ def evaluate(db: Session, case: CustomsCase, actor: audit.Actor) -> None:
     items = db.execute(select(GoodsItem).where(GoodsItem.case_id == case.id).order_by(GoodsItem.line_no)).scalars().all()
     try:
         ds = require_dataset(db, "HS_RULES")
+    except ConflictingDatasets as exc:
+        specs.append(IssueSpec("hs_dataset_conflict", "HS_KNOWLEDGE_CONFLICT", "CRITICAL", "HS", "Xung đột bộ quy tắc HS hiệu lực",
+                               f"Nhiều dataset cùng hiệu lực; reviewer phải chọn/giải quyết. {exc}", auto_resolvable=True))
+        sync(db, case, specs, "hs_engine")
+        return
     except NoActiveDataset:
         specs.append(IssueSpec("hs_dataset", "HS_KNOWLEDGE_UNAVAILABLE", "CRITICAL", "HS", "Không có bộ quy tắc HS hiệu lực",
                                "Hệ thống không phân loại khi thiếu knowledge dataset (fail-closed).", auto_resolvable=True))

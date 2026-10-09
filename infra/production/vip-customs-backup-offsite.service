@@ -1,0 +1,22 @@
+# Example systemd unit (G18) — NOT installed by any script in this repository. Replicates the newest
+# local backup pair off-host and writes BACKUP_STATUS_FILE for /ready. Install like the backup unit:
+#   sudo cp infra/production/vip-customs-backup-offsite.{service,timer} /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now vip-customs-backup-offsite.timer
+# Requires an owner-provided destination (OFFSITE_METHOD/OFFSITE_TARGET in infra/production/.env) and,
+# for rclone, a credential in the deploy user's rclone config (chmod 600) — never in this repository.
+[Unit]
+Description=VIP Customs AI — off-host backup replication
+Documentation=file:/opt/vip-customs-ai/docs/G18_OFFHOST_BACKUP.md
+# Runs after the local backup so it always replicates tonight's pair.
+After=vip-customs-backup.service
+Wants=vip-customs-backup.service
+
+[Service]
+Type=oneshot
+User=deploy
+WorkingDirectory=/opt/vip-customs-ai
+Environment=DEPLOY_PATH=/opt/vip-customs-ai
+Environment=ENV_FILE=infra/production/.env
+UMask=0077
+ExecStart=/usr/bin/env bash scripts/production/backup_offsite.sh
+TimeoutStartSec=5400

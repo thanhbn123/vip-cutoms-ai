@@ -1,46 +1,38 @@
-# docker-smoke · 2026-10-08T06:57:05Z · 9c1e6a6
+# docker-smoke · 2026-10-09T16:52:23Z · 781a98d
 docker: 29.8.2 · compose: 5.6.0
 ## down -v --remove-orphans
- Volume vip-customs_uploads Removed 
+ Volume vip-customs_uploads Removing 
  Volume vip-customs_pgdata Removed 
- Network vip-customs_default Removed 
+ Volume vip-customs_uploads Removed 
 ## build --no-cache
 build_exit=0
 #20 naming to docker.io/library/vip-customs-web:latest done
 #27 naming to docker.io/library/vip-customs-api:latest done
-real	0m49.925s
+real	0m53.962s
 ## up -d
  Container vip-customs-api-1 Starting 
  Container vip-customs-api-1 Started 
  Container vip-customs-web-1 Starting 
- Container vip-customs-web-1 Started 
+Error response from daemon: failed to set up container networking: driver failed programming external connectivity on endpoint vip-customs-web-1 (5bf9a49618f7ad95c661777ca6bea92c167428c775de7dec59f55343cc6a60d1): failed to bind host port 0.0.0.0:5173/tcp: address already in use
 ## ps
 NAME                     IMAGE                STATUS                    PORTS
-vip-customs-api-1        vip-customs-api      Up 4 seconds              0.0.0.0:8000->8000/tcp
-vip-customs-postgres-1   postgres:16-alpine   Up 10 seconds (healthy)   0.0.0.0:55432->5432/tcp
-vip-customs-web-1        vip-customs-web      Up 4 seconds              0.0.0.0:5173->5173/tcp
+vip-customs-api-1        vip-customs-api      Up 10 seconds             0.0.0.0:8000->8000/tcp
+vip-customs-postgres-1   postgres:16-alpine   Up 21 seconds (healthy)   0.0.0.0:55432->5432/tcp
 ## health (host)
-{"status":"ok","service":"vip-customs-api","version":"0.1.0"} [200]
+{"status":"ok","service":"vip-customs-api","version":"0.1.0","mode":"demo","release_sha":null} [200]
 ## ready (host)
-{"status":"ready","checks":{"database":"ok","migrations":"0010_copilot_meta","ai_provider":"mock","environment":"development"}} [200]
+{"status":"ready","mode":"demo","checks":{"mode":"demo","environment":"development","release_sha":null,"migration_head":"0011_dataset_provenance","database":"ok","migrations":"0011_dataset_provenance","migration_in_sync":true,"providers":{"document_ocr":{"capability":"document_ocr","name":"mock","version":"mock-1.0.0","configured":true,"healthy":true,"detail":"deterministic mock","is_mock":true},"document_ai":{"capability":"document_ai","name":"mock","version":"mock-1.0.0","configured":true,"healthy":true,"detail":"deterministic mock","is_mock":true},"hs_ai":{"capability":"hs_ai","name":"mock","version":"mock-1.0.0","configured":true,"healthy":true,"detail":"deterministic mock","is_mock":true},"copilot":{"capability":"copilot","name":"mock","version":"mock-1.0.0","configured":true,"healthy":true,"detail":"deterministic mock","is_mock":true}},"ai_provider":"mock","document_provider":"mock","customs_data_authoritative":{"HS_RULES":{"authoritative":false,"reason":"HS_RULES: no verified authoritative dataset effective on 2026-10-09 (demo/unverified data refused in full mode)"},"TARIFF":{"authoritative":false,"reason":"TARIFF: no verified authoritative dataset effective on 2026-10-09 (demo/unverified data refused in full mode)"},"FTA":{"authoritative":false,"reason":"FTA: no verified authoritative dataset effective on 2026-10-09 (demo/unverified data refused in full mode)"},"POLICY":{"authoritative":false,"reason":"POLICY: no verified authoritative dataset effective on 2026-10-09 (demo/unverified data refused in full mode)"},"all_authoritative":false},"backup_status":{"state":"unconfigured"}},"blocking":[]} [200]
 ## frontend (host)
 HTTP/1.1 200 OK
 Access-Control-Allow-Origin: *
 ## alembic in api container
-0010_copilot_meta (head)
+0011_dataset_provenance (head)
 heads=1
 ## schema tables (fresh volume)
 21
 
 ## logs scan (last 200 lines/service)
 error/traceback/restart lines: 1
-postgres-1  | 2026-10-08 06:58:07.851 UTC [41] LOG:  background worker "logical replication launcher" (PID 47) exited with exit code 1
+postgres-1  | 2026-10-09 16:53:25.407 UTC [48] LOG:  background worker "logical replication launcher" (PID 54) exited with exit code 1
 secret leak check (POSTGRES_PASSWORD / APP_SECRET_KEY in logs): 0
-restart counts: /vip-customs-api-1=0 /vip-customs-postgres-1=0 /vip-customs-web-1=0 
--web Built 
- Image vip-customs-api Built 
- Container vip-customs-web-1 Running 
- Container vip-customs-postgres-1 Running 
- Container vip-customs-api-1 Running 
- Container vip-customs-postgres-1 Waiting 
- Container vip-customs-postgres-1 Healthy 
+restart counts: /vip-customs-api-1=0 /vip-customs-postgres-1=0 

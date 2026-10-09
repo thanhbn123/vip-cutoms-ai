@@ -59,3 +59,26 @@ Docker Compose for local/staging:
 - postgres
 - optional redis/worker when background work is introduced
 - local S3-compatible storage only if needed for staging
+
+## G18 — runtime modes, provider boundaries, authoritative data
+
+```
+APP_MODE ──► app/core/modes.py ──► startup gate (create_app) + readiness gate (/ready)
+                 │
+   demo/limited: mock AI + demo datasets allowed (banner)   full: real providers + verified authoritative data only
+                 │
+app/ai/gateway.get_capability(cap) ── cap ∈ {document_ocr, document_ai, hs_ai, copilot}
+        ├── mock        app/ai/mock_provider.py          (deterministic, offline)
+        └── http-llm    app/ai/http_llm_provider.py      (vendor-neutral; timeouts, retries, schema validation,
+                                                          correlation id, cost ledger app/ai/accounting.py, redaction)
+        failures → ProviderError → mapping: PARSE_FAILED + CRITICAL AI_PROVIDER_FAILED · copilot: 503 (no fallback)
+
+app/services/customs_data.py ── select_dataset(kind, on, mode)  ← the only path evaluators use
+        candidates: active ∧ effective ∧ not superseded
+        full: is_authoritative ∧ verified ∧ ¬demo ; >1 → ConflictingDatasets (reviewer) ; 0 → NoActiveDataset
+        import (FileImportProvider / POST /knowledge/datasets/import) → verify (ADMIN/SENIOR) → activate → supersede
+        knowledge_datasets provenance columns (migration 0011), CHECK NOT (is_authoritative AND is_demo)
+
+/ready  mode · database · migrations vs head · providers[cap] · customs_data_authoritative[kind] · backup_status · release_sha · blocking[]
+/metrics  Prometheus text (app/core/metrics.py + readiness.metrics_lines): http, 5xx, ai calls/failures/cost/tokens, dataset age, backup age
+```

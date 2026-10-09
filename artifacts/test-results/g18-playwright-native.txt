@@ -1,0 +1,23 @@
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, G01 baseline (empty schema, establishes migration head)
+INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_identity_cases_audit, G02 identity, masterdata, cases, audit
+INFO  [alembic.runtime.migration] Running upgrade 0002_identity_cases_audit -> 0003_documents, G03 documents
+INFO  [alembic.runtime.migration] Running upgrade 0003_documents -> 0004_fields_issues, G04 extracted fields, case fields, issues
+INFO  [alembic.runtime.migration] Running upgrade 0004_fields_issues -> 0005_goods_hs_knowledge, G05 goods, HS candidates, decisions, knowledge
+INFO  [alembic.runtime.migration] Running upgrade 0005_goods_hs_knowledge -> 0006_assessments, G06 assessments, issue owner
+INFO  [alembic.runtime.migration] Running upgrade 0006_assessments -> 0007_drafts, G08 declaration drafts
+INFO  [alembic.runtime.migration] Running upgrade 0007_drafts -> 0008_copilot_memory, G09-G10 copilot messages, proposals, product memory
+INFO  [alembic.runtime.migration] Running upgrade 0008_copilot_memory -> 0009_decision_request_info, G05 widen classification decision for REQUEST_INFO
+INFO  [alembic.runtime.migration] Running upgrade 0009_decision_request_info -> 0010_copilot_meta, G09 copilot message meta
+INFO  [alembic.runtime.migration] Running upgrade 0010_copilot_meta -> 0011_dataset_provenance, G18 knowledge dataset provenance (authoritative-source governance, B-02)
+tenant DEMO ready; users: operator@demo.local, reviewer@demo.local, senior@demo.local, admin@demo.local; datasets seeded: ['HS_RULES', 'TARIFF', 'FTA', 'POLICY']
+demo case VIP-HQ-261008-001: {'documents_parsed': 4, 'status': 'BLOCKED'}
+{"status":"ready","mode":"demo","checks":{"mode":"demo","environment":"test","release_sha":null,"migration_head":"0011_dataset_provenance","database":"ok","migrations":"0011_dataset_provenance","migration_in_sync":true,"providers":{"document_ocr":{"capability":"document_ocr","name":"mock","version":"mock-1.0.0","configured":true,"healthy":true,"detail":"deterministic mock","is_mock":true},"document_ai":{"capability":"document_ai","name":"mock","version":"mock-1.0.0","configured":true,"healthy":true,"detail":"deterministic mock","is_mock":true},"hs_ai":{"capability":"hs_ai","name":"mock","version":"mock-1.0.0","configured":true,"healthy":true,"detail":"deterministic mock","is_mock":true},"copilot":{"capability":"copilot","name":"mock","version":"mock-1.0.0","configured":true,"healthy":true,"detail":"deterministic mock","is_mock":true}},"ai_provider":"mock","document_provider":"mock","customs_data_authoritative":{"HS_RULES":{"authoritative":false,"reason":"HS_RULES: no verified authoritative dataset effective on 2026-10-09 (demo/unverified data refused in full mode)"},"TARIFF":{"authoritative":false,"reason":"TARIFF: no verified authoritative dataset effective on 2026-10-09 (demo/unverified data refused in full mode)"},"FTA":{"authoritative":false,"reason":"FTA: no verified authoritative dataset effective on 2026-10-09 (demo/unverified data refused in full mode)"},"POLICY":{"authoritative":false,"reason":"POLICY: no verified authoritative dataset effective on 2026-10-09 (demo/unverified data refused in full mode)"},"all_authoritative":false},"backup_status":{"state":"unconfigured"}},"blocking":[]}
+
+Running 2 tests using 2 workers
+
+  ✓  2 demo-labels.spec.ts:8:1 › demo safety labels are visible on every surface that shows HS / tariff / FTA / policy data (2.5s)
+  ✓  1 smoke.spec.ts:5:1 › login → V12 navigation → goods shows the BLOCKED item → copilot answers → release gate blocked (3.0s)
+
+  2 passed (5.5s)

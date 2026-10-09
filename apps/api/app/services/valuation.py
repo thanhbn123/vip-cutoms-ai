@@ -12,7 +12,7 @@ from app.models.extraction import CaseField
 from app.models.goods import GoodsItem
 from app.services import assessments, audit
 from app.services.issues import IssueSpec, sync
-from app.services.knowledge import NoActiveDataset, dataset_payload, require_dataset
+from app.services.knowledge import ConflictingDatasets, NoActiveDataset, dataset_payload, require_dataset
 from app.services.normalize import norm_text, parse_decimal
 
 Q = Decimal("0.01")
@@ -77,6 +77,10 @@ def evaluate(db: Session, case: CustomsCase, actor: audit.Actor) -> None:
     try:
         tariff_ds = require_dataset(db, "TARIFF")
         rates = dataset_payload(tariff_ds).get("rates", {})
+    except ConflictingDatasets as exc:
+        tariff_ds, rates = None, {}
+        specs.append(IssueSpec("tariff_dataset_conflict", "TARIFF_KNOWLEDGE_CONFLICT", "CRITICAL", "VALUATION", "Xung đột biểu thuế hiệu lực",
+                               f"Nhiều dataset cùng hiệu lực; reviewer phải giải quyết. {exc}", auto_resolvable=True))
     except NoActiveDataset:
         tariff_ds, rates = None, {}
         specs.append(IssueSpec("tariff_dataset", "TARIFF_KNOWLEDGE_UNAVAILABLE", "CRITICAL", "VALUATION", "Không có biểu thuế hiệu lực",

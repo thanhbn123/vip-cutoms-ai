@@ -1,0 +1,25 @@
+docker_smoke_exit=0
+Access-Control-Allow-Origin: *
+## alembic in api container
+0011_dataset_provenance (head)
+heads=1
+## schema tables (fresh volume)
+21
+
+## logs scan (last 200 lines/service)
+error/traceback/restart lines: 1
+postgres-1  | 2026-10-09 16:53:25.407 UTC [48] LOG:  background worker "logical replication launcher" (PID 54) exited with exit code 1
+secret leak check (POSTGRES_PASSWORD / APP_SECRET_KEY in logs): 0
+restart counts: /vip-customs-api-1=0 /vip-customs-postgres-1=0 
+docker_acceptance_exit=0
+  2 passed (4.8s)
+ACCEPTANCE_HTTP: 17/17 steps PASS against http://localhost:8000
+restart counts: /vip-customs-api-1=0 /vip-customs-postgres-1=0 
+--- /ready from compose stack (mode + blocking)
+ready demo blocking= [] release_sha= None ai= mock
+# TYPE vip_http_5xx_total counter
+vip_http_5xx_total 0
+# TYPE vip_app_mode_info gauge
+DOCKER_DONE
+
+[exited with code 0]

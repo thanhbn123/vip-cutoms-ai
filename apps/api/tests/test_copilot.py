@@ -95,8 +95,8 @@ def test_fabricated_sources_are_dropped(world, client, monkeypatch):
         def answer_case_question(self, q, ctx):
             return CopilotAnswer("answer", "GENERAL", [{"type": "document", "id": "00000000-0000-0000-0000-000000000000", "label": "x"}], ["r"], "mock")
 
-    monkeypatch.setattr(gateway, "get_provider", lambda: Fake())
-    monkeypatch.setattr("app.services.copilot.get_provider", lambda: Fake())
+    monkeypatch.setattr(gateway, "get_capability", lambda cap: Fake())
+    monkeypatch.setattr("app.services.copilot.get_capability", lambda cap: Fake())
     a = ask(client, world, cid, "hello")
     assert a["sources"] == [] and any("[validation]" in r for r in a["reasoning"])
     assert a["confidence"] == 0.0  # Fake returned no confidence → never inflated

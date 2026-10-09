@@ -1,4 +1,10 @@
-"""Versioned, effective-dated knowledge datasets. Fail closed when nothing is active."""
+"""Versioned, effective-dated knowledge datasets. Fail closed when nothing is active.
+
+G18: selection is delegated to app.services.customs_data.select_dataset, which applies the
+runtime mode (demo/limited may use demo data; full requires verified authoritative data) and
+refuses to choose between conflicting datasets. The demo seed below only ever creates
+is_demo=True datasets and only runs where the mode allows demo data.
+"""
 
 from __future__ import annotations
 
@@ -8,31 +14,33 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
+from app.core.modes import policy
 from app.models.knowledge import HsRule, KnowledgeDataset
 from app.services import demo_fixtures as fx
+from app.services.customs_data import ConflictingDatasets, NoActiveDataset, select_dataset
 
-
-class NoActiveDataset(Exception):
-    pass
+__all__ = ["ConflictingDatasets", "NoActiveDataset", "active_dataset", "require_dataset", "seed_demo", "dataset_payload"]
 
 
 def active_dataset(db: Session, kind: str, on: date | None = None) -> KnowledgeDataset | None:
-    on = on or date.today()
-    stmt = (select(KnowledgeDataset).where(KnowledgeDataset.kind == kind, KnowledgeDataset.is_active.is_(True),
-                                           KnowledgeDataset.effective_from <= on)
-            .where((KnowledgeDataset.effective_to.is_(None)) | (KnowledgeDataset.effective_to >= on))
-            .order_by(KnowledgeDataset.effective_from.desc(), KnowledgeDataset.created_at.desc()))
-    return db.execute(stmt).scalars().first()
+    try:
+        return select_dataset(db, kind, on)
+    except NoActiveDataset:
+        return None
 
 
 def require_dataset(db: Session, kind: str, on: date | None = None) -> KnowledgeDataset:
-    ds = active_dataset(db, kind, on)
-    if ds is None and get_settings().is_development:
-        seed_demo(db)
-        ds = active_dataset(db, kind, on)
-    if ds is None:
-        raise NoActiveDataset(kind)
-    return ds
+    """Dataset for `kind` under the configured mode. Raises NoActiveDataset / ConflictingDatasets (fail closed)."""
+    s = get_settings()
+    try:
+        return select_dataset(db, kind, on)
+    except ConflictingDatasets:
+        raise
+    except NoActiveDataset:
+        if s.is_development and policy(s).demo_data_allowed:
+            seed_demo(db)
+            return select_dataset(db, kind, on)
+        raise
 
 
 def _seed(db: Session, kind: str, version: str, effective_from: str, label: str, notes: str | None = None) -> KnowledgeDataset | None:
