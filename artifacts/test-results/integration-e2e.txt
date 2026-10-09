@@ -1,8 +1,7 @@
-# integration-e2e · 2026-10-08T12:02:06Z · develop 3592878
+# integration-e2e · 2026-10-09T08:39:39Z · develop 52d8fe1
 $ bash -o pipefail -c PW_CHROMIUM_PATH=${PW_CHROMIUM_PATH:-/opt/pw-browsers/chromium} bash scripts/e2e.sh 2>&1 | grep -vE 'agent-proxy|google|gvt1|For details' | tail -15
 exit_code=0
 ----- last lines -----
-INFO  [alembic.runtime.migration] Running upgrade 0004_fields_issues -> 0005_goods_hs_knowledge, G05 goods, HS candidates, decisions, knowledge
 INFO  [alembic.runtime.migration] Running upgrade 0005_goods_hs_knowledge -> 0006_assessments, G06 assessments, issue owner
 INFO  [alembic.runtime.migration] Running upgrade 0006_assessments -> 0007_drafts, G08 declaration drafts
 INFO  [alembic.runtime.migration] Running upgrade 0007_drafts -> 0008_copilot_memory, G09-G10 copilot messages, proposals, product memory
@@ -12,8 +11,9 @@ tenant DEMO ready; users: operator@demo.local, reviewer@demo.local, senior@demo.
 demo case VIP-HQ-261008-001: {'documents_parsed': 4, 'status': 'BLOCKED'}
 {"status":"ready","checks":{"database":"ok","migrations":"0010_copilot_meta","ai_provider":"mock","environment":"test"}}
 
-Running 1 test using 1 worker
+Running 2 tests using 2 workers
 
-  ✓  1 smoke.spec.ts:5:1 › login → V12 navigation → goods shows the BLOCKED item → copilot answers → release gate blocked (2.9s)
+  ✓  1 demo-labels.spec.ts:8:1 › demo safety labels are visible on every surface that shows HS / tariff / FTA / policy data (2.9s)
+  ✓  2 smoke.spec.ts:5:1 › login → V12 navigation → goods shows the BLOCKED item → copilot answers → release gate blocked (3.4s)
 
-  1 passed (4.9s)
+  2 passed (4.9s)

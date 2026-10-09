@@ -1,4 +1,4 @@
-# backend-pytest · 2026-10-08T11:59:59Z · develop 3592878
+# backend-pytest · 2026-10-09T08:37:28Z · develop 52d8fe1
 $ bash -o pipefail -c cd apps/api && .venv/bin/pytest 2>&1 | tail -5
 exit_code=0
 ----- last lines -----
@@ -6,4 +6,4 @@ exit_code=0
     from starlette.testclient import TestClient as TestClient  # noqa
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-69 passed, 1 warning in 88.12s (0:01:28)
+72 passed, 1 warning in 92.37s (0:01:32)

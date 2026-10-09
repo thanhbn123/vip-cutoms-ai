@@ -1,4 +1,4 @@
-# migration-test · 2026-10-08T12:01:58Z · develop 3592878
+# migration-test · 2026-10-09T08:39:31Z · develop 52d8fe1
 $ bash -o pipefail -c cd apps/api && export DATABASE_URL=postgresql+psycopg://vip_customs:vip_customs@localhost:5432/vip_customs_test && .venv/bin/python -c "from sqlalchemy import create_engine,text;e=create_engine('postgresql+psycopg://vip_customs:vip_customs@localhost:5432/vip_customs_test');c=e.connect();c.execute(text('DROP SCHEMA public CASCADE; CREATE SCHEMA public;'));c.commit()" && .venv/bin/alembic upgrade head 2>&1 | tail -12 && echo HEADS=$(.venv/bin/alembic heads | wc -l) && .venv/bin/alembic downgrade 0008_copilot_memory 2>&1 | tail -2 && .venv/bin/alembic upgrade head 2>&1 | tail -2 && .venv/bin/alembic current
 exit_code=0
 ----- last lines -----
