@@ -34,6 +34,16 @@ jobs:
       - run: npx tsc -b
       - run: npx vitest run
       - run: npx vite build
+  infra:
+    # Root `tests/` suite: staging + production infrastructure contracts (70 tests). No database, no Docker —
+    # the backup script runs against a mocked `docker` inside tmp_path. Kept separate from the api job on purpose.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install pytest
+      - run: python -m pytest tests -q
   secrets:
     runs-on: ubuntu-latest
     steps:
