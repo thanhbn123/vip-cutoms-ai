@@ -1,0 +1,160 @@
+# G16 production review — fresh evidence · 2026-10-09T07:36:20Z
+# Clean isolated checkout at develop c7fdafdbba139991cd537d5093b4af46d3a61052
+# Python 3.13.16 · Node 22.23.3 · PostgreSQL 16.15 · dedicated database vip_customs_g16
+# The live staging database was never written to. A-P and negative suites ran against a LOCAL stack.
+
+############ G16 REGRESSION — clean checkout c7fdafdbba139991cd537d5093b4af46d3a61052
+############ started 2026-10-09T07:22:12Z  DB=vip_customs_g16  python=Python 3.13.16
+
+===== [1/8] ruff lint (api) =====
+All checks passed!
+ruff exit=0
+
+===== [2/8] alembic heads =====
+0010_copilot_meta (head)
+heads exit=0
+
+===== [3/8] pytest apps/api =====
+........................................................................ [100%]
+=============================== warnings summary ===============================
+.venv/lib/python3.13/site-packages/fastapi/testclient.py:1
+  /Users/viporder/Documents/Codex/2026-10-09/referenced-chatgpt-conversation-this-is-an/work/g16-clean/apps/api/.venv/lib/python3.13/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+api pytest exit=
+
+===== [3b/8] pytest apps/api (with summary) =====
+72 passed, 1 warning in 12.18s
+API_PYTEST_EXIT=0
+
+===== [4/8] pytest tests/ (infra, no DB) =====
+============================== 21 passed in 0.10s ==============================
+
+===== [5/8] web typecheck (tsc -b)  node=v22.23.3 =====
+TSC_EXIT=0
+
+===== [6/8] vitest run =====
+
+ RUN  v2.1.8 /Users/viporder/Documents/Codex/2026-10-09/referenced-chatgpt-conversation-this-is-an/work/g16-clean/apps/web
+
+ ✓ src/pages/Goods.test.tsx (1 test) 19ms
+ ✓ src/App.test.tsx (2 tests) 52ms
+
+ Test Files  2 passed (2)
+      Tests  3 passed (3)
+   Start at  14:23:06
+   Duration  801ms (transform 128ms, setup 143ms, collect 305ms, tests 72ms, environment 558ms, prepare 91ms)
+
+VITEST_EXIT=0
+
+===== [7/8] vite build =====
+transforming...
+✓ 40 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.40 kB │ gzip:  0.26 kB
+dist/assets/index-BeesP8vI.css    5.96 kB │ gzip:  1.90 kB
+dist/assets/index-CVvKd8IQ.js   188.92 kB │ gzip: 59.82 kB
+✓ built in 3.00s
+BUILD_EXIT=0
+
+===== [8/8] secret scan =====
+SECRET SCAN: clean
+SECRETSCAN_EXIT=0
+
+FINISHED 2026-10-09T07:23:11Z
+
+===== [9] Playwright E2E (tail) =====
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:3884) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  2 demo-labels.spec.ts:8:1 › demo safety labels are visible on every surface that shows HS / tariff / FTA / policy data (1.6s)
+  ✓  1 smoke.spec.ts:5:1 › login → V12 navigation → goods shows the BLOCKED item → copilot answers → release gate blocked (2.0s)
+
+  2 passed (5.4s)
+E2E_EXIT=0
+
+===== [10] Owner acceptance flow A–P over HTTP (LOCAL stack, DB=vip_customs_g16) =====
+{"status":"ready","checks":{"database":"ok","migrations":"0010_copilot_meta","ai_provider":"mock","environment":"test"}}
+[PASS] 0. health/ready — migrations=0010_copilot_meta provider=mock
+[PASS] A. authentication/login (operator, reviewer, senior)
+[PASS] B. create case — VIP-HQ-261009-001
+[PASS] C. upload mock documents (Invoice, PL, B/L, Form E)
+[PASS] D. parse with mock provider
+[PASS] E. package conflict 124/126 detected, not auto-resolved
+[PASS] F. 3 goods items
+[PASS] G. HS 0.87 review / 0.95 / 0.64 blocked — item1=0.87 item2=0.95 item3=0.64 history={1: False, 2: False, 3: False}
+[PASS] H. valuation 17900 + 420 + 100 = 18420
+[PASS] I. C/O + policy demo rules (versioned, is_demo)
+[PASS] J. Copilot answers with sources/confidence/requires_review
+[PASS] K. reviewer resolution with audit (actor/before/after/reason)
+[PASS] L. release gate passes only after all checks — status=REVIEWED
+[PASS] M. READY_TO_EXPORT after all critical resolved
+[PASS] N. DRAFT export (versioned JSON + CSV, watermark, legal notice)
+[PASS] O. approved-only historical memory
+[PASS] P. similar next case finds history (EXACT, +0.05, still NEEDS_REVIEW)
+
+ACCEPTANCE_HTTP: 17/17 steps PASS against http://localhost:8012
+ACCEPTANCE_EXIT=0
+
+===== [11] Negative / security suite (LOCAL stack, DB=vip_customs_g16) =====
+[PASS] invalid auth: no token → 401
+[PASS] invalid auth: tampered token → 401
+[PASS] invalid auth: wrong password → 401
+[PASS] RBAC: operator cannot approve HS critical → 403
+[PASS] RBAC: operator cannot resolve issues → 403
+[PASS] RBAC: operator cannot mark READY → 403
+[PASS] RBAC: operator cannot export release draft → 403
+[PASS] upload: path-traversal filename sanitised (stored as basename, no error)
+[PASS] upload: unsupported type rejected → 422 — got 422
+[PASS] upload: unknown doc_type rejected → 422 — got 422
+[PASS] upload: oversize rejected → 413 — got 413
+[PASS] release gate: open issues block READY (reviewer) → 409
+[PASS] release gate: release draft blocked → 409
+[PASS] tenant/ID isolation: unknown case id → 404 (no enumeration leak)
+[PASS] tenant/ID isolation: unknown document → 404
+[PASS] RBAC: admin has no customs-decision permission
+[PASS] audit records critical actions with actor/before/after
+[PASS] audit chain valid
+
+NEGATIVE_TESTS: 18/18 PASS
+NEGATIVE_EXIT=0
+
+===== [12] FAIL-CLOSED PROBES (G16 fresh, local) =====
+--- (a) APP_SECRET_KEY missing while APP_ENV=production → must refuse to start
+    raise RuntimeError("APP_SECRET_KEY is required outside development")
+RuntimeError: APP_SECRET_KEY is required outside development
+--- (b) APP_SECRET_KEY too short (<32) → must refuse
+    raise RuntimeError("APP_SECRET_KEY must be at least 32 characters")
+RuntimeError: APP_SECRET_KEY must be at least 32 characters
+--- (c) AI_PROVIDER=openai (unsupported) → gateway must fail closed, /ready must be 503
+/Users/viporder/Documents/Codex/2026-10-09/referenced-chatgpt-conversation-this-is-an/work/g16-clean/apps/api/.venv/lib/python3.13/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient as TestClient  # noqa
+HTTP 503 {'status': 'not_ready', 'checks': {'database': 'ok', 'migrations': '0010_copilot_meta', 'ai_provider': "error: AI provider 'openai' is not available in this build", 'environment': 'production'}}
+--- (d) OBJECT_STORAGE_PROVIDER=s3 (unsupported) → must fail closed
+RuntimeError: storage provider 's3' not available in this build
+--- (e) seed_demo.py must refuse outside development/test
+seed_demo refuses to run outside development/test
+
+############################################################
+# FINAL VERIFY at RC SHA 08ff835dc891af0413b9757c37463d425531d1f1 (clean checkout)
+############################################################
+############ G16 FINAL VERIFY at RC 08ff835dc891af0413b9757c37463d425531d1f1 · 2026-10-09T07:38:56Z
+############ node=v22.23.3 · python=Python 3.13.16 · PostgreSQL 16.15 · DB vip_customs_g16
+===== scripts/verify.sh — ruff, pytest(api), pytest(infra), single head, tsc, vitest, vite build, secret scan =====
+All checks passed!
+........................................................................ [100%]
+.venv/lib/python3.13/site-packages/fastapi/testclient.py:1
+72 passed, 1 warning in 19.34s
+...................................................                      [100%]
+51 passed in 0.31s
+ RUN  v2.1.8 /Users/viporder/Documents/Codex/2026-10-09/referenced-chatgpt-conversation-this-is-an/work/g16-clean/apps/web
+ ✓ src/pages/Goods.test.tsx (1 test) 79ms
+ ✓ src/App.test.tsx (2 tests) 256ms
+ Test Files  2 passed (2)
+      Tests  3 passed (3)
+   Start at  14:39:20
+   Duration  2.41s (transform 562ms, setup 690ms, collect 1.01s, tests 336ms, environment 1.61s, prepare 184ms)
+SECRET SCAN: clean
+VERIFY: ALL CHECKS PASSED
