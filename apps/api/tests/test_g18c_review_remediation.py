@@ -141,7 +141,8 @@ def test_hs_decision_rejects_candidate_heading_mismatch(world, client):
 
 # F12 — CSV formula injection
 def test_csv_cells_neutralise_formulas():
-    assert csv_safe('=HYPERLINK("http://evil")') == "'=HYPERLINK(\"http://evil\")" and csv_safe("+1") == "'+1" and csv_safe("-5") == "'-5"
+    assert csv_safe('=HYPERLINK("http://evil")') == "'=HYPERLINK(\"http://evil\")" and csv_safe("+1") == "'+1"
+    assert csv_safe("-5") == "-5" and csv_safe("-5 USD") == "'-5 USD"  # plain numbers stay numeric (G18C-2), text with a dash is quoted
     assert csv_safe("@cmd") == "'@cmd" and csv_safe("plain") == "plain" and csv_safe(None) == "" and csv_safe(12) == "12"
     payload = {"meta": {"watermark": "W", "version": 1, "schema_version": "s", "legal_notice": None}, "case": {"case_no": "C"},
                "items": [{"line_no": 1, "description": "=1+1", "hs": {"code": None, "status": "X"}, "origin": {}, "tax": {}}]}

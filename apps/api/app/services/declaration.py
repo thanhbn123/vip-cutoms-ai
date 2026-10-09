@@ -71,10 +71,14 @@ def build(db: Session, case: CustomsCase) -> dict:
                                       "alternatives": []})
 
     item_rows = []
+    top_by_item: dict = {}
+    if items:  # one query for the top candidate of every item (G18C-2)
+        for c in db.execute(select(HsCandidate).where(HsCandidate.item_id.in_([it.id for it in items]), HsCandidate.status != "SUPERSEDED")
+                            .order_by(HsCandidate.item_id, HsCandidate.rank)).scalars():
+            top_by_item.setdefault(c.item_id, c)
     for it in items:
         a = by_item.get(it.id, {})
-        top = db.execute(select(HsCandidate).where(HsCandidate.item_id == it.id, HsCandidate.status != "SUPERSEDED")
-                         .order_by(HsCandidate.rank)).scalars().first()
+        top = top_by_item.get(it.id)
         tax, co, pol = a.get("TAX"), a.get("CO"), a.get("POLICY")
         item_rows.append({
             "item_id": str(it.id), "line_no": it.line_no, "description": it.description, "description_vn": it.description_vn,

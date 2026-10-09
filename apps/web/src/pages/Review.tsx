@@ -30,7 +30,8 @@ export function Review({ ctx }: { ctx: Ctx }) {
           <h3 style={{ fontSize: 12 }}>Issues hồ sơ hiện tại</h3>
           <div className="list">
             {issues.map((i) => (<Row key={i.id} title={<>{i.title} <Badge s={i.severity} /></>}>{i.category} · {i.target_ref ?? "case"} · {i.assignee_role}{i.detail ? ` · ${i.detail}` : ""}
-              {ctx.can("issue.resolve") && <> · <a href="#" onClick={(e) => { e.preventDefault(); resolve(i); }}>resolve</a></>}
+              {ctx.can("issue.resolve") && !(i.severity === "CRITICAL" && i.auto_resolvable) && <> · <a href="#" onClick={(e) => { e.preventDefault(); resolve(i); }}>resolve</a></>}
+              {i.severity === "CRITICAL" && i.auto_resolvable && <> · <span title="Hệ thống phát hiện: tự đóng khi điều kiện hết; Senior có thể waive kèm bằng chứng">hệ thống</span></>}
               {(i.severity === "CRITICAL" ? ctx.can("issue.waive_critical") : ctx.can("issue.waive_warning")) && <> · <a href="#" onClick={(e) => { e.preventDefault(); waive(i); }}>waive</a></>}</Row>))}
             {!issues.length && ctx.caseId && <Callout kind="pass"><b>Không còn issue mở.</b></Callout>}
           </div>

@@ -153,6 +153,15 @@ def _same(a: str, b: str, how: str) -> bool:
     return norm_text(a) == norm_text(b)
 
 
+FIELD_BY_KEY: dict[str, FieldDef] = {fd.key: fd for fd in FIELD_DEFS}
+
+
+def values_equal(key: str, a: str | None, b: str | None) -> bool:
+    """Equality under the field's own compare semantics (number/name/text), used by approve_field (G18C-2)."""
+    fd = FIELD_BY_KEY.get(key)
+    return _same(a or "", b or "", fd.compare if fd else "text")
+
+
 def map_fields(db: Session, case: CustomsCase, actor: audit.Actor) -> list[IssueSpec]:
     pairs = current_extractions(db, case)
     by_key: dict[str, list[tuple[Document, ExtractedField]]] = {}
@@ -160,7 +169,10 @@ def map_fields(db: Session, case: CustomsCase, actor: audit.Actor) -> list[Issue
         by_key.setdefault(f.key, []).append((d, f))
     existing = {cf.key: cf for cf in db.execute(select(CaseField).where(CaseField.case_id == case.id)).scalars()}
     specs: list[IssueSpec] = []
-    present_doc_types = {d.doc_type for d, _ in pairs}
+    # every CURRENT document counts as "present", including one that failed to parse: an unreadable new invoice version
+    # must still clear the previous version's values (G18C-2), and a critical field it should carry stays NEEDS_REVIEW.
+    present_doc_types = set(db.execute(select(Document.doc_type).where(Document.case_id == case.id,
+                                                                          Document.is_current.is_(True))).scalars().all())
 
     for fd in FIELD_DEFS:
         candidates: list[tuple[Document, ExtractedField]] = []
@@ -179,10 +191,15 @@ def map_fields(db: Session, case: CustomsCase, actor: audit.Actor) -> list[Issue
                                            f"Đã duyệt '{cf.value}' nhưng phiên bản chứng từ hiện tại không trích xuất được trường này.",
                                            target_ref=fd.key, auto_resolvable=True))
                 else:
+                    before = {"value": cf.value, "review_status": cf.review_status, "source_document_id": str(cf.source_document_id)}
                     cf.value, cf.confidence, cf.review_status = None, 0.0, "NEEDS_REVIEW"
                     cf.source_document_id, cf.source_extracted_field_id, cf.source_ref, cf.alternatives = None, None, None, []
                     cf.reasoning = "Chứng từ hiện tại không còn trích xuất được giá trị; giá trị cũ đã bị gỡ (không dùng bằng chứng cũ)."
                     cf.rule_ref = "MAP-STALE-CLEARED"
+                    db.flush()
+                    audit.record(db, tenant_id=case.tenant_id, actor=actor, action="field.cleared", entity_type="case_field", entity_id=cf.id,
+                                 case_id=case.id, before=before, after={"key": fd.key, "value": None, "review_status": "NEEDS_REVIEW"},
+                                 reason="current document versions no longer yield this field")
                     specs.append(IssueSpec(f"missing:{fd.key}", "FIELD_MISSING", "WARNING", "MISSING_DATA", f"Thiếu {fd.label}",
                                            "Chứng từ nguồn đã có nhưng không trích xuất được giá trị.", target_ref=fd.key, auto_resolvable=True))
                 continue

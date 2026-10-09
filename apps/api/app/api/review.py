@@ -117,7 +117,6 @@ class ApproveAllIn(BaseModel):
 def approve_all_fields(case_id: uuid.UUID, body: ApproveAllIn, user: User = Depends(require(Perm.PROPOSAL_DECIDE)), db: Session = Depends(get_db)):
     """Approve every NEEDS_REVIEW critical field that has a value and no open conflict on it. Conflicted fields are skipped (fail closed)."""
     case = load_case(db, user, case_id, for_update=True)
-    reopen_if_exported(db, case, audit.Actor.user(user), "fields approved")
     conflicted = {i.target_ref for i in db.execute(select(Issue).where(Issue.case_id == case.id, Issue.status == "OPEN",
                                                                         Issue.category.in_(("DOCUMENT_CONFLICT", "VALIDATION")))).scalars()}
     approved, skipped = [], []
@@ -132,6 +131,8 @@ def approve_all_fields(case_id: uuid.UUID, body: ApproveAllIn, user: User = Depe
         audit.record(db, tenant_id=case.tenant_id, actor=audit.Actor.user(user), action="field.approved", entity_type="case_field", entity_id=cf.id,
                      case_id=case.id, before={"review_status": "NEEDS_REVIEW"}, after={"key": cf.key, "value": cf.value, "review_status": "APPROVED"},
                      reason=body.reason)
+    if approved:
+        reopen_if_exported(db, case, audit.Actor.user(user), f"{len(approved)} field(s) approved")
     evaluators.run_all(db, case, audit.Actor.user(user))
     recompute_case_status(db, case, audit.Actor.user(user))
     db.commit()

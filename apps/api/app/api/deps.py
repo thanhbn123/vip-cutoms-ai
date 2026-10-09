@@ -22,7 +22,7 @@ def current_user(authorization: str | None = Header(default=None), db: Session =
     except (InvalidToken, ValueError, KeyError) as exc:
         raise HTTPException(status_code=401, detail={"code": "UNAUTHENTICATED", "message": str(exc)}) from exc
     user = db.get(User, subject)
-    if not user or not user.is_active or str(user.tenant_id) != payload["tid"]:
+    if not user or not user.is_active or str(user.tenant_id) != payload.get("tid"):
         raise HTTPException(status_code=401, detail={"code": "UNAUTHENTICATED", "message": "inactive or unknown user"})
     return user
 

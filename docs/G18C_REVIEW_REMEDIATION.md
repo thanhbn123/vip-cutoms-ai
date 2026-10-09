@@ -43,3 +43,24 @@ Senior Reviewer, which is what D-009 always intended.
 | Playwright native | **2 passed** (isolated DB; a first run shared `vip_customs_test` with a concurrent pytest run and failed on login — environment, not product) |
 | Docker boot from zero | migrate to `0012_ai_usage_events`, health/ready 200, 0 restarts, 0 secret leaks |
 | Docker acceptance A–P (updated flow: Senior waives criticals with evidence) | **17/17** · Playwright vs Docker **2/2** |
+
+## Second pass (G18C-2): review of the remediation itself
+
+A second high-effort review of the G18C diff (`39e6444...develop`) found 14 follow-ups; all are closed.
+
+| # | Finding | Fix | Tests |
+|---|---|---|---|
+| 1 | Stale-value clearing only considered PARSED documents, so an unreadable new invoice version left v1 values in place | `present_doc_types` = every **current** document (any status); critical fields of an unreadable invoice exist empty + NEEDS_REVIEW for manual entry | `test_unreadable_new_version_clears_previous_values`, `test_binary_document_fails_closed_to_manual_review` (updated) |
+| 2 | OPEN issues did not take a promoted severity (e.g. `ITEM_NOT_ON_INVOICE` WARNING→CRITICAL) | `sync` refreshes severity, category, target, auto_resolvable, assignee on OPEN rows | `test_already_open_issue_takes_the_promoted_severity` |
+| 3 | A reviewer-RESOLVED/WAIVED issue whose condition *changed* stayed hidden | reopen when evidence/title differ from the stored ones (same condition → the human decision stands) | `test_user_resolved_issue_reopens_when_condition_changes` |
+| 4 | Clearing a critical field wrote no audit event | `field.cleared` audit with before/after | same test (audit assertion) |
+| 5 | `csv_safe` quoted negative numbers | plain numbers (incl. negatives) pass through; only non-numeric text starting with `=+-@` is quoted | `test_csv_safe_keeps_numbers_numeric` |
+| 6 | UI still offered "resolve" on system criticals (→ opaque 409); `IssueOut` lacked `auto_resolvable` | `auto_resolvable` exposed; Review page hides resolve for CRITICAL+system issues and labels them | `test_issue_out_exposes_auto_resolvable` |
+| 7 | approve-all reopened an exported case even when nothing was approved | reopen only when ≥1 field approved | release-flow tests |
+| 8 | Same-value detection ignored the field's compare semantics (`126` vs `126.0`) | `mapping.values_equal(key, a, b)` using the field's number/name/text compare | `test_approve_field_same_numeric_value_in_different_notation_keeps_lineage` |
+| 9 | Web client resolved a 2xx non-JSON body to `null` | throws `ApiError(status, "BAD_RESPONSE")` | `api.test.ts` |
+| 10 | `payload["tid"]` outside the guarded path | `.get` (decode_token already guarantees it) | token tests |
+| 11 | Promoted/new fail-closed behaviours shipped untested | tests for orphan line CRITICAL, `ITEM_DESCRIPTION_MISSING`, reviewer-decided preferential rate precedence | `test_orphan_invoice_line_is_critical_and_blocks`, `test_invoice_row_without_description_blocks_instead_of_500`, `test_reviewer_decided_preferential_rate_wins_over_recomputation` |
+| 12 | Duplicate HS_RULES shape check in `register` | removed (validate_payload is the single source) | package tests |
+| 13 | N+1 top-candidate query in `declaration.build` | one grouped query | declaration tests |
+| 14 | Reopen branch refreshed only some attributes | shared `_refresh` used by both branches | covered by 2/3 |

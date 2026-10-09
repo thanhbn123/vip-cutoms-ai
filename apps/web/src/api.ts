@@ -29,6 +29,7 @@ export async function api<T = unknown>(path: string, init: RequestInit = {}): Pr
   const text = await res.text();
   let body: any = null;
   try { body = text ? JSON.parse(text) : null; } catch { body = null; }  // proxy HTML (502/504/413) is not JSON
+  if (res.ok && text && body === null) throw new ApiError(res.status, "BAD_RESPONSE", "Phản hồi không phải JSON (proxy/SPA fallback?)");
   if (!res.ok) {
     if (body === null) throw new ApiError(res.status, "UPSTREAM", text ? `Máy chủ trả về lỗi ${res.status} (không phải JSON)` : res.statusText);
     const d = body?.detail;
@@ -57,7 +58,7 @@ export interface Doc { id: string; doc_type: string; filename: string; version: 
 export interface Field { id?: string; key: string; label: string; section: string; value: string | null; confidence: number | null; is_critical: boolean; review_status: string; origin: string | null; source?: { document_id?: string | null; source_ref?: string | null } | null; source_ref?: string | null; reasoning: string | null; rule_ref?: string | null; alternatives: { value: string; doc_type: string }[] }
 export interface Candidate { id: string; rank: number; heading: string; title: string; confidence: number; reasoning: string[]; missing_attributes: string[]; history_refs: { case_no: string; hs_code: string; match: string; reusable: boolean; outcome: string }[]; dataset_version: string; status: string }
 export interface Item { id: string; line_no: number; description: string; description_vn: string | null; description_vn_status: string; model: string | null; quantity: string | null; unit: string | null; unit_price: string | null; amount: string | null; attributes: Record<string, { value: string; source: string }>; hs_code: string | null; hs_status: string; hs_confidence: number | null; co_line_matched: boolean | null; origin_criterion: string | null; source_ref: string | null; candidates: Candidate[] }
-export interface Issue { id: string; code: string; severity: string; category: string; title: string; detail: string | null; target_ref: string | null; status: string; assignee_role: string | null; resolution: string | null }
+export interface Issue { id: string; code: string; severity: string; category: string; title: string; detail: string | null; target_ref: string | null; status: string; assignee_role: string | null; resolution: string | null; auto_resolvable?: boolean }
 export interface Assessment { id: string; item_id: string | null; kind: string; status: string; dataset_version: string | null; dataset_is_demo: boolean | null; inputs: Record<string, unknown>; result: Record<string, unknown>; reasoning: string[]; reviewer_decision: { decision: string } | null }
 export interface Declaration { case: { case_no: string; status: string }; readiness: number; summary: { fields_total: number; fields_ok: number; items_total: number; items_hs_approved: number; open_critical: number; open_warning: number; documents: Doc[] }; sections: { id: string; title: string; fields: Field[] }[]; items: unknown[]; validation: { code: string; ok: boolean; severity: string; message: string }[]; release_eligible: boolean; disclaimer: string }
 export interface Dataset { id: string; kind: string; version: string; label: string; source: string; is_demo: boolean; effective_from: string; effective_to: string | null; is_active: boolean; rule_count: number }
