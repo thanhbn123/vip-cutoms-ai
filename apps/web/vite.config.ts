@@ -10,5 +10,5 @@ export default defineConfig({
     port: 5173,
     proxy: { "/api": apiTarget, "/health": apiTarget, "/ready": apiTarget },
   },
-  test: { environment: "jsdom", globals: true, setupFiles: ["./src/test-setup.ts"], include: ["src/**/*.test.tsx"], exclude: ["e2e/**", "node_modules/**"] },
+  test: { environment: "jsdom", globals: true, setupFiles: ["./src/test-setup.ts"], include: ["src/**/*.test.{ts,tsx}"], exclude: ["e2e/**", "node_modules/**"] },
 });

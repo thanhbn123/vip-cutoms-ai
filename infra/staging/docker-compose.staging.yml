@@ -77,6 +77,7 @@ services:
     environment:
       PUBLIC_HOST: ${PUBLIC_HOST:?}          # e.g. staging.example.internal — supplied by the owner, never committed
       TLS_MODE: ${TLS_MODE:-internal}        # internal (self-signed) | acme (public DNS) | <email> (ACME) | off (upstream TLS)
+      METRICS_ALLOW_FROM: ${METRICS_ALLOW_FROM:-127.0.0.1/32}  # CIDR(s) allowed to read /metrics via the proxy (G18C); default = none
     # TLS_MODE is translated into the two variables the Caddyfile reads. `tls off` / `tls acme`
     # are NOT valid Caddy v2 syntax, so passing TLS_MODE straight to the tls directive aborts
     # config adaptation and the proxy never starts. Fail fast on an unknown mode.

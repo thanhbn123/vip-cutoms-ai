@@ -15,7 +15,7 @@ from app.models.copilot import CopilotMessage, Proposal
 from app.models.goods import GoodsItem
 from app.models.identity import User
 from app.services import audit, copilot, evaluators
-from app.services.release import recompute_case_status
+from app.services.release import recompute_case_status, reopen_if_exported
 
 router = APIRouter(tags=["copilot"])
 
@@ -93,6 +93,8 @@ def decide(case_id: uuid.UUID, proposal_id: uuid.UUID, body: DecideIn, user: Use
         raise DomainError("PROPOSAL_DECIDED", f"proposal already {p.status}")
     if p.requested_by == user.id:
         raise DomainError("SEPARATION_OF_DUTIES", "the requester of a proposal cannot approve it (D-011)")
+    if body.decision == "APPROVE":
+        reopen_if_exported(db, case, audit.Actor.user(user), "proposal applied")
     p.status = "APPROVED" if body.decision == "APPROVE" else "REJECTED"
     p.decided_by, p.decided_at, p.decision_reason = user.id, utcnow(), body.reason
     applied = None

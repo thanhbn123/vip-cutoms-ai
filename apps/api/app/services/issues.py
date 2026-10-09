@@ -54,6 +54,13 @@ def sync(db: Session, case: CustomsCase, specs: list[IssueSpec], owner: str) -> 
                          evidence=spec.evidence)
         elif cur.status == "OPEN":
             cur.detail, cur.evidence, cur.title = spec.detail, spec.evidence, spec.title
+        elif cur.status == "RESOLVED" and cur.resolved_by_type == "SYSTEM":
+            # auto-resolved earlier, condition detected again → reopen (never leave a live condition hidden, G18C)
+            cur.status, cur.resolved_at, cur.resolution, cur.resolved_by_type = "OPEN", None, None, None
+            cur.detail, cur.evidence, cur.title, cur.severity = spec.detail, spec.evidence, spec.title, spec.severity
+            audit.record(db, tenant_id=case.tenant_id, actor=audit.Actor.system(), action="issue.reopened", entity_type="issue",
+                         entity_id=cur.id, case_id=case.id, before={"status": "RESOLVED"}, after={"status": "OPEN", "code": cur.code},
+                         reason="Condition detected again after re-evaluation")
     for key, cur in existing.items():
         if key not in seen and cur.status == "OPEN" and cur.auto_resolvable:
             cur.status = "RESOLVED"

@@ -23,7 +23,7 @@ from app.models.identity import User
 from app.models.issue import Issue
 from app.services import audit, declaration, evaluators, release
 from app.services.export_adapters import ADAPTERS
-from app.services.release import recompute_case_status
+from app.services.release import recompute_case_status, reopen_if_exported
 from app.services.workflow import CaseStatus, transition
 
 router = APIRouter(tags=["review"])
@@ -65,6 +65,7 @@ def _issue(db: Session, user: User, case_id: uuid.UUID, issue_id: uuid.UUID) -> 
 def _close(db, case, user, issue: Issue, status: str, body: ResolveIn, action: str) -> Issue:
     if issue.status != "OPEN":
         raise DomainError("ISSUE_NOT_OPEN", f"issue is {issue.status}")
+    reopen_if_exported(db, case, audit.Actor.user(user), f"issue {issue.code} {status.lower()}")
     before = {"status": issue.status}
     issue.status = status
     issue.resolved_by = user.id
@@ -85,7 +86,15 @@ def _close(db, case, user, issue: Issue, status: str, body: ResolveIn, action: s
 def resolve_issue(case_id: uuid.UUID, issue_id: uuid.UUID, body: ResolveIn, user: User = Depends(require(Perm.ISSUE_RESOLVE)),
                   db: Session = Depends(get_db)):
     case = load_case(db, user, case_id, for_update=True)
-    return _close(db, case, user, _issue(db, user, case_id, issue_id), "RESOLVED", body, "issue.resolved")
+    issue = _issue(db, user, case_id, issue_id)
+    if issue.severity == "CRITICAL" and issue.auto_resolvable:
+        # System-detected fail-closed conditions (knowledge unavailable, provider failed, low-confidence HS, unreadable
+        # document) clear only when re-evaluation no longer detects them. A human may WAIVE them (Senior + evidence), never
+        # "resolve" them with a sentence (G18C review finding).
+        raise DomainError("SYSTEM_ISSUE_NOT_RESOLVABLE",
+                          "this critical issue is detected by the system; fix the underlying condition and re-run the pipeline, "
+                          "or have a Senior Reviewer waive it with evidence", details={"code": issue.code})
+    return _close(db, case, user, issue, "RESOLVED", body, "issue.resolved")
 
 
 @router.post("/cases/{case_id}/issues/{issue_id}/waive", response_model=IssueOut)
@@ -108,6 +117,7 @@ class ApproveAllIn(BaseModel):
 def approve_all_fields(case_id: uuid.UUID, body: ApproveAllIn, user: User = Depends(require(Perm.PROPOSAL_DECIDE)), db: Session = Depends(get_db)):
     """Approve every NEEDS_REVIEW critical field that has a value and no open conflict on it. Conflicted fields are skipped (fail closed)."""
     case = load_case(db, user, case_id, for_update=True)
+    reopen_if_exported(db, case, audit.Actor.user(user), "fields approved")
     conflicted = {i.target_ref for i in db.execute(select(Issue).where(Issue.case_id == case.id, Issue.status == "OPEN",
                                                                         Issue.category.in_(("DOCUMENT_CONFLICT", "VALIDATION")))).scalars()}
     approved, skipped = [], []
@@ -201,8 +211,12 @@ def review_queue(user: User = Depends(require(Perm.CASE_READ)), db: Session = De
     cases = db.execute(select(CustomsCase).where(CustomsCase.tenant_id == user.tenant_id,
                                                  CustomsCase.status.in_(("REVIEW_REQUIRED", "BLOCKED", "REVIEWED", "AI_PROCESSING")))).scalars().all()
     rows = []
+    by_case: dict = {}
+    if cases:  # one query for every case's open issues instead of one per case (G18C)
+        for i in db.execute(select(Issue).where(Issue.case_id.in_([c.id for c in cases]), Issue.status == "OPEN")).scalars():
+            by_case.setdefault(i.case_id, []).append(i)
     for c in cases:
-        issues = db.execute(select(Issue).where(Issue.case_id == c.id, Issue.status == "OPEN")).scalars().all()
+        issues = by_case.get(c.id, [])
         crit = sum(i.severity == "CRITICAL" for i in issues)
         rows.append({"case_id": str(c.id), "case_no": c.case_no, "status": c.status, "priority": c.priority, "owner_id": str(c.owner_id),
                      "reviewer_id": str(c.reviewer_id) if c.reviewer_id else None, "open_critical": crit, "open_warning": len(issues) - crit,

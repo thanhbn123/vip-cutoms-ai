@@ -32,6 +32,17 @@ def recompute_case_status(db: Session, case: CustomsCase, actor: audit.Actor) ->
     return case.status
 
 
+def reopen_if_exported(db: Session, case: CustomsCase, actor: audit.Actor, reason: str) -> bool:
+    """A decision that changes case data after READY_TO_EXPORT/DRAFT_EXPORTED reopens the case for review (G18C).
+
+    Otherwise the released draft silently diverges from the case. Returns True when a transition happened.
+    """
+    if case.status in (CaseStatus.READY_TO_EXPORT.value, CaseStatus.DRAFT_EXPORTED.value):
+        transition(db, case, CaseStatus.REVIEW_REQUIRED, actor, reason=f"reopened: {reason} after {case.status}")
+        return True
+    return False
+
+
 def gate(db: Session, case: CustomsCase) -> dict:
     """Release gate = declaration validation (all CRITICAL checks ok). Deterministic, no LLM."""
     from app.services import declaration

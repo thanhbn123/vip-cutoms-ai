@@ -16,6 +16,7 @@ from app.models.issue import Issue
 from app.services import audit, evaluators, mapping
 from app.services.issues import IssueSpec
 from app.services.issues import sync as sync_issues
+from app.services.release import reopen_if_exported
 from app.services.workflow import CaseStatus, transition
 
 router = APIRouter(tags=["pipeline"])
@@ -88,12 +89,20 @@ def run_pipeline(db: Session, case, user: User, *, parse: bool = True) -> dict:
         for d in docs:
             mapping.parse_document(db, case, d, actor)
             parsed += 1
-    failed = [d for d in docs if d.status == "PARSE_FAILED" and any(str(w).startswith("provider failure") for w in (d.parse_warnings or []))]
-    sync_issues(db, case, [IssueSpec(f"provider_failed:{d.id}", "AI_PROVIDER_FAILED", "CRITICAL", "DOCUMENT",
-                                     f"{d.doc_type} {d.filename}: AI provider không trả kết quả hợp lệ",
-                                     "Không có giá trị nào được trích xuất (fail-closed). Thử lại pipeline hoặc nhập thủ công; không suy đoán.",
-                                     target_ref=f"document:{d.id}", auto_resolvable=True, evidence=[{"warnings": d.parse_warnings}])
-                           for d in failed], "provider")
+    specs = []
+    for d in docs:
+        if d.status != "PARSE_FAILED":
+            continue
+        provider_failed = any(str(w).startswith("provider failure") for w in (d.parse_warnings or []))
+        # Any current document that yielded no values blocks the case (G18C): a scanned invoice nobody could read must
+        # never let a case reach REVIEWED just because the other documents parsed.
+        specs.append(IssueSpec(f"provider_failed:{d.id}" if provider_failed else f"unreadable:{d.id}",
+                               "AI_PROVIDER_FAILED" if provider_failed else "DOCUMENT_UNREADABLE", "CRITICAL", "DOCUMENT",
+                               f"{d.doc_type} {d.filename}: " + ("AI provider không trả kết quả hợp lệ" if provider_failed
+                                                                else "không trích xuất được dữ liệu (scan/ảnh hoặc định dạng không đọc được)"),
+                               "Không có giá trị nào được trích xuất (fail-closed). Tải lại bản đọc được, thử lại pipeline hoặc nhập thủ công; không suy đoán.",
+                               target_ref=f"document:{d.id}", auto_resolvable=True, evidence=[{"warnings": d.parse_warnings}]))
+    sync_issues(db, case, specs, "provider")
     mapping.map_fields(db, case, actor)
     evaluators.run_all(db, case, actor)
     from app.services.release import recompute_case_status
@@ -157,7 +166,10 @@ def approve_field(case_id: uuid.UUID, key: str, body: FieldSetIn | None = None, 
     cf = db.execute(select(CaseField).where(CaseField.case_id == case.id, CaseField.key == key)).scalar()
     if cf is None:
         raise HTTPException(status_code=404, detail={"code": "NOT_FOUND", "message": "field not mapped"})
-    if body and body.value:
+    reopen_if_exported(db, case, audit.Actor.user(user), f"field {key} approved")
+    if body and body.value and (body.value.strip() != (cf.value or "").strip() or cf.alternatives):
+        # A different value, or an explicit choice among conflicting document values, is a reviewer entry (field.manual_set).
+        # The SAME value on an unconflicted field is an approval of the AI value and keeps its document lineage (G18C).
         cf = mapping.set_field_manual(db, case, user, key, body.value, body.reason)
     else:
         if not cf.value:

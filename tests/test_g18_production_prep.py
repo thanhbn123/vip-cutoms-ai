@@ -227,8 +227,12 @@ def test_caddyfile_restricts_metrics_to_private_ranges_and_health_checks_the_api
     metrics = re.search(r"@metrics_private path /metrics\n\thandle @metrics_private \{(.*?)\n\t\}", text, re.S)
     assert metrics, "/metrics must have its own handle block"
     block = metrics.group(1)
-    assert "remote_ip private_ranges" in block and "respond 404" in block and "reverse_proxy api:8000" in block
+    assert "remote_ip {$METRICS_ALLOW_FROM:127.0.0.1/32}" in block and "respond 404" in block and "reverse_proxy api:8000" in block
+    assert "private_ranges" not in block, "private_ranges would admit an upstream proxy's address when TLS_MODE=off (G18C)"
     api = re.search(r"handle @api \{\n\t\treverse_proxy api:8000 \{(.*?)\n\t\t\}", text, re.S)
     assert api and "health_uri /health" in api.group(1)
-    # /metrics must NOT be matched by the generic api matcher (that would bypass the restriction)
-    assert "/metrics" not in re.search(r"@api path (.*)", text).group(1)
+    # /metrics must NOT be matched by the generic api matcher (that would bypass the restriction); /docs is never proxied (G18C)
+    api_paths = re.search(r"@api path (.*)", text).group(1)
+    assert "/metrics" not in api_paths and "/docs" not in api_paths and "/openapi.json" not in api_paths
+    assert "METRICS_ALLOW_FROM: ${METRICS_ALLOW_FROM:-127.0.0.1/32}" in STAGING_COMPOSE.read_text()
+    assert _env(PROD_ENV)["METRICS_ALLOW_FROM"] == "127.0.0.1/32"

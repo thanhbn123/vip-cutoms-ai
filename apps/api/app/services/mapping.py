@@ -171,6 +171,21 @@ def map_fields(db: Session, case: CustomsCase, actor: audit.Actor) -> list[Issue
                         candidates.append((d, f))
         cf = existing.get(fd.key)
         if not candidates:
+            if cf is not None and cf.origin == "AI" and cf.value is not None and (set(fd.sources) & present_doc_types):
+                # the current document versions no longer yield this field → the old AI value is stale evidence (G18C)
+                if cf.review_status == "APPROVED":
+                    specs.append(IssueSpec(f"approved_source_gone:{fd.key}", "APPROVED_SOURCE_GONE", "WARNING", "DOCUMENT_CONFLICT",
+                                           f"{fd.label}: giá trị đã duyệt không còn chứng từ hiện tại chứng minh",
+                                           f"Đã duyệt '{cf.value}' nhưng phiên bản chứng từ hiện tại không trích xuất được trường này.",
+                                           target_ref=fd.key, auto_resolvable=True))
+                else:
+                    cf.value, cf.confidence, cf.review_status = None, 0.0, "NEEDS_REVIEW"
+                    cf.source_document_id, cf.source_extracted_field_id, cf.source_ref, cf.alternatives = None, None, None, []
+                    cf.reasoning = "Chứng từ hiện tại không còn trích xuất được giá trị; giá trị cũ đã bị gỡ (không dùng bằng chứng cũ)."
+                    cf.rule_ref = "MAP-STALE-CLEARED"
+                    specs.append(IssueSpec(f"missing:{fd.key}", "FIELD_MISSING", "WARNING", "MISSING_DATA", f"Thiếu {fd.label}",
+                                           "Chứng từ nguồn đã có nhưng không trích xuất được giá trị.", target_ref=fd.key, auto_resolvable=True))
+                continue
             if fd.critical and cf is None and (set(fd.sources) & present_doc_types):
                 # a source document exists but did not yield the field → explicit NEEDS_REVIEW, never a fabricated value
                 cf = CaseField(tenant_id=case.tenant_id, case_id=case.id, key=fd.key, section=fd.section, label=fd.label,

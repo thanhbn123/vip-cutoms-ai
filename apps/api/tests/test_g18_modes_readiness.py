@@ -54,9 +54,13 @@ def _apply(monkeypatch, env: dict[str, str]) -> Settings:
 
 def _authoritative_world(db, admin, *, effective_to: date | None = None, kinds=KINDS) -> list[KnowledgeDataset]:
     out = []
+    payloads = {"HS_RULES": {"rules": [{"heading": "8413", "title": "Pumps", "keywords": ["pump"], "base_confidence": 0.9}]},
+                "TARIFF": {"rates": {"8413": {"mfn_duty_pct": 1.0, "vat_pct": 10.0}}},
+                "FTA": {"forms": {"E": {"agreement": "ACFTA (test)", "origin_countries": ["CN"], "allowed_criteria": ["WO"], "checks": [],
+                                        "preferential_duty_pct": {"8413": 0.0}}}},
+                "POLICY": {"requirements": {}}}
     for kind in kinds:
-        payload = {"rules": [{"heading": "8413", "title": "Pumps", "keywords": ["pump"], "base_confidence": 0.9}]} if kind == "HS_RULES" \
-            else {"rates": {"8413": {"mfn_duty_pct": 1.0, "vat_pct": 10.0}}}
+        payload = payloads[kind]
         pkg = DatasetPackage(kind=kind, version=f"auth-{kind.lower()}-2026.01", label=f"Authoritative {kind} (test)",
                              effective_from=date(2026, 1, 1), effective_to=effective_to, source_authority="Test Authority",
                              source_document="Decision 1/2026/TEST", source_reference="https://example.test/legal/1-2026", payload=payload)
