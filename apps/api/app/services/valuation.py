@@ -11,6 +11,7 @@ from app.models.case import CustomsCase
 from app.models.extraction import CaseField
 from app.models.goods import GoodsItem
 from app.services import assessments, audit
+from app.services.hs_lookup import lookup
 from app.services.issues import IssueSpec, sync
 from app.services.knowledge import ConflictingDatasets, NoActiveDataset, dataset_payload, require_dataset
 from app.services.normalize import norm_text, parse_decimal
@@ -97,10 +98,11 @@ def evaluate(db: Session, case: CustomsCase, actor: audit.Actor) -> None:
                                inputs={"item_value": str(item_value) if item_value else None, "hs_code": None},
                                result={}, reasoning=["Chưa có HS được duyệt → không tính thuế."])
             continue
-        rate = rates.get(it.hs_code[:4])
+        hit = lookup(rates, it.hs_code)  # longest matching key: 8-digit line if present, else the heading (G18B)
+        rate_key, rate = hit if hit else (None, None)
         if rate is None:
             assessments.upsert(db, case, "TAX", it.id, status="RATE_NOT_FOUND", ds=tariff_ds,
-                               inputs={"hs_code": it.hs_code}, result={}, reasoning=[f"Không có dòng thuế demo cho nhóm {it.hs_code[:4]}."])
+                               inputs={"hs_code": it.hs_code}, result={}, reasoning=[f"Không có dòng thuế cho mã {it.hs_code} (nhóm {it.hs_code[:4]})."])
             specs.append(IssueSpec(f"tax_rate:item:{it.line_no}", "TARIFF_RATE_NOT_FOUND", "WARNING", "VALUATION",
                                    f"Item {it.line_no}: không tìm thấy thuế suất cho {it.hs_code}", target_ref=f"item:{it.line_no}", auto_resolvable=True))
             continue
@@ -111,7 +113,7 @@ def evaluate(db: Session, case: CustomsCase, actor: audit.Actor) -> None:
             duty_pct = pref
             r.append(f"Áp dụng thuế suất ưu đãi {pref}% theo quyết định reviewer trên C/O (form {co.inputs.get('form')}).")
         else:
-            r.append(f"Thuế suất MFN demo {duty_pct}% cho nhóm {it.hs_code[:4]}; chưa áp dụng FTA (chưa có quyết định reviewer).")
+            r.append(f"Thuế suất MFN {duty_pct}% theo dòng {rate_key} ({tariff_ds.version}); chưa áp dụng FTA (chưa có quyết định reviewer).")
         vat_pct = Decimal(str(rate["vat_pct"]))
         if item_value is None:
             assessments.upsert(db, case, "TAX", it.id, status="INPUT_MISSING", ds=tariff_ds,

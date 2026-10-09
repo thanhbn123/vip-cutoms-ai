@@ -9,6 +9,7 @@ from app.models.case import CustomsCase
 from app.models.extraction import CaseField
 from app.models.goods import GoodsItem, HsCandidate
 from app.services import assessments, audit
+from app.services.hs_lookup import lookup_value
 from app.services.issues import IssueSpec, sync
 from app.services.knowledge import ConflictingDatasets, NoActiveDataset, dataset_payload, require_dataset
 from app.services.mapping import current_extractions
@@ -67,12 +68,12 @@ def evaluate(db: Session, case: CustomsCase, actor: audit.Actor) -> None:
     for it in items:
         prev = assessments.get(db, case.id, "CO", it.id)
         inputs = {"form": form, "origin_criterion": it.origin_criterion, "co_line_matched": it.co_line_matched, "header_checks": header_checks}
-        heading = it.hs_code[:4] if it.hs_status == "APPROVED" and it.hs_code else None
-        if heading is None:
+        code = it.hs_code if it.hs_status == "APPROVED" and it.hs_code else None  # full code → longest-prefix rate lookup (G18B)
+        if code is None:
             top = db.execute(select(HsCandidate).where(HsCandidate.item_id == it.id, HsCandidate.status == "PROPOSED")
                              .order_by(HsCandidate.rank)).scalars().first()
-            heading = top.heading if top else None
-        pref = (rule or {}).get("preferential_duty_pct", {}).get(heading) if heading else None
+            code = top.heading if top else None
+        pref = lookup_value((rule or {}).get("preferential_duty_pct", {}), code) if code else None
         result = {"preferential_duty_pct": pref, "heading_basis": "approved" if it.hs_status == "APPROVED" else "candidate (provisional)",
                   "agreement": (rule or {}).get("agreement")}
         item_reasons = list(reasons)
@@ -93,7 +94,7 @@ def evaluate(db: Session, case: CustomsCase, actor: audit.Actor) -> None:
                                    auto_resolvable=True))
         elif pref is None:
             status = "NEEDS_REVIEW"
-            item_reasons.append(f"Không có thuế suất ưu đãi demo cho nhóm {heading} trong {rule['agreement']}.")
+            item_reasons.append(f"Không có thuế suất ưu đãi cho mã {code} trong {rule['agreement']}.")
         else:
             status = "ELIGIBLE_PENDING_REVIEW"
             item_reasons.append(f"Tất cả kiểm tra tự động đạt; ưu đãi {pref}% ({rule['agreement']}) CHỈ áp dụng sau khi reviewer quyết định.")

@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import ensure, load_case, require
 from app.api.pipeline import IssueOut
 from app.core.errors import DomainError, not_found
+from app.core.http import content_disposition
 from app.core.rbac import Perm, has_perm
 from app.db import get_db
 from app.models.base import utcnow
@@ -192,7 +193,7 @@ def download_draft(draft_id: uuid.UUID, format: Literal["json", "csv"] = "json",
     adapter = ADAPTERS[format]
     fname = f"{d.payload['case']['case_no']}-draft-v{d.version}.{format}"
     return Response(content=adapter.render(d.payload), media_type=adapter.content_type,
-                    headers={"Content-Disposition": f'attachment; filename="{fname}"', "X-Draft-Checksum": d.checksum, "Cache-Control": "private, no-store"})
+                    headers={"Content-Disposition": content_disposition(fname), "X-Draft-Checksum": d.checksum, "Cache-Control": "private, no-store"})
 
 
 @router.get("/review/queue")

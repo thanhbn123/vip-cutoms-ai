@@ -22,9 +22,24 @@
 		Referrer-Policy "no-referrer"
 		Content-Security-Policy "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; connect-src 'self'"
 	}
+	# /metrics (G18B): counters only, but not for the public internet — monitoring host must be on a private
+	# network / the host itself. Everything else gets 404 (not 403, to avoid advertising the endpoint).
+	@metrics_private path /metrics
+	handle @metrics_private {
+		@allowed remote_ip private_ranges 127.0.0.1/8 ::1
+		handle @allowed {
+			reverse_proxy api:8000
+		}
+		respond 404
+	}
 	@api path /api/* /health /ready /docs /openapi.json
 	handle @api {
-		reverse_proxy api:8000
+		reverse_proxy api:8000 {
+			# route only to a live api (G18B); /health is dependency-free so a DB outage does not flap the proxy
+			health_uri /health
+			health_interval 15s
+			health_timeout 5s
+		}
 	}
 	handle {
 		reverse_proxy web:80

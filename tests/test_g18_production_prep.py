@@ -216,3 +216,19 @@ def test_offsite_fails_when_no_local_backup_exists(tmp_path):
     r = _run(tmp_path, _write_env(tmp_path, bd, OFFSITE_METHOD="rclone", OFFSITE_TARGET="remote:bucket/vip", OFFSITE_ALLOW_PLAINTEXT="yes"),
              _fake_bin(tmp_path))
     assert r.returncode == 1 and "no local backup pair" in r.stderr
+
+
+# ---------------------------------------------------------------------------- G18B proxy hardening
+CADDYFILE = REPO / "infra" / "staging" / "Caddyfile"
+
+
+def test_caddyfile_restricts_metrics_to_private_ranges_and_health_checks_the_api():
+    text = CADDYFILE.read_text()
+    metrics = re.search(r"@metrics_private path /metrics\n\thandle @metrics_private \{(.*?)\n\t\}", text, re.S)
+    assert metrics, "/metrics must have its own handle block"
+    block = metrics.group(1)
+    assert "remote_ip private_ranges" in block and "respond 404" in block and "reverse_proxy api:8000" in block
+    api = re.search(r"handle @api \{\n\t\treverse_proxy api:8000 \{(.*?)\n\t\t\}", text, re.S)
+    assert api and "health_uri /health" in api.group(1)
+    # /metrics must NOT be matched by the generic api matcher (that would bypass the restriction)
+    assert "/metrics" not in re.search(r"@api path (.*)", text).group(1)

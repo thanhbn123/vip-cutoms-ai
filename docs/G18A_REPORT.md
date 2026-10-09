@@ -74,7 +74,7 @@ Critical 0 · High 0 · Medium 0 · Low: the three G16 low hardening items remai
 `nosniff` at the API layer, 500-vs-401 on a malformed signed-token payload) plus two G18 notes: the AI cost ledger
 is in-process (resets on restart) and `/metrics` should be IP-restricted at the proxy once B-06 is decided.
 
-## Known limitations (stated)
+## Known limitations (stated) — items 2, 3 and the ledger/metrics notes were closed in G18B (`docs/G18B_HARDENING.md`)
 - `http-llm` does not OCR scanned documents; they fail closed to manual review until an OCR vendor is chosen.
 - Evaluators look up tariff/policy by 4-digit heading; the national 8-digit depth is wired in when the
   authoritative source (and its key depth) is selected (`G18_OWNER_INPUTS.md` B-02 #6).

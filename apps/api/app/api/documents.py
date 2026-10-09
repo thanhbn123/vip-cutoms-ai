@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import load_case, require
 from app.core.config import get_settings
 from app.core.errors import not_found
+from app.core.http import content_disposition
 from app.core.rbac import Perm
 from app.db import get_db
 from app.models.document import Document
@@ -95,4 +96,4 @@ def download_document(doc_id: uuid.UUID, user: User = Depends(require(Perm.CASE_
     doc = load_document(db, user, doc_id)
     data = get_storage().get(doc.storage_key)
     return Response(content=data, media_type=doc.content_type,
-                    headers={"Content-Disposition": f'attachment; filename="{doc.filename}"', "Cache-Control": "private, no-store"})
+                    headers={"Content-Disposition": content_disposition(doc.filename), "Cache-Control": "private, no-store"})

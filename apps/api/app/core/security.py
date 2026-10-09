@@ -7,6 +7,7 @@ Replaceable by an OIDC identity provider later; the rest of the app only depends
 from __future__ import annotations
 
 import base64
+import binascii
 import hashlib
 import hmac
 import json
@@ -66,7 +67,12 @@ def decode_token(token: str) -> dict:
         raise InvalidToken("malformed") from exc
     if not hmac.compare_digest(sig, _sign(body)):
         raise InvalidToken("bad signature")
-    payload = json.loads(_unb64(body))
-    if payload.get("exp", 0) < time.time():
+    try:
+        payload = json.loads(_unb64(body))
+    except (ValueError, binascii.Error, UnicodeDecodeError) as exc:  # G18B: a signed-but-garbled body is 401, never 500
+        raise InvalidToken("malformed payload") from exc
+    if not isinstance(payload, dict) or not isinstance(payload.get("sub"), str) or not isinstance(payload.get("tid"), str):
+        raise InvalidToken("malformed payload")
+    if not isinstance(payload.get("exp"), (int, float)) or payload["exp"] < time.time():
         raise InvalidToken("expired")
     return payload
