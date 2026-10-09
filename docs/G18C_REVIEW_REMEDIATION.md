@@ -33,5 +33,13 @@ Process change recorded in D-038: a system-detected CRITICAL issue is never "res
 flows (`scripts/acceptance_http.py`, `tests/test_review_release.py`) were updated to waive with evidence as a
 Senior Reviewer, which is what D-009 always intended.
 
-## Verification
-See `docs/STATUS.md` (G18C line) for the counts of the full regression run on the merged develop SHA.
+## Verification (fresh, this gate)
+| Check | Result |
+|---|---|
+| Backend pytest | **152 passed**, 1 skipped (candidate-mismatch test skips when the fixture yields a single heading) |
+| Infra pytest | **103 passed** |
+| Vitest | **5 passed** (3 files; `api.test.ts` added) |
+| tsc · ruff · vite build · secret scan | PASS (`VERIFY: ALL CHECKS PASSED`) |
+| Playwright native | **2 passed** (isolated DB; a first run shared `vip_customs_test` with a concurrent pytest run and failed on login — environment, not product) |
+| Docker boot from zero | migrate to `0012_ai_usage_events`, health/ready 200, 0 restarts, 0 secret leaks |
+| Docker acceptance A–P (updated flow: Senior waives criticals with evidence) | **17/17** · Playwright vs Docker **2/2** |
