@@ -61,3 +61,26 @@ BASE_URL=https://<PUBLIC_HOST> WEB_URL=https://<PUBLIC_HOST> SEED_DEMO_PASSWORD=
 
 ## Bugs / blockers
 Bugs found in this gate: none in application code (one robustness fix to the staging compose `env_file`). Blockers: B-03 staging host/TLS/secrets (owner).
+
+
+## G15B (2026-10-09) — real staging deployment attempt: **BLOCKED_ENV — not executed, nothing deployed**
+
+Inputs now provided: host `160.22.170.20`, user `root`, domain `hq.vipgroup.com.vn`, path `/opt/vip-customs-ai`, DEPLOY_SHA `bfc82cb45cf40453a14208a43fef4660fcc1f067`.
+
+| Check (from the build session) | Result |
+|---|---|
+| Git rebaseline | origin/main `2afdf6b…` ✓ · origin/develop `bfc82cb…` ✓ (no drift) |
+| DNS | `hq.vipgroup.com.vn` → `160.22.170.20` ✓ (DNS_PENDING = NO) |
+| SSH client | installed in-session (OpenSSH 9.6p1) |
+| SSH reachability | **direct `tcp/22` → connection timed out; via egress proxy CONNECT → connection closed (policy)** |
+| SSH credential | **none available** (no key in `~/.ssh`, no password supplied to the session) |
+| HTTPS to the domain / IP | `https://hq.vipgroup.com.vn/` → no connection (000); `http://160.22.170.20/` → 403 from the egress proxy — host not in the environment's allowed network set |
+| Host identity, inventory, build, start, migration, health, TLS, acceptance, Playwright, negative, restart, persistence, backup, restore, logs, performance | **NOT RUN** — would require claims without remote evidence (§ "DO NOT claim PASS without real remote evidence") |
+
+What this gate produced: `docs/G15B_OPERATOR_RUNBOOK.md` — the exact command sequence (sections 2–26 of the brief) using the committed
+`scripts/staging/deploy.sh` and `scripts/staging/acceptance.sh`, runnable from any machine with SSH to the host. The acceptance script accepts an
+`ssh … docker compose …` prefix in `COMPOSE`, so the whole suite can be driven remotely from a workstation.
+
+Remediation to run G15B from a Claude cloud session: allow outbound access to `160.22.170.20` (and `hq.vipgroup.com.vn`) in the environment's
+Network access settings, and provide an SSH key for `root@160.22.170.20` through the environment's secrets. Even then, port 22 must be permitted by
+the egress policy; HTTPS-only policies will still block SSH.

@@ -11,7 +11,7 @@
 | Providers | `AI_PROVIDER=mock` (parser / HS / Copilot) — intentionally, for workflow acceptance |
 | Knowledge data | DEMO DATA — NON-AUTHORITATIVE — NOT FOR CUSTOMS FILING (`is_demo=true` only) |
 | FIRST_DEPLOY | expected YES — `scripts/staging/deploy.sh` records any previous image/DB baseline |
-| Staging host | still NOT PROVIDED → deployment remains BLOCKED_OWNER (B-03) |
+| Staging host | `root@160.22.170.20`, domain `hq.vipgroup.com.vn` (DNS → 160.22.170.20 verified 2026-10-09), path `/opt/vip-customs-ai` — provided in G15B; **deployment not executed: the build session cannot reach tcp/22 and holds no SSH credential** (see G15B section of the acceptance report + `docs/G15B_OPERATOR_RUNBOOK.md`) |
 
 What the candidate adds over `474f7d8`: staging deploy/acceptance automation and docs, negative-test driver, demo-password rotation on
 re-seed, staging compose `env_file` optional for validation, ignore rules for backups/raw logs. No domain or API behaviour change.
