@@ -60,6 +60,7 @@ class IssueOut(BaseModel):
     id: uuid.UUID
     code: str
     severity: str
+    auto_resolvable: bool = False  # system-detected: CRITICAL ones cannot be resolved by hand, only waived (D-038)
     category: str
     title: str
     detail: str | None
@@ -167,7 +168,7 @@ def approve_field(case_id: uuid.UUID, key: str, body: FieldSetIn | None = None, 
     if cf is None:
         raise HTTPException(status_code=404, detail={"code": "NOT_FOUND", "message": "field not mapped"})
     reopen_if_exported(db, case, audit.Actor.user(user), f"field {key} approved")
-    if body and body.value and (body.value.strip() != (cf.value or "").strip() or cf.alternatives):
+    if body and body.value and (not mapping.values_equal(key, body.value, cf.value) or cf.alternatives):
         # A different value, or an explicit choice among conflicting document values, is a reviewer entry (field.manual_set).
         # The SAME value on an unconflicted field is an approval of the AI value and keeps its document lineage (G18C).
         cf = mapping.set_field_manual(db, case, user, key, body.value, body.reason)

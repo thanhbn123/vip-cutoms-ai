@@ -6,6 +6,7 @@ from __future__ import annotations
 import csv
 import io
 import json
+import re
 from typing import Protocol
 
 
@@ -27,9 +28,17 @@ class InternalJsonAdapter:
 _FORMULA_PREFIXES = ("=", "+", "-", "@", "\t", "\r")
 
 
+_NUMERIC = re.compile(r"^-?\d+(\.\d+)?$")
+
+
 def csv_safe(value) -> str:
-    """Neutralise spreadsheet formula injection: a leading =,+,-,@ (or tab/CR) gets a quote prefix (G18C)."""
+    """Neutralise spreadsheet formula injection: a leading =,+,-,@ (or tab/CR) gets a quote prefix (G18C).
+
+    Plain numbers (including negatives such as a discount line) are emitted unchanged so numeric columns stay numeric.
+    """
     s = "" if value is None else str(value)
+    if _NUMERIC.match(s.strip()):
+        return s
     return "'" + s if s.startswith(_FORMULA_PREFIXES) else s
 
 

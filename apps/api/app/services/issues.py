@@ -53,14 +53,14 @@ def sync(db: Session, case: CustomsCase, specs: list[IssueSpec], owner: str) -> 
                          after={"code": spec.code, "severity": spec.severity, "title": spec.title, "target": spec.target_ref},
                          evidence=spec.evidence)
         elif cur.status == "OPEN":
-            cur.detail, cur.evidence, cur.title = spec.detail, spec.evidence, spec.title
+            _refresh(cur, spec)  # including severity: a promoted rule (e.g. WARNING → CRITICAL) applies to already-open rows (G18C-2)
         elif cur.status == "RESOLVED" and cur.resolved_by_type == "SYSTEM":
             # auto-resolved earlier, condition detected again → reopen (never leave a live condition hidden, G18C)
-            cur.status, cur.resolved_at, cur.resolution, cur.resolved_by_type = "OPEN", None, None, None
-            cur.detail, cur.evidence, cur.title, cur.severity = spec.detail, spec.evidence, spec.title, spec.severity
-            audit.record(db, tenant_id=case.tenant_id, actor=audit.Actor.system(), action="issue.reopened", entity_type="issue",
-                         entity_id=cur.id, case_id=case.id, before={"status": "RESOLVED"}, after={"status": "OPEN", "code": cur.code},
-                         reason="Condition detected again after re-evaluation")
+            _reopen(db, case, cur, spec, "Condition detected again after re-evaluation")
+        elif cur.status in ("RESOLVED", "WAIVED") and _condition_changed(cur, spec):
+            # a human closed it for a specific condition; the condition is now DIFFERENT (new evidence/values) → the decision
+            # no longer covers it, reopen and let the reviewer look again (G18C-2)
+            _reopen(db, case, cur, spec, f"Condition changed after re-evaluation (was {cur.status.lower()} by a user)")
     for key, cur in existing.items():
         if key not in seen and cur.status == "OPEN" and cur.auto_resolvable:
             cur.status = "RESOLVED"
@@ -70,6 +70,25 @@ def sync(db: Session, case: CustomsCase, specs: list[IssueSpec], owner: str) -> 
             audit.record(db, tenant_id=case.tenant_id, actor=audit.Actor.system(), action="issue.auto_resolved",
                          entity_type="issue", entity_id=cur.id, case_id=case.id, before={"status": "OPEN"},
                          after={"status": "RESOLVED"}, reason=cur.resolution)
+
+
+def _refresh(cur: Issue, spec: IssueSpec) -> None:
+    cur.detail, cur.evidence, cur.title = spec.detail, spec.evidence, spec.title
+    cur.severity, cur.category, cur.target_ref = spec.severity, spec.category, spec.target_ref
+    cur.auto_resolvable, cur.assignee_role = spec.auto_resolvable, spec.assignee_role
+
+
+def _condition_changed(cur: Issue, spec: IssueSpec) -> bool:
+    return (cur.evidence or []) != (spec.evidence or []) or (cur.title or "") != (spec.title or "")
+
+
+def _reopen(db: Session, case: CustomsCase, cur: Issue, spec: IssueSpec, reason: str) -> None:
+    before = {"status": cur.status, "resolved_by_type": cur.resolved_by_type, "resolution": cur.resolution}
+    cur.status, cur.resolved_at, cur.resolution, cur.resolved_by_type, cur.resolved_by = "OPEN", None, None, None, None
+    _refresh(cur, spec)
+    audit.record(db, tenant_id=case.tenant_id, actor=audit.Actor.system(), action="issue.reopened", entity_type="issue",
+                 entity_id=cur.id, case_id=case.id, before=before, after={"status": "OPEN", "code": cur.code, "severity": cur.severity},
+                 reason=reason, evidence=spec.evidence)
 
 
 def open_issues(db: Session, case: CustomsCase) -> list[Issue]:

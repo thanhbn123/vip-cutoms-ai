@@ -100,4 +100,8 @@ def test_binary_document_fails_closed_to_manual_review(world, client):
     client.post(f"/api/v1/cases/{case['id']}/pipeline/run", headers=world.h())
     doc = client.get(f"/api/v1/cases/{case['id']}/documents", headers=world.h()).json()[0]
     assert doc["status"] == "PARSE_FAILED" and any("manual review" in w for w in doc["parse_warnings"])
-    assert fields_by_key(client, world, case["id"]) == {}  # nothing fabricated
+    # G18C-2: the unreadable invoice is still a present source document, so its critical fields exist for MANUAL entry —
+    # every one of them empty and NEEDS_REVIEW; nothing fabricated, and the case is BLOCKED by DOCUMENT_UNREADABLE.
+    fields = fields_by_key(client, world, case["id"])
+    assert fields and all(f["value"] in (None, "") and f["review_status"] == "NEEDS_REVIEW" and f["is_critical"] for f in fields.values())
+    assert client.get(f"/api/v1/cases/{case['id']}", headers=world.h()).json()["status"] == "BLOCKED"

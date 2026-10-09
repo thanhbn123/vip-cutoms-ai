@@ -200,9 +200,7 @@ def register(db: Session, pkg: DatasetPackage, actor_user: User, *, reason: str)
                           source_authority=pkg.source_authority, source_document=pkg.source_document, source_reference=pkg.source_reference,
                           ingested_at=datetime.now(UTC), is_authoritative=False, checksum=pkg.checksum(), notes=pkg.notes)
     if pkg.kind == "HS_RULES":
-        rules = pkg.payload.get("rules")
-        if not isinstance(rules, list) or not rules:
-            raise DomainError("INVALID_PACKAGE", "HS_RULES payload must contain a non-empty 'rules' list", status_code=422)
+        rules = pkg.payload["rules"]  # shape already enforced by validate_payload
         db.add(ds)
         db.flush()
         for r in rules:
