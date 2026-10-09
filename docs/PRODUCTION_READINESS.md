@@ -49,7 +49,8 @@ work that was explicitly out of scope until now.
 
 | Gap | Why it matters in production | Mitigation available now |
 |---|---|---|
-| **No automated backup.** `docs/STAGING_ROLLBACK.md` documents the commands and says "nightly", but no scheduler existed anywhere in the repo. | A host loss is unbounded data loss. | **Closed by this gate:** `scripts/production/backup.sh` + example systemd timer. Still needs installation (root) and an off-host copy. |
+| **No automated backup.** `docs/STAGING_ROLLBACK.md` documents the commands and says "nightly", but no scheduler existed anywhere in the repo. | A host loss is unbounded data loss. | **Closed by this gate:** `scripts/production/backup.sh` (hardened: `umask 077` + `chmod 600` artifacts, `0700` validated `BACKUP_DIR`, `UMask=0077` on the unit) + example systemd timer. Still needs installation (root) and an off-host copy. |
+| **A live backup is not an atomic snapshot.** The dump and the uploads archive are taken sequentially seconds apart, so they are not one instant of the system. | Expect a few dangling document references around the backup window — not corruption, but not a coherent restore either. | Documented in `docs/PRODUCTION_RUNBOOK.md` §4 with the quiesced procedure for a coherent pair, a post-restore reconciliation command, and filesystem/volume snapshots as the no-outage answer (an infrastructure decision). |
 | **No off-host backup replication.** | Same-host copies do not survive host loss. | Operator must replicate `BACKUP_DIR`. The script says so in its own output. |
 | **No restore drill schedule.** | An untested backup is not a backup. G15C restored once, successfully. | Runbook gives the procedure; cadence is an operations decision. |
 | **No monitoring, alerting or log aggregation.** `/health` and `/ready` exist and are correct; nothing watches them. | An outage is discovered by a user, not an alert. | Runbook §5 specifies exactly what to point a monitor at. Choosing the tool is an owner decision. |
@@ -139,8 +140,10 @@ Each of these is the owner's call. Nothing below has been decided or pre-empted 
 
 ## 5. Recommended sequence
 
-1. Owner reviews this gate and `docs/G16_PRODUCTION_REVIEW.md`; merges `develop` → `main` as a
-   release candidate. Merging does not deploy anything.
+1. Owner reviews this gate and `docs/G16_PRODUCTION_REVIEW.md`, then reviews draft PR #1
+   (`release/g16-rc1` → `develop`) and merges it, so `develop` holds the G16 additions.
+   Re-verify and freeze `develop` at that merge commit, and only then prepare `develop` → `main`.
+   `READY_TO_MERGE_MAIN` is **NO** until those steps are done. Merging deploys nothing.
 2. Resolve **B-07** (cheap, reduces exposure now).
 3. Decide **B-06** for production addressing before provisioning a production host.
 4. Install automated backup + a monitor on `/ready` (§2.2) — these are prerequisites for
