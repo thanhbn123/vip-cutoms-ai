@@ -33,8 +33,10 @@
 # What that means in practice: expect a small number of dangling references near the backup
 # window, not silent data corruption. Restore guidance is in docs/PRODUCTION_RUNBOOK.md §4 —
 # for a restore that must be exact, quiesce writers first (stop `api` and `web`, leave
-# `postgres` up) and take the pair with no traffic in flight. Do not describe the output of a
-# live run as a consistent point-in-time backup, because it is not one.
+# `postgres` up) and take the pair with no traffic in flight. That works because the uploads
+# archive is read by a one-off container rather than by `exec` into the running `api`; see the
+# uploads step below. Do not describe the output of a live run as a consistent point-in-time
+# backup, because it is not one.
 #
 # Exit non-zero on any failure, so a systemd timer / cron job reports it instead of failing
 # silently — a backup job that fails quietly is worse than no backup job.
@@ -103,11 +105,32 @@ _new_private_file "$DB_FILE"
 "${C[@]}" exec -T postgres sh -c 'pg_dump -U "$POSTGRES_USER" -Fc "$POSTGRES_DB"' > "$DB_FILE"
 [ -s "$DB_FILE" ] || die "database dump is empty — refusing to report success"
 
-log "== uploads archive → $UP_FILE  (live directory walk; see the consistency note above)"
-# Streamed out of the api container, which already has the volume mounted, so this needs no
-# knowledge of the volume's name or host path.
+log "== uploads archive → $UP_FILE  (one-off reader; see the consistency note above)"
+# Read the uploads volume through a ONE-OFF container, NOT `docker compose exec`. `exec`
+# requires a running container, so it cannot work during the quiesced procedure in
+# docs/PRODUCTION_RUNBOOK.md §4, which stops `api` and `web` before taking the pair. A one-off
+# container mounts the same `uploads` volume, so this still needs no knowledge of the volume's
+# name or host path, and it starts no writer.
+#   --no-deps        do not start postgres, and do not re-run the one-shot `migrate` service
+#   -T               no pseudo-TTY: the archive is binary on stdout and a TTY would corrupt it
+#   --rm             throw the container away afterwards
+#   --pull never     never reach out to a registry (requires compose >= v2.8)
+#   --entrypoint sh  bypass the image's own CMD, which is
+#                    `sh -c "alembic upgrade head && uvicorn ..."`. Without this override a
+#                    one-off container would RUN MIGRATIONS and then try to serve, instead of
+#                    tarring the volume. `--entrypoint` also discards the compose `command`.
+# `--build` is deliberately absent, so a present image is reused as-is; the pre-flight below
+# fails closed rather than letting a backup silently trigger an image build.
+UPLOADS_IMAGE=$("${C[@]}" config --images api 2>/dev/null | head -1 || true)
+if [ -n "$UPLOADS_IMAGE" ]; then
+  docker image inspect "$UPLOADS_IMAGE" >/dev/null 2>&1 \
+    || die "api image '$UPLOADS_IMAGE' is not present locally — refusing to let a backup build or pull it"
+else
+  log "WARN: could not resolve the api image name — skipping the image pre-flight"
+fi
 _new_private_file "$UP_FILE"
-"${C[@]}" exec -T api sh -c 'tar czf - -C /data/uploads .' > "$UP_FILE"
+"${C[@]}" run --rm --no-deps -T --pull never --entrypoint sh api \
+  -c 'tar czf - -C /data/uploads .' > "$UP_FILE"
 [ -s "$UP_FILE" ] || die "uploads archive is empty — refusing to report success"
 
 log "== checksums"

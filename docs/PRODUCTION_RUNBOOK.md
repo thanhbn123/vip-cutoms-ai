@@ -43,9 +43,12 @@ cd $DEPLOY_PATH
 git fetch origin --prune
 git -c advice.detachedHead=false checkout --detach "$DEPLOY_SHA"
 [ "$(git rev-parse HEAD)" = "$DEPLOY_SHA" ] || { echo "HEAD != DEPLOY_SHA"; exit 1; }
-sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=${DEPLOY_SHA:0:12}/" "$ENV"
+# Baseline backup FIRST, while .env still names the CURRENTLY deployed image. backup.sh
+# resolves the api image from the compose config and refuses to run if it is not present
+# locally, so bumping IMAGE_TAG before this line would make the baseline backup fail.
+bash scripts/production/backup.sh          # step 4 — baseline (skip on a first deploy)
 
-bash scripts/production/backup.sh          # step 4 — baseline before any change (skip on first deploy)
+sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=${DEPLOY_SHA:0:12}/" "$ENV"
 $C build --no-cache
 $C up -d
 $C ps
@@ -153,6 +156,13 @@ DEPLOY_PATH=/opt/vip-customs-ai ENV_FILE=infra/production/.env bash scripts/prod
 $C start api web
 ```
 
+This works because `backup.sh` reads the uploads volume with a **one-off container**
+(`run --rm --no-deps -T --pull never --entrypoint sh api`) rather than `docker compose exec api`.
+`exec` requires a running container and would fail here. The one-off reader mounts the same
+`uploads` volume, starts no dependency and no writer, and `--entrypoint sh` bypasses the image's
+CMD — which is `sh -c "alembic upgrade head && uvicorn ..."`, so without the override the
+backup would apply migrations. `postgres` must stay up for `pg_dump`.
+
 That costs a short write outage and is worth scheduling for a pre-deploy or pre-migration
 baseline, where a half-matched pair is exactly what you cannot afford. The nightly timer
 deliberately does **not** stop the stack: an unattended nightly outage is the wrong trade for a
@@ -161,7 +171,9 @@ filesystem-level snapshot (LVM, ZFS, or the hosting provider's disk snapshot) ta
 instant across both the database and the uploads volume — not something this script can do, and
 an infrastructure decision rather than an application one.
 
-After **any** restore, reconcile the two halves before trusting the result:
+After **any** restore, reconcile the two halves before trusting the result. This one does use
+`exec`, correctly: it runs after `$C up -d` above, so `api` is running again and it needs a live
+database.
 
 ```bash
 # documents whose stored bytes are missing from the restored uploads volume
@@ -208,10 +220,18 @@ $C exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d postgres -qc "DROP DATABA
 ```bash
 $C stop api web                             # stop writers; leave postgres up
 $C exec -T postgres sh -c 'pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --clean --if-exists' < backups/db-<stamp>.dump
-$C exec -T api sh -c 'tar xzf - -C /data/uploads' < backups/uploads-<stamp>.tgz
+# `api` is stopped, so the uploads volume is written through a one-off container, not `exec`
+# (`exec` needs a running container). --no-deps starts nothing else, and --entrypoint sh
+# bypasses the image CMD, which would otherwise run `alembic upgrade head` and then uvicorn.
+$C run --rm --no-deps -T --pull never --entrypoint sh api \
+  -c 'tar xzf - -C /data/uploads' < backups/uploads-<stamp>.tgz
 $C up -d && curl -fsS https://$PUBLIC_HOST/ready
 curl -fsS -H "Authorization: Bearer <token>" https://$PUBLIC_HOST/api/v1/audit/verify   # chain_valid must be true
 ```
+
+`postgres` stays up on purpose: `pg_restore` needs a live server, and `exec` into it is correct
+because it is still running. Only `api` and `web` are stopped, and only the uploads step needs
+the one-off container.
 
 ## 5. Monitoring
 

@@ -234,22 +234,37 @@ def test_systemd_units_point_at_files_that_exist_and_reference_each_other():
 FAKE_DUMP = b"PGDMP-fake-not-a-real-dump\n"
 FAKE_TGZ = b"\x1f\x8b-fake-not-a-real-archive\n"
 
-# Mock `docker`, dispatching on the full argument string the script builds.
-#   <compose...> ps -q postgres      -> a container id, so the "is it running" probe passes
-#   <compose...> exec -T postgres …  -> dump bytes on stdout
-#   <compose...> exec -T api …       -> archive bytes on stdout
+# Mock `docker`, dispatching on the full argument string the script builds. Every invocation is
+# appended to $DOCKER_CALL_LOG so the tests can assert on *how* the script used docker, not just
+# on its output.
+#
+#   <compose…> ps -q postgres        -> a container id, so the "is it running" probe passes
+#   <compose…> config --images api   -> the api image name, for the pre-flight
+#   image inspect <name>             -> success, i.e. the image is present locally
+#   <compose…> exec -T postgres …    -> dump bytes on stdout
+#   <compose…> run --rm --no-deps …  -> archive bytes on stdout (the one-off reader)
+#   <compose…> exec -T api …         -> FAILS, modelling a STOPPED api container. The script
+#                                       must never take this path; `exec` cannot work during
+#                                       the quiesced procedure, which stops api and web.
 FAKE_DOCKER = r"""#!/bin/sh
+echo "$*" >> "$DOCKER_CALL_LOG"
 case "$*" in
-  *"ps -q postgres"*)   echo fakecontainerid ;;
-  *"exec -T postgres"*) printf '%s' '__DUMP__' ;;
-  *"exec -T api"*)      printf '%s' '__TGZ__' ;;
+  *"ps -q postgres"*)       echo fakecontainerid ;;
+  *"config --images api"*)  echo '__IMAGE__' ;;
+  "image inspect"*)         __IMAGE_INSPECT__ ;;
+  *"exec -T postgres"*)     printf '%s' '__DUMP__' ;;
+  *"run --rm --no-deps"*)   printf '%s' '__TGZ__' ;;
+  *"exec -T api"*)
+      echo "Error response from daemon: container for service "api" is not running" >&2
+      exit 1 ;;
   *) echo "fake docker: unexpected invocation: $*" >&2; exit 2 ;;
 esac
 """
 
 
 def _backup_sandbox(tmp_path, *, dump="PGDMP-fake-not-a-real-dump", tgz="GZIP-fake-not-a-real-archive",
-                    retention="14", backup_dir=None):
+                    retention="14", backup_dir=None, image="vip-customs-api:testtag",
+                    image_present=True):
     """Build an isolated DEPLOY_PATH + env file + mocked `docker` on PATH."""
     deploy = tmp_path / "deploy"
     (deploy / "infra" / "production").mkdir(parents=True)
@@ -261,7 +276,10 @@ def _backup_sandbox(tmp_path, *, dump="PGDMP-fake-not-a-real-dump", tgz="GZIP-fa
     bindir = tmp_path / "bin"
     bindir.mkdir()
     docker = bindir / "docker"
-    docker.write_text(FAKE_DOCKER.replace("__DUMP__", dump).replace("__TGZ__", tgz))
+    docker.write_text(
+        FAKE_DOCKER.replace("__DUMP__", dump).replace("__TGZ__", tgz).replace("__IMAGE__", image)
+        .replace("__IMAGE_INSPECT__", "exit 0" if image_present else "exit 1")
+    )
     docker.chmod(0o755)
     return deploy, pathlib.Path(str(backups)), bindir
 
@@ -278,6 +296,7 @@ def _run_backup(deploy, bindir, umask="022"):
             "ENV_FILE": "infra/production/.env",
             "PATH": f"{bindir}:/usr/bin:/bin:/usr/sbin:/sbin",
             "HOME": str(deploy),
+            "DOCKER_CALL_LOG": str(pathlib.Path(deploy).parent / "docker-calls.log"),
         },
         capture_output=True, text=True,
     )
@@ -285,6 +304,11 @@ def _run_backup(deploy, bindir, umask="022"):
 
 def _mode(path: pathlib.Path) -> str:
     return oct(path.stat().st_mode & 0o777)[2:]
+
+
+def _docker_calls(tmp_path) -> list[str]:
+    log = tmp_path / "docker-calls.log"
+    return log.read_text().splitlines() if log.exists() else []
 
 
 def test_backup_run_creates_private_artifacts_despite_a_permissive_umask(tmp_path):
@@ -426,3 +450,87 @@ def test_backup_never_runs_against_a_stack_that_is_not_up(tmp_path):
 def test_systemd_unit_sets_a_restrictive_umask():
     """systemd's default UMask is 0022; the unit must not depend on the script alone."""
     assert re.search(r"^UMask=0?077$", UNIT.read_text(), re.M), "service must set UMask=0077"
+
+
+# ── the uploads archive must not need a running api container ────────────────────────────────
+# The runbook's quiesced procedure stops `api` and `web` before taking the dump/archive pair, so
+# anything that reaches the uploads volume via `docker compose exec api` cannot work there:
+# `exec` requires a running container. The archive is therefore read by a one-off container.
+
+def test_the_mock_models_a_stopped_api_so_the_next_test_is_not_vacuous(tmp_path):
+    """Guard the guard: `exec -T api` against the mock must fail, as it would on a stopped api.
+
+    Without this, a test asserting "backup succeeds while api is stopped" would also pass
+    against a mock that happily answered `exec`, proving nothing.
+    """
+    deploy, _, bindir = _backup_sandbox(tmp_path)
+    proc = subprocess.run(
+        [str(bindir / "docker"), "compose", "-p", "x", "exec", "-T", "api", "sh", "-c", "tar czf - ."],
+        env={"DOCKER_CALL_LOG": str(tmp_path / "probe.log"), "PATH": "/usr/bin:/bin"},
+        capture_output=True, text=True,
+    )
+    assert proc.returncode != 0, "the mock must refuse `exec` into a stopped api"
+    assert "is not running" in proc.stderr
+
+
+def test_backup_succeeds_while_the_api_container_is_stopped(tmp_path):
+    """The actual regression: this is the quiesced procedure's state (api and web stopped)."""
+    deploy, backups, bindir = _backup_sandbox(tmp_path)
+    proc = _run_backup(deploy, bindir)
+    assert proc.returncode == 0, f"backup must work with api stopped:\n{proc.stdout}\n{proc.stderr}"
+    archives = list(backups.glob("uploads-*.tgz"))
+    assert len(archives) == 1 and archives[0].stat().st_size > 0
+
+
+def test_backup_reads_uploads_through_a_one_off_container_not_exec(tmp_path):
+    deploy, _, bindir = _backup_sandbox(tmp_path)
+    assert _run_backup(deploy, bindir).returncode == 0
+    calls = _docker_calls(tmp_path)
+
+    assert not any(" exec -T api" in c for c in calls), \
+        f"the uploads archive must not use `exec` into api: {calls}"
+    runs = [c for c in calls if " run " in c and c.rstrip().endswith("tar czf - -C /data/uploads .")]
+    assert len(runs) == 1, f"expected exactly one one-off uploads reader, got: {calls}"
+    assert "/data/uploads" in runs[0]
+
+
+def test_the_one_off_reader_starts_no_dependency_and_runs_no_migration(tmp_path):
+    """--no-deps keeps postgres and the one-shot `migrate` service out of a backup run.
+
+    `--entrypoint sh` matters just as much: the api image's CMD is
+    `sh -c "alembic upgrade head && uvicorn ..."`, so without the override a one-off container
+    would apply migrations and then try to serve, instead of tarring a volume.
+    """
+    deploy, _, bindir = _backup_sandbox(tmp_path)
+    assert _run_backup(deploy, bindir).returncode == 0
+    run = next(c for c in _docker_calls(tmp_path) if " run " in c)
+
+    assert "--no-deps" in run, "a backup must not start linked services"
+    assert "--entrypoint sh" in run, "the image CMD runs alembic; it must be overridden"
+    assert "--rm" in run, "the throwaway container must be removed"
+    assert re.search(r"(^| )-T( |$)", run), "binary stdout needs a disabled pseudo-TTY"
+    assert "--pull never" in run, "a backup must not reach a registry"
+    assert "--build" not in run, "a backup must never rebuild an image"
+    assert "alembic" not in run and "uvicorn" not in run
+
+
+def test_backup_never_starts_or_restarts_any_service(tmp_path):
+    """No `up`, `start` or `restart` anywhere: a backup is a reader, including when quiesced."""
+    deploy, _, bindir = _backup_sandbox(tmp_path)
+    assert _run_backup(deploy, bindir).returncode == 0
+    for call in _docker_calls(tmp_path):
+        for verb in (" up ", " up\n", " start ", " restart "):
+            assert verb not in f"{call}\n", f"backup must not run `{verb.strip()}`: {call}"
+
+
+def test_backup_refuses_when_the_api_image_is_absent_rather_than_building_it(tmp_path):
+    """Fail closed: a nightly backup must never become an image build on a production host."""
+    deploy, backups, bindir = _backup_sandbox(tmp_path, image_present=False)
+    proc = _run_backup(deploy, bindir)
+
+    assert proc.returncode != 0
+    assert "not present locally" in proc.stderr
+    assert not list(backups.glob("uploads-*.tgz")), "no archive may be written"
+    assert not (backups / "MANIFEST.txt").exists(), "a failed run must not be recorded as taken"
+    assert not any(" run " in c for c in _docker_calls(tmp_path)), \
+        "the pre-flight must stop the run before any container is created"
