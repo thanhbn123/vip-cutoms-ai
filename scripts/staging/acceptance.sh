@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Full staging acceptance from a CLIENT machine (or the host) against a running stack.
 #   BASE_URL=https://staging.host WEB_URL=https://staging.host SEED_DEMO_PASSWORD=... [COMPOSE="docker compose -p vip-customs-ai-staging -f infra/staging/docker-compose.staging.yml --env-file infra/staging/.env"] bash scripts/staging/acceptance.sh
-# COMPOSE is needed for the host-side parts (seed, restart/persistence, backup/restore, logs). Writes artifacts/test-results/staging-acceptance.txt.
+# COMPOSE is needed for the host-side parts (seed, restart/persistence, backup/restore, logs);
+# DOCKER is the matching plain-docker transport, only used for container restart counts. Writes artifacts/test-results/staging-acceptance.txt.
 set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"; cd "$ROOT"
 : "${BASE_URL:?}"; WEB_URL="${WEB_URL:-$BASE_URL}"
@@ -10,6 +11,11 @@ PY="${PY:-$ROOT/apps/api/.venv/bin/python}"; A="$ROOT/artifacts/test-results"; m
 CURL=(curl -sS --max-time 15); [ "${E2E_INSECURE_TLS:-0}" = 1 ] && CURL+=(-k)
 read -r -a COMPOSE_ARR <<< "${COMPOSE:-}"   # word-split once; never eval (container-side quoting must survive)
 compose() { [ -n "${COMPOSE:-}" ] && "${COMPOSE_ARR[@]}" "$@"; }
+# `docker` itself is needed for what compose cannot report (RestartCount). When acceptance runs
+# from a client machine the daemon is remote, so DOCKER carries the same transport as COMPOSE
+# (e.g. DOCKER="ssh host docker"); it defaults to a local docker for host-side runs.
+read -r -a DOCKER_ARR <<< "${DOCKER:-docker}"
+dockercli() { "${DOCKER_ARR[@]}" "$@"; }
 ms() { "${CURL[@]}" -o /dev/null -w '%{time_total}' "$1" | awk '{printf "%.0f", $1*1000}'; }
 {
   echo "# staging-acceptance · $(date -u +%FT%TZ) · target $BASE_URL (web $WEB_URL) · repo $(git rev-parse --short HEAD)"
@@ -26,7 +32,7 @@ ms() { "${CURL[@]}" -o /dev/null -w '%{time_total}' "$1" | awk '{printf "%.0f", 
     echo "after restart: ready $("${CURL[@]}" -o /dev/null -w '%{http_code}' "$BASE_URL/ready"), cases before=$N0 after=$(compose exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "select count(*) from cases"')"
     compose down >/dev/null 2>&1; compose up -d >/dev/null 2>&1; for i in $(seq 1 45); do "${CURL[@]}" -f "$BASE_URL/ready" >/dev/null 2>&1 && break; sleep 2; done
     echo "after down/up (volumes kept): ready $("${CURL[@]}" -o /dev/null -w '%{http_code}' "$BASE_URL/ready"), cases=$(compose exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "select count(*) from cases"'), uploads=$(compose exec -T api sh -c 'find /data/uploads -type f | wc -l')"
-    echo "restart counts: $(for c in $(compose ps -q); do docker inspect --format '{{.Name}}={{.RestartCount}}' "$c"; done | tr '\n' ' ')"
+    echo "restart counts: $(for c in $(compose ps -q); do dockercli inspect --format '{{.Name}}={{.RestartCount}}' "$c"; done | tr '\n' ' ')"
     echo "## 9. backup + restore test (temporary database, live DB untouched)"; mkdir -p backups; F="backups/staging-$(date +%F-%H%M).dump"; compose exec -T postgres sh -c 'pg_dump -U "$POSTGRES_USER" -Fc "$POSTGRES_DB"' > "$F"; echo "backup $F size=$(wc -c < "$F") bytes"
     compose exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d postgres -qc "DROP DATABASE IF EXISTS restore_test" -c "CREATE DATABASE restore_test"' && compose exec -T postgres sh -c 'pg_restore -U "$POSTGRES_USER" -d restore_test' < "$F" && echo "RESTORE_TEST cases=$(compose exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d restore_test -tAc "select count(*) from cases"') audit=$(compose exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d restore_test -tAc "select count(*) from audit_events"')"; compose exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d postgres -qc "DROP DATABASE restore_test"'
     echo "## 10. log / secret review"; compose logs --no-color --tail=300 > "$A/.staging-logs.full" 2>&1; echo "lines=$(wc -l < "$A/.staging-logs.full") errors=$(grep -ciE 'traceback|exception|fatal|restarting' "$A/.staging-logs.full")"; echo "secret-pattern hits: $(grep -ciE 'password=|secret_key|authorization: bearer|BEGIN (RSA|EC|OPENSSH) PRIVATE' "$A/.staging-logs.full")"; echo "$SEED_DEMO_PASSWORD" | grep -qF -f - "$A/.staging-logs.full" && echo "SEED PASSWORD LEAKED" || echo "seed password not in logs"

@@ -57,11 +57,15 @@ check("RBAC: operator cannot export release draft → 403", r.status_code == 403
 r = op.post(f"/cases/{cid}/documents", data={"doc_type": "INVOICE"}, files={"file": ("../../etc/passwd.txt", b"root:x:0:0", "text/plain")})
 check("upload: path-traversal filename sanitised (stored as basename, no error)", r.status_code in (201, 409) and "/" not in (r.json().get("filename", "") if r.status_code == 201 else ""))
 r = op.post(f"/cases/{cid}/documents", data={"doc_type": "INVOICE"}, files={"file": ("evil.exe", b"MZ\x90\x00", "application/octet-stream")})
-check("upload: unsupported type rejected → 422", r.status_code == 422)
+check("upload: unsupported type rejected → 422", r.status_code == 422, f"got {r.status_code}")
 r = op.post(f"/cases/{cid}/documents", data={"doc_type": "PASSPORT"}, files={"file": ("x.txt", b"x", "text/plain")})
-check("upload: unknown doc_type rejected → 422", r.status_code == 422)
-r = op.post(f"/cases/{cid}/documents", data={"doc_type": "OTHER"}, files={"file": ("big.txt", b"0" * (21 * 1024 * 1024), "text/plain")})
-check("upload: oversize rejected → 413", r.status_code == 413)
+check("upload: unknown doc_type rejected → 422", r.status_code == 422, f"got {r.status_code}")
+# 21 MB over a WAN link takes well over the client-wide 30 s budget once the stack is also
+# serving other traffic, so this one request gets its own generous timeout. The observed
+# status is always reported: without it a failure here is undiagnosable after the fact.
+r = op.post(f"/cases/{cid}/documents", data={"doc_type": "OTHER"},
+            files={"file": ("big.txt", b"0" * (21 * 1024 * 1024), "text/plain")}, timeout=300)
+check("upload: oversize rejected → 413", r.status_code == 413, f"got {r.status_code}")
 
 gate = rv.get(f"/cases/{cid}/release-gate").json()
 r = rv.post(f"/cases/{cid}/mark-ready", json={"reason": "reviewer tries with open issues"})
