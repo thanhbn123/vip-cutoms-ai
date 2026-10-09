@@ -1,0 +1,28 @@
+# Example systemd unit — NOT installed by any script in this repository. Installing it needs
+# root on the production host (an owner decision; the deploy user has no sudo by design).
+#   sudo cp infra/production/vip-customs-backup.{service,timer} /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now vip-customs-backup.timer
+#   systemctl list-timers vip-customs-backup.timer      # confirm the next run
+#   journalctl -u vip-customs-backup.service -n 50      # read the last run
+[Unit]
+Description=VIP Customs AI — database + uploads backup
+Documentation=file:/opt/vip-customs-ai/docs/PRODUCTION_RUNBOOK.md
+# Needs the Docker daemon, since the dump runs inside the postgres container.
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+# Must be a user in the `docker` group that can read infra/production/.env (chmod 600).
+User=deploy
+WorkingDirectory=/opt/vip-customs-ai
+Environment=DEPLOY_PATH=/opt/vip-customs-ai
+Environment=ENV_FILE=infra/production/.env
+Environment=COMPOSE_PROJECT_NAME=vip-customs-ai-production
+# Belt and braces: the script sets `umask 077` itself and chmods every artifact, but a dump
+# holds every customer document and audit record in plaintext, so the unit does not rely on
+# the script alone. systemd's default is 0022, which would create world-readable files.
+UMask=0077
+ExecStart=/usr/bin/env bash scripts/production/backup.sh
+# A backup that hangs must not block the next one forever.
+TimeoutStartSec=3600

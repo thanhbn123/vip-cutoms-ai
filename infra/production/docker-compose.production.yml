@@ -1,0 +1,70 @@
+# Production OVERLAY — prepared, NOT deployed (product rule #7).
+#
+# This file is an overlay on infra/staging/docker-compose.staging.yml, not a copy of it. The
+# service topology is identical by design, so duplicating it would guarantee the two drift
+# apart. Use both files together, staging first, overlay second:
+#
+#   docker compose -p vip-customs-ai-production \
+#     -f infra/staging/docker-compose.staging.yml \
+#     -f infra/production/docker-compose.production.yml \
+#     --env-file infra/production/.env up -d
+#
+# `name:` below overrides the staging project name so a production stack can never share
+# volumes with a staging stack on the same host.
+#
+# What the overlay adds, and why staging does not need it:
+#   * log rotation on every service — unbounded json-file logs are the most common way a
+#     long-lived host fills its disk; staging is short-lived and watched.
+#   * a healthcheck on `web` — staging only health-checks the api, so a dead static-file
+#     container would show as "Up" and the proxy would serve 502s with nothing marked
+#     unhealthy.
+#   * memory limits — on a shared host one runaway container must not take the others down.
+#   * `restart: always` instead of `unless-stopped` — after a host reboot an operator-stopped
+#     container should still come back in production.
+name: vip-customs-production
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+  postgres:
+    logging: *logging
+    restart: always
+    deploy:
+      resources:
+        limits: { memory: 1g }
+
+  migrate:
+    logging: *logging
+    # stays restart: "no" — a one-shot migration must never be restarted automatically
+
+  api:
+    logging: *logging
+    restart: always
+    deploy:
+      resources:
+        limits: { memory: 1g }
+
+  web:
+    logging: *logging
+    restart: always
+    # Staging has no healthcheck here. nginx:alpine has no curl, so probe with its own binary.
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:80/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits: { memory: 256m }
+
+  proxy:
+    logging: *logging
+    restart: always
+    deploy:
+      resources:
+        limits: { memory: 256m }

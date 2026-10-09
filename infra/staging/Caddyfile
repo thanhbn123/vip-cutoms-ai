@@ -1,0 +1,33 @@
+# Reverse proxy: /api, /health, /ready → api:8000 ; everything else → web:80 (static build).
+#
+# TLS is chosen with TLS_MODE in infra/staging/.env. The proxy service entrypoint (see
+# docker-compose.staging.yml) translates TLS_MODE into SITE_ADDRESS + TLS_ARG, because the
+# Caddy v2 `tls` directive accepts ONLY `internal`, `force_automate` or an email address —
+# `tls off` and `tls acme` are not valid Caddyfile syntax and abort config adaptation:
+#   "single argument must either be 'internal', 'force_automate', or an email address".
+#
+#   TLS_MODE=internal → SITE_ADDRESS=https://HOST TLS_ARG=internal        self-signed, private staging
+#   TLS_MODE=acme     → SITE_ADDRESS=HOST         TLS_ARG=force_automate  public DNS, Let's Encrypt
+#   TLS_MODE=<email>  → SITE_ADDRESS=HOST         TLS_ARG=<email>         ACME with a contact address
+#   TLS_MODE=off      → SITE_ADDRESS=http://HOST  TLS_ARG=internal        plain HTTP; TLS terminated by an
+#                                                                         upstream proxy. The http:// scheme
+#                                                                         disables automatic HTTPS, so the
+#                                                                         tls directive is inert.
+{$SITE_ADDRESS} {
+	encode gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "no-referrer"
+		Content-Security-Policy "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; connect-src 'self'"
+	}
+	@api path /api/* /health /ready /docs /openapi.json
+	handle @api {
+		reverse_proxy api:8000
+	}
+	handle {
+		reverse_proxy web:80
+	}
+	tls {$TLS_ARG:internal}
+}

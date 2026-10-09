@@ -1,0 +1,9 @@
+# backend-pytest · 2026-10-09T08:37:28Z · develop 52d8fe1
+$ bash -o pipefail -c cd apps/api && .venv/bin/pytest 2>&1 | tail -5
+exit_code=0
+----- last lines -----
+  /home/user/vip-cutoms-ai/apps/api/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+72 passed, 1 warning in 92.37s (0:01:32)

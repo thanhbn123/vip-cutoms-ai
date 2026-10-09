@@ -1,0 +1,38 @@
+# Local development stack. Not a staging/production definition.
+# Usage: cp .env.example .env && docker compose -f infra/docker-compose.yml --env-file .env up --build
+name: vip-customs
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-vip_customs}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-vip_customs}
+    ports: ["${POSTGRES_HOST_PORT:-5432}:5432"]  # host port only; change when a local PostgreSQL already uses 5432
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      retries: 10
+  api:
+    build: { context: ../apps/api, dockerfile: Dockerfile, secrets: [ca_bundle] }
+    env_file: ../.env
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-vip_customs}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-vip_customs}
+      LOCAL_STORAGE_DIR: /data/uploads
+    depends_on: { postgres: { condition: service_healthy } }
+    ports: ["8000:8000"]
+    volumes: [uploads:/data/uploads]
+  web:
+    build: { context: ../apps/web, dockerfile: Dockerfile, secrets: [ca_bundle] }
+    environment:
+      VITE_API_PROXY: http://api:8000
+    depends_on: [api]
+    ports: ["5173:5173"]
+volumes:
+  pgdata: {}
+  uploads: {}
+# Build-time only: CA bundle for hosts with TLS-intercepting egress. Default /dev/null = no custom CA.
+secrets:
+  ca_bundle:
+    file: ${BUILD_CA_BUNDLE:-/dev/null}

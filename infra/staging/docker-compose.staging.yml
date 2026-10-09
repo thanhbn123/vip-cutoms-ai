@@ -1,0 +1,100 @@
+# Staging stack — prepared, NOT deployed. No hosts, IPs or domains are hard-coded; everything comes from the staging .env
+# (see docs/STAGING_SECRETS.md). Only the reverse proxy publishes ports; api/web stay on the internal network.
+name: vip-customs-staging
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+      POSTGRES_DB: ${POSTGRES_DB:?}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    networks: [internal]
+
+  migrate:
+    image: ${API_IMAGE:-vip-customs-api:${IMAGE_TAG:-latest}}
+    build: { context: ../../apps/api, dockerfile: Dockerfile, secrets: [ca_bundle] }
+    command: ["alembic", "upgrade", "head"]
+    env_file: [{ path: .env, required: false }]  # deploy.sh guarantees the file; optional here so `config` validates without it
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+    depends_on: { postgres: { condition: service_healthy } }
+    restart: "no"
+    networks: [internal]
+
+  api:
+    image: ${API_IMAGE:-vip-customs-api:${IMAGE_TAG:-latest}}
+    build: { context: ../../apps/api, dockerfile: Dockerfile, secrets: [ca_bundle] }
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips", "*"]
+    restart: unless-stopped
+    env_file: [{ path: .env, required: false }]  # deploy.sh guarantees the file; optional here so `config` validates without it
+    environment:
+      APP_ENV: ${APP_ENV:-staging}
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      LOCAL_STORAGE_DIR: /data/uploads
+      AI_PROVIDER: ${AI_PROVIDER:-mock}
+      CORS_ORIGINS: ${PUBLIC_WEB_ORIGIN:?}
+    volumes: [uploads:/data/uploads]
+    depends_on:
+      postgres: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys;sys.exit(0 if urllib.request.urlopen('http://localhost:8000/ready',timeout=3).status==200 else 1)\""]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+    networks: [internal]
+
+  web:
+    image: ${WEB_IMAGE:-vip-customs-web:${IMAGE_TAG:-latest}}
+    build: { context: ../../apps/web, dockerfile: Dockerfile.staging, secrets: [ca_bundle] }
+    restart: unless-stopped
+    depends_on: [api]
+    networks: [internal]
+
+  proxy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports: ["${PUBLIC_HTTP_PORT:-80}:80", "${PUBLIC_HTTPS_PORT:-443}:443"]
+    environment:
+      PUBLIC_HOST: ${PUBLIC_HOST:?}          # e.g. staging.example.internal — supplied by the owner, never committed
+      TLS_MODE: ${TLS_MODE:-internal}        # internal (self-signed) | acme (public DNS) | <email> (ACME) | off (upstream TLS)
+    # TLS_MODE is translated into the two variables the Caddyfile reads. `tls off` / `tls acme`
+    # are NOT valid Caddy v2 syntax, so passing TLS_MODE straight to the tls directive aborts
+    # config adaptation and the proxy never starts. Fail fast on an unknown mode.
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        case "$${TLS_MODE}" in
+          internal) SITE_ADDRESS="https://$${PUBLIC_HOST}"; TLS_ARG="internal" ;;
+          acme)     SITE_ADDRESS="$${PUBLIC_HOST}";         TLS_ARG="force_automate" ;;
+          off)      SITE_ADDRESS="http://$${PUBLIC_HOST}";  TLS_ARG="internal" ;;
+          *@*.*)    SITE_ADDRESS="$${PUBLIC_HOST}";         TLS_ARG="$${TLS_MODE}" ;;
+          *) echo "FATAL: invalid TLS_MODE='$${TLS_MODE}' (expected internal|acme|off|<email>)" >&2; exit 1 ;;
+        esac
+        export SITE_ADDRESS TLS_ARG
+        echo "proxy: TLS_MODE=$${TLS_MODE} SITE_ADDRESS=$${SITE_ADDRESS} TLS_ARG=$${TLS_ARG}"
+        exec caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [api, web]
+    networks: [internal]
+
+volumes:
+  pgdata: {}
+  uploads: {}
+  caddy_data: {}
+  caddy_config: {}
+networks:
+  internal: {}
+secrets:
+  ca_bundle:
+    file: ${BUILD_CA_BUNDLE:-/dev/null}

@@ -1,6 +1,9 @@
 .env
 .env.*
 !.env.example
+!*.env.example
+!.env.staging.example
+!.env.production.example
 .DS_Store
 __pycache__/
 *.py[cod]
@@ -18,3 +21,7 @@ htmlcov/
 *.log
 uploads/
 local-data/
+*.tsbuildinfo
+*.egg-info/
+backups/
+artifacts/test-results/.*.full

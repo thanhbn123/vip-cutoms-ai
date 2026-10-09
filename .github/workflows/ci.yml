@@ -1,0 +1,51 @@
+name: ci
+on:
+  push:
+    branches: [main, develop, "feature/**", "claude/**"]
+  pull_request:
+jobs:
+  api:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_USER: vip_customs, POSTGRES_PASSWORD: vip_customs, POSTGRES_DB: vip_customs_test }
+        ports: ["5432:5432"]
+        options: --health-cmd pg_isready --health-interval 5s --health-retries 10
+    defaults: { run: { working-directory: apps/api } }
+    env:
+      DATABASE_URL: postgresql+psycopg://vip_customs:vip_customs@localhost:5432/vip_customs_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -e '.[dev]'
+      - run: ruff check app tests
+      - run: pytest
+      - run: test "$(alembic heads | wc -l)" -eq 1
+  web:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: apps/web } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - run: npm ci
+      - run: npx tsc -b
+      - run: npx vitest run
+      - run: npx vite build
+  infra:
+    # Root `tests/` suite: staging + production infrastructure contracts (70 tests). No database, no Docker —
+    # the backup script runs against a mocked `docker` inside tmp_path. Kept separate from the api job on purpose.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install pytest
+      - run: python -m pytest tests -q
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash scripts/secret_scan.sh

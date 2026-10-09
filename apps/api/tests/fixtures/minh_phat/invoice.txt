@@ -1,0 +1,15 @@
+COMMERCIAL INVOICE
+Invoice No: INV-2026-889
+Invoice Date: 2026-10-05
+Exporter: GUANGZHOU ABC TRADING CO., LTD.
+Importer: CONG TY TNHH MINH PHAT
+Incoterm: FOB
+Currency: USD
+Total Amount: 17900.00
+Insurance: 100.00
+Total Packages: 124
+Gross Weight: 1250.5
+ITEMS
+1 | Water pump for cooling system | ABC-500 | 20 | PCE | 45.00 | 900.00
+2 | PVC pipe, non-reinforced | PVC-20 | 500 | MTR | 1.20 | 600.00
+3 | Electrical controller | CT-88 | 15 | SET | 32.00 | 480.00
