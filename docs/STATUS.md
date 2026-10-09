@@ -5,7 +5,7 @@ See `PROJECT_STATUS.md` (gate log), `docs/G16_PRODUCTION_REVIEW.md` (**current g
 `docs/PRODUCTION_RUNBOOK.md`, `docs/G15_STAGING_ACCEPTANCE_REPORT.md` (real staging evidence),
 `docs/G15_DEPLOY_RECORD.md` (deployed SHA + rollback), `docs/STAGING_ROLLBACK.md`.
 
-- Current gate: **G16 — RC closeout: PR #1 merged into `develop` (`d21fd77`), RC frozen (`docs/G16_RC_FREEZE.md`), PR #2 `develop → main` open for OWNER review. PASS_LIMITED_MODE. `main` not merged, production not deployed.**
+- Current gate: **G17 — main release freeze: PR #2 `develop → main` merged with owner approval; `main` = `4a2acb9130afb47b30350ed7b52197e28717847a` (RC `54a00e7`). PASS_LIMITED_MODE. Production deployment NOT AUTHORIZED. Record: `docs/G17_MAIN_RELEASE_FREEZE.md`. Release tag `v0.1.0-rc1` → TAG_EXTERNAL_BLOCKED (operator to push). Next: G18.**
   `READY_TO_MERGE_MAIN = NO` · `READY_TO_DEPLOY_PRODUCTION = NO`. Merging to `main` waits on the
   G16 additions being reviewed into `develop` (draft PR #1) and `develop` being verified and
   frozen; the owner's limited-mode review is also open. **Nothing deployed by this gate.**
@@ -43,7 +43,7 @@ See `PROJECT_STATUS.md` (gate log), `docs/G16_PRODUCTION_REVIEW.md` (**current g
 | B-01 | Real OCR/LLM provider credentials | BLOCKED_OWNER | Mock provider only |
 | B-02 | Authoritative tariff / FTA / policy data source | BLOCKED_OWNER | Demo datasets only (labelled, fail-closed when inactive) |
 | B-03 | ~~Staging host / domain / secrets~~ | **RESOLVED (G15C)** | Deployed to `160.22.170.20` / `hq.vipgroup.com.vn` |
-| B-04 | Review `develop`; PR to `main` only after production review | OWNER | main unchanged; G16 production review complete → RC PR open for owner merge |
+| B-04 | ~~Review `develop`; PR to `main` only after production review~~ | **RESOLVED (G17)** | Owner approved PR #2; `main` = `4a2acb9` (limited mode) |
 | B-05 | GitHub Actions not observable in the build session | ENV | CI unverified (real staging acceptance executed in G15C: PASS) |
 | B-06 | Edge TLS for `hq.vipgroup.com.vn` is terminated by the host's **shared** Caddy, which also serves unrelated projects | OWNER | Availability coupled to a shared proxy; the stack's own `acme` mode cannot be used because it needs ports 80/443. G16 options + recommendation: `docs/PRODUCTION_READINESS.md` §4 |
 | B-07 | Demo users remain on staging after acceptance | OWNER | `docs/STAGING_SECRETS.md` says to delete them once acceptance is signed off. G16 recommends deactivating (`is_active=false`) rather than deleting, to preserve audit actor references |
