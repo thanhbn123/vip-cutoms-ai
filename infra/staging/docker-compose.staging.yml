@@ -64,7 +64,23 @@ services:
     ports: ["${PUBLIC_HTTP_PORT:-80}:80", "${PUBLIC_HTTPS_PORT:-443}:443"]
     environment:
       PUBLIC_HOST: ${PUBLIC_HOST:?}          # e.g. staging.example.internal — supplied by the owner, never committed
-      TLS_MODE: ${TLS_MODE:-internal}        # internal (self-signed) | acme (public DNS) | off (behind an upstream TLS terminator)
+      TLS_MODE: ${TLS_MODE:-internal}        # internal (self-signed) | acme (public DNS) | <email> (ACME) | off (upstream TLS)
+    # TLS_MODE is translated into the two variables the Caddyfile reads. `tls off` / `tls acme`
+    # are NOT valid Caddy v2 syntax, so passing TLS_MODE straight to the tls directive aborts
+    # config adaptation and the proxy never starts. Fail fast on an unknown mode.
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        case "$${TLS_MODE}" in
+          internal) SITE_ADDRESS="https://$${PUBLIC_HOST}"; TLS_ARG="internal" ;;
+          acme)     SITE_ADDRESS="$${PUBLIC_HOST}";         TLS_ARG="force_automate" ;;
+          off)      SITE_ADDRESS="http://$${PUBLIC_HOST}";  TLS_ARG="internal" ;;
+          *@*.*)    SITE_ADDRESS="$${PUBLIC_HOST}";         TLS_ARG="$${TLS_MODE}" ;;
+          *) echo "FATAL: invalid TLS_MODE='$${TLS_MODE}' (expected internal|acme|off|<email>)" >&2; exit 1 ;;
+        esac
+        export SITE_ADDRESS TLS_ARG
+        echo "proxy: TLS_MODE=$${TLS_MODE} SITE_ADDRESS=$${SITE_ADDRESS} TLS_ARG=$${TLS_ARG}"
+        exec caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
