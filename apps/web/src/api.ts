@@ -61,7 +61,12 @@ export interface Item { id: string; line_no: number; description: string; descri
 export interface Issue { id: string; code: string; severity: string; category: string; title: string; detail: string | null; target_ref: string | null; status: string; assignee_role: string | null; resolution: string | null; auto_resolvable?: boolean }
 export interface Assessment { id: string; item_id: string | null; kind: string; status: string; dataset_version: string | null; dataset_is_demo: boolean | null; inputs: Record<string, unknown>; result: Record<string, unknown>; reasoning: string[]; reviewer_decision: { decision: string } | null }
 export interface Declaration { case: { case_no: string; status: string }; readiness: number; summary: { fields_total: number; fields_ok: number; items_total: number; items_hs_approved: number; open_critical: number; open_warning: number; documents: Doc[] }; sections: { id: string; title: string; fields: Field[] }[]; items: unknown[]; validation: { code: string; ok: boolean; severity: string; message: string }[]; release_eligible: boolean; disclaimer: string }
-export interface Dataset { id: string; kind: string; version: string; label: string; source: string; is_demo: boolean; effective_from: string; effective_to: string | null; is_active: boolean; rule_count: number }
+export interface Dataset {
+  id: string; kind: string; version: string; label: string; source: string; is_demo: boolean; effective_from: string; effective_to: string | null; is_active: boolean; rule_count: number;
+  // G18 provenance (older API builds omit these)
+  is_authoritative?: boolean; source_authority?: string | null; source_document?: string | null; source_reference?: string | null;
+  ingested_at?: string | null; verified_at?: string | null; verified_by?: string | null; checksum?: string | null; supersedes_id?: string | null; superseded_at?: string | null;
+}
 export interface Draft { id: string; version: number; kind: string; release_eligible: boolean; watermark: string; checksum: string; created_at: string }
 export interface Memory { id: string; model: string | null; description: string; hs_code: string; unit_price: string | null; currency: string | null; outcome: string; reusable: boolean; case_no: string; approved_at: string }
 export interface Proposal { id: string; target_ref: string; current_value: string | null; proposed_value: string; status: string; reasoning: string[]; requested_by: string }

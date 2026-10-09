@@ -16,6 +16,5 @@ unchanged; B-07 execution still needs the operator (`docs/G18_B07_DEMO_USERS.md`
 
 Migration: `0012_ai_usage_events` (head, single) — upgrade from zero, downgrade to `0011`, re-upgrade verified.
 
-Not in scope (still requires owner input or a decision): rate limiting on `/auth/login` (proxy module choice
-belongs to the B-06 proxy decision), OCR adapter (vendor), national 8-digit datasets (source), production
-provisioning.
+Not in scope (still requires owner input or a decision): OCR adapter (vendor), national 8-digit datasets (source), production
+provisioning. Login throttling was added at the API layer in G18D (`docs/G18D_LOGIN_THROTTLING_AND_KNOWLEDGE_UI.md`).
