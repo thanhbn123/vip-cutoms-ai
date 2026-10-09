@@ -1,5 +1,8 @@
 # RUNBOOK — local / staging-candidate operation
 
+For a *production* deployment (not performed; owner decision) see `docs/PRODUCTION_RUNBOOK.md`
+and `docs/PRODUCTION_READINESS.md`.
+
 ## Prerequisites
 Python 3.12, Node 22, PostgreSQL 16 (native or Docker). No external credentials are required: the AI provider is `mock`.
 
@@ -13,7 +16,7 @@ Or with Docker: `cp .env.example .env`, set `POSTGRES_PASSWORD`, `APP_SECRET_KEY
 ```bash
 cd apps/api && python3.12 -m venv .venv && .venv/bin/pip install -e '.[dev]'
 export DATABASE_URL=postgresql+psycopg://vip_customs:vip_customs@localhost:5432/vip_customs
-.venv/bin/alembic upgrade head                     # head: 0008_copilot_memory
+.venv/bin/alembic upgrade head                     # head: 0010_copilot_meta
 SEED_DEMO_PASSWORD='<choose ≥10 chars>' .venv/bin/python scripts/seed_demo.py --with-case
 .venv/bin/uvicorn app.main:app --reload --port 8000
 ```

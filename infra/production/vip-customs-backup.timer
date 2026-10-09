@@ -1,0 +1,16 @@
+# Example systemd timer — see vip-customs-backup.service for installation.
+[Unit]
+Description=VIP Customs AI — nightly backup
+Documentation=file:/opt/vip-customs-ai/docs/PRODUCTION_RUNBOOK.md
+
+[Timer]
+# 02:30 UTC daily. RandomizedDelaySec spreads load if several stacks share the host.
+OnCalendar=*-*-* 02:30:00 UTC
+RandomizedDelaySec=15m
+# Run as soon as possible if the host was off at the scheduled time — otherwise a nightly
+# backup silently skips every day the machine happens to be down at 02:30.
+Persistent=true
+Unit=vip-customs-backup.service
+
+[Install]
+WantedBy=timers.target
