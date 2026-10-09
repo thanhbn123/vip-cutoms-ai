@@ -136,3 +136,25 @@ HTTP 503 {'status': 'not_ready', 'checks': {'database': 'ok', 'migrations': '001
 RuntimeError: storage provider 's3' not available in this build
 --- (e) seed_demo.py must refuse outside development/test
 seed_demo refuses to run outside development/test
+
+############################################################
+# FINAL VERIFY at RC SHA 08ff835dc891af0413b9757c37463d425531d1f1 (clean checkout)
+############################################################
+############ G16 FINAL VERIFY at RC 08ff835dc891af0413b9757c37463d425531d1f1 · 2026-10-09T07:38:56Z
+############ node=v22.23.3 · python=Python 3.13.16 · PostgreSQL 16.15 · DB vip_customs_g16
+===== scripts/verify.sh — ruff, pytest(api), pytest(infra), single head, tsc, vitest, vite build, secret scan =====
+All checks passed!
+........................................................................ [100%]
+.venv/lib/python3.13/site-packages/fastapi/testclient.py:1
+72 passed, 1 warning in 19.34s
+...................................................                      [100%]
+51 passed in 0.31s
+ RUN  v2.1.8 /Users/viporder/Documents/Codex/2026-10-09/referenced-chatgpt-conversation-this-is-an/work/g16-clean/apps/web
+ ✓ src/pages/Goods.test.tsx (1 test) 79ms
+ ✓ src/App.test.tsx (2 tests) 256ms
+ Test Files  2 passed (2)
+      Tests  3 passed (3)
+   Start at  14:39:20
+   Duration  2.41s (transform 562ms, setup 690ms, collect 1.01s, tests 336ms, environment 1.61s, prepare 184ms)
+SECRET SCAN: clean
+VERIFY: ALL CHECKS PASSED
