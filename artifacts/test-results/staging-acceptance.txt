@@ -1,0 +1,79 @@
+# staging-acceptance · 2026-10-09T06:35:30Z · target https://hq.vipgroup.com.vn (web https://hq.vipgroup.com.vn) · repo 9649ec7
+## 1. external health
+{"status":"ok","service":"vip-customs-api","version":"0.1.0"} [200]
+{"status":"ready","checks":{"database":"ok","migrations":"0010_copilot_meta","ai_provider":"mock","environment":"staging"}} [200]
+frontend [200]
+TLS: certificate VALID (verify_result=0)
+http→https redirect: 308 → https://hq.vipgroup.com.vn/health
+## 2. seed demo data (host side)
+tenant DEMO ready; users: operator@demo.local, reviewer@demo.local, senior@demo.local, admin@demo.local; datasets seeded: already present
+demo case already exists
+## 3. Playwright (browser) against https://hq.vipgroup.com.vn
+  ✓  1 demo-labels.spec.ts:8:1 › demo safety labels are visible on every surface that shows HS / tariff / FTA / policy data (1.6s)
+  ✓  2 smoke.spec.ts:5:1 › login → V12 navigation → goods shows the BLOCKED item → copilot answers → release gate blocked (1.9s)
+
+  2 passed (2.4s)
+playwright_exit=0
+## 4. acceptance flow A–P over HTTP
+[PASS] 0. health/ready — migrations=0010_copilot_meta provider=mock
+[PASS] A. authentication/login (operator, reviewer, senior)
+[PASS] B. create case — VIP-HQ-261009-005
+[PASS] C. upload mock documents (Invoice, PL, B/L, Form E)
+[PASS] D. parse with mock provider
+[PASS] E. package conflict 124/126 detected, not auto-resolved
+[PASS] F. 3 goods items
+[PASS] G. HS 0.87 review / 0.95 / 0.64 blocked (approved-memory boost +0.05 applied on re-used DB) — item1=0.92 item2=0.99 item3=0.69 history={1: True, 2: True, 3: True}
+[PASS] H. valuation 17900 + 420 + 100 = 18420
+[PASS] I. C/O + policy demo rules (versioned, is_demo)
+[PASS] J. Copilot answers with sources/confidence/requires_review
+[PASS] K. reviewer resolution with audit (actor/before/after/reason)
+[PASS] L. release gate passes only after all checks — status=REVIEWED
+[PASS] M. READY_TO_EXPORT after all critical resolved
+[PASS] N. DRAFT export (versioned JSON + CSV, watermark, legal notice)
+[PASS] O. approved-only historical memory
+[PASS] P. similar next case finds history (EXACT, +0.05, still NEEDS_REVIEW)
+
+ACCEPTANCE_HTTP: 17/17 steps PASS against https://hq.vipgroup.com.vn
+acceptance_exit=0
+## 5. negative / security tests
+[PASS] invalid auth: no token → 401
+[PASS] invalid auth: tampered token → 401
+[PASS] invalid auth: wrong password → 401
+[PASS] RBAC: operator cannot approve HS critical → 403
+[PASS] RBAC: operator cannot resolve issues → 403
+[PASS] RBAC: operator cannot mark READY → 403
+[PASS] RBAC: operator cannot export release draft → 403
+[PASS] upload: path-traversal filename sanitised (stored as basename, no error)
+[PASS] upload: unsupported type rejected → 422 — got 422
+[PASS] upload: unknown doc_type rejected → 422 — got 422
+[PASS] upload: oversize rejected → 413 — got 413
+[PASS] release gate: open issues block READY (reviewer) → 409
+[PASS] release gate: release draft blocked → 409
+[PASS] tenant/ID isolation: unknown case id → 404 (no enumeration leak)
+[PASS] tenant/ID isolation: unknown document → 404
+[PASS] RBAC: admin has no customs-decision permission
+[PASS] audit records critical actions with actor/before/after
+[PASS] audit chain valid
+
+NEGATIVE_TESTS: 18/18 PASS
+negative_exit=0
+## 6. demo labels
+{"demo_active":true,"notice":"DEMO DATA — NON-AUTHORITATIVE — NOT FOR CUSTOMS FILING","datasets":["HS_RULES demo-hs-2026.10","TARIFF demo-tariff-2026.10","FTA demo-fta-2026.10","POLICY demo-policy-2026.10"],"non_demo_datasets":[]}
+## 7. performance smoke (sequential, light)
+/health avg 942 ms (5 req, auth: none for health/ready)
+/ready avg 7164 ms (5 req, auth: none for health/ready)
+/api/v1/cases avg 13952 ms (5 req, auth: none for health/ready)
+/api/v1/dashboard/summary avg 128 ms (5 req, auth: none for health/ready)
+/api/v1/knowledge/datasets avg 65 ms (5 req, auth: none for health/ready)
+## 8. restart / persistence
+after restart: ready 200, cases before=8 after=8
+after down/up (volumes kept): ready 200, cases=8, uploads=25
+restart counts: /vip-customs-ai-staging-api-1=0 /vip-customs-ai-staging-postgres-1=0 /vip-customs-ai-staging-proxy-1=0 /vip-customs-ai-staging-web-1=0 
+## 9. backup + restore test (temporary database, live DB untouched)
+backup backups/staging-2026-10-09-1338.dump size=  208065 bytes
+NOTICE:  database "restore_test" does not exist, skipping
+RESTORE_TEST cases=8 audit=455
+## 10. log / secret review
+lines=      54 errors=0
+secret-pattern hits: 0
+seed password not in logs
