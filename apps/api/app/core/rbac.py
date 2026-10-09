@@ -32,6 +32,7 @@ class Perm(StrEnum):
     DRAFT_EXPORT_RELEASE = "draft.export_release"
     MEMORY_OUTCOME = "memory.outcome"
     KNOWLEDGE_MANAGE = "knowledge.manage"
+    KNOWLEDGE_VERIFY = "knowledge.verify"  # G18B: mark a dataset authoritative (ADMIN, SENIOR_REVIEWER)
     USER_MANAGE = "user.manage"
 
 
@@ -43,9 +44,10 @@ _REVIEWER = _OPERATOR | {
     Perm.PROPOSAL_DECIDE, Perm.HS_DECIDE, Perm.ISSUE_RESOLVE, Perm.ISSUE_WAIVE_WARNING,
     Perm.CASE_MARK_READY, Perm.DRAFT_EXPORT_RELEASE,
 }
-_SENIOR = _REVIEWER | {Perm.ISSUE_WAIVE_CRITICAL, Perm.HS_OVERRIDE, Perm.MEMORY_OUTCOME}
+_SENIOR = _REVIEWER | {Perm.ISSUE_WAIVE_CRITICAL, Perm.HS_OVERRIDE, Perm.MEMORY_OUTCOME, Perm.KNOWLEDGE_VERIFY}
 # Separation of duties (D-011): Admin configures the system but takes no customs decisions.
-_ADMIN = {Perm.CASE_READ, Perm.AUDIT_READ, Perm.KNOWLEDGE_MANAGE, Perm.USER_MANAGE, Perm.MASTERDATA_MANAGE, Perm.DRAFT_PREVIEW}
+_ADMIN = {Perm.CASE_READ, Perm.AUDIT_READ, Perm.KNOWLEDGE_MANAGE, Perm.KNOWLEDGE_VERIFY, Perm.USER_MANAGE, Perm.MASTERDATA_MANAGE,
+          Perm.DRAFT_PREVIEW}
 
 ROLE_PERMISSIONS: dict[Role, frozenset[Perm]] = {
     Role.OPERATOR: frozenset(_OPERATOR),

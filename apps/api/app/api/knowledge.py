@@ -181,7 +181,7 @@ def import_dataset(body: DatasetImportIn, admin: User = Depends(require(Perm.KNO
 
 
 @router.post("/knowledge/datasets/{dataset_id}/verify", response_model=DatasetOut)
-def verify_dataset(dataset_id: uuid.UUID, body: ReasonIn, verifier: User = Depends(require(Perm.KNOWLEDGE_MANAGE)),
+def verify_dataset(dataset_id: uuid.UUID, body: ReasonIn, verifier: User = Depends(require(Perm.KNOWLEDGE_VERIFY)),
                    db: Session = Depends(get_db)):
     """Mark a dataset authoritative. Refused (409 MISSING_AUTHORITY) for demo data, missing legal source or checksum mismatch."""
     ds = _get(db, dataset_id)

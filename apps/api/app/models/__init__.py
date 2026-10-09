@@ -1,5 +1,6 @@
 """ORM models. Import side-effect registers every table on Base.metadata."""
 
+from app.models.ai_usage import AiUsageEvent  # noqa: E402,F401
 from app.models.assessment import Assessment  # noqa: F401
 from app.models.audit import AuditEvent  # noqa: F401
 from app.models.case import CustomsCase  # noqa: F401

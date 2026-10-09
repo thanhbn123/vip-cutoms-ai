@@ -9,6 +9,7 @@ from app.models.case import CustomsCase
 from app.models.document import Document
 from app.models.goods import GoodsItem
 from app.services import assessments, audit
+from app.services.hs_lookup import lookup
 from app.services.issues import IssueSpec, sync
 from app.services.knowledge import ConflictingDatasets, NoActiveDataset, dataset_payload, require_dataset
 
@@ -48,7 +49,9 @@ def evaluate(db: Session, case: CustomsCase, actor: audit.Actor) -> None:
                                reasoning=["Chính sách chỉ đánh giá trên HS đã duyệt."])
             continue
         heading = it.hs_code[:4]
-        reqs = reqs_by_heading.get(heading, [])
+        hit = lookup(reqs_by_heading, it.hs_code)  # most specific entry (8-digit line or heading), G18B
+        reqs = hit[1] if hit else []
+        req_key = hit[0] if hit else heading
         results = []
         for r in reqs:
             evidence_present = (not r.get("evidence_doc_types")) or any(t in doc_types for t in r["evidence_doc_types"])
@@ -63,5 +66,5 @@ def evaluate(db: Session, case: CustomsCase, actor: audit.Actor) -> None:
                                    evidence=[{"requirement": r["code"], "evidence_doc_types": r.get("evidence_doc_types", []), "present": evidence_present}]))
         assessments.upsert(db, case, "POLICY", it.id, status="REQUIREMENTS_PENDING_REVIEW" if reqs else "NO_REQUIREMENT", ds=ds,
                            inputs={"hs_code": it.hs_code, "heading": heading}, result={"requirements": results},
-                           reasoning=[f"Tra cứu nhóm {heading} trong {ds.label}: {len(reqs)} yêu cầu."])
+                           reasoning=[f"Tra cứu {req_key} trong {ds.label}: {len(reqs)} yêu cầu."])
     sync(db, case, specs, "policy")

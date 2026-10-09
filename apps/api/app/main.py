@@ -32,6 +32,12 @@ def create_app() -> FastAPI:
             metrics.observe_http(request.method, 500)
             raise
         metrics.observe_http(request.method, response.status_code)
+        # G18B: defence in depth — set at the API layer too, so a proxy misconfiguration cannot drop them.
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "DENY")
+        response.headers.setdefault("Referrer-Policy", "no-referrer")
+        if request.url.path.startswith("/api/"):
+            response.headers.setdefault("Cache-Control", "private, no-store")
         return response
 
     app.include_router(health.router)
