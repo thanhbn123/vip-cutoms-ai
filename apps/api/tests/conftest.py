@@ -44,6 +44,16 @@ def clean_tables(migrated_db):
             conn.execute(text("ALTER TABLE audit_events ENABLE TRIGGER USER"))
 
 
+@pytest.fixture(autouse=True)
+def _fresh_login_limiter():
+    """Login throttling state must never leak between tests (G18D)."""
+    from app.core import ratelimit
+
+    ratelimit.reset_login_limiter()
+    yield
+    ratelimit.reset_login_limiter()
+
+
 @pytest.fixture
 def client():
     from app.main import create_app

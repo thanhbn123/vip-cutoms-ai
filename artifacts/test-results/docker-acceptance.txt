@@ -1,12 +1,12 @@
-# docker-acceptance · 2026-10-09T18:41:40Z · ff18608 · api http://localhost:8000 · web http://localhost:5173
+# docker-acceptance · 2026-10-09T19:32:03Z · e7d2593 · api http://localhost:8000 · web http://localhost:5173
 ## 1. seed demo tenant + V12 case inside the api container
 tenant DEMO ready; users: operator@demo.local, reviewer@demo.local, senior@demo.local, admin@demo.local; datasets seeded: ['HS_RULES', 'TARIFF', 'FTA', 'POLICY']
 demo case VIP-HQ-261008-001: {'documents_parsed': 4, 'status': 'BLOCKED'}
 ## 2. Playwright against the Docker web (seeded case must be BLOCKED)
-  ✓  1 demo-labels.spec.ts:8:1 › demo safety labels are visible on every surface that shows HS / tariff / FTA / policy data (1.9s)
-  ✓  2 smoke.spec.ts:5:1 › login → V12 navigation → goods shows the BLOCKED item → copilot answers → release gate blocked (2.7s)
+  ✓  1 demo-labels.spec.ts:8:1 › demo safety labels are visible on every surface that shows HS / tariff / FTA / policy data (1.6s)
+  ✓  2 smoke.spec.ts:5:1 › login → V12 navigation → goods shows the BLOCKED item → copilot answers → release gate blocked (2.1s)
 
-  2 passed (3.8s)
+  2 passed (3.1s)
 playwright_exit=0
 ## 3. HTTP acceptance A–P (scripts/acceptance_http.py)
 [PASS] 0. health/ready — migrations=0012_ai_usage_events provider=mock
@@ -31,7 +31,8 @@ ACCEPTANCE_HTTP: 17/17 steps PASS against http://localhost:8000
 acceptance_exit=0
 ## containers after flow
 NAME                     STATUS
-vip-customs-api-1        Up 19 seconds
-vip-customs-postgres-1   Up 25 seconds (healthy)
-restart counts: /vip-customs-api-1=0 /vip-customs-postgres-1=0 
+vip-customs-api-1        Up 27 seconds
+vip-customs-postgres-1   Up 33 seconds (healthy)
+vip-customs-web-1        Up 27 seconds
+restart counts: /vip-customs-api-1=0 /vip-customs-postgres-1=0 /vip-customs-web-1=0 
 uploaded documents in volume: 11
