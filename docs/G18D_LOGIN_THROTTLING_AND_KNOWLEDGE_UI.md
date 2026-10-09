@@ -40,7 +40,12 @@ What the owner's data steward and verifier will use once a B-02 source exists:
 Tests: `apps/web/src/pages/Knowledge.test.tsx` (admin sees provenance/badges/actions and `verify` posts the
 reason; a reviewer sees provenance but no management actions).
 
+## 3. Admin readiness panel (`apps/web/src/pages/Manage.tsx`)
+The "Production path" card now renders `/ready` structurally instead of `key=value` text: mode and build SHA, database
+and migration-vs-head, each AI capability's provider (mock / healthy / unhealthy), authoritative status per knowledge
+kind, off-host backup freshness, and the `blocking[]` list that explains a 503. Test: `Manage.test.tsx`.
+
 ## Verification
-Backend pytest **166 passed**, 1 skipped · infra pytest **106** · vitest **7** · `VERIFY: ALL CHECKS PASSED` ·
+Backend pytest **166 passed**, 1 skipped · infra pytest **106** · vitest **8** · `VERIFY: ALL CHECKS PASSED` ·
 Playwright native **2/2** · Docker boot from zero + acceptance A–P **17/17** (results recorded in
 `artifacts/test-results/g18d-*.txt`).

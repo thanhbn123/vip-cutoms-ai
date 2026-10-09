@@ -1,0 +1,41 @@
+All checks passed!
+........................................................................ [ 43%]
+......................................s................................. [ 86%]
+.......................                                                  [100%]
+=============================== warnings summary ===============================
+.venv/lib/python3.12/site-packages/fastapi/testclient.py:1
+  /home/user/vip-cutoms-ai/apps/api/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+166 passed, 1 skipped, 1 warning in 89.93s (0:01:29)
+........................................................................ [ 67%]
+..................................                                       [100%]
+106 passed in 2.01s
+
+ RUN  v2.1.8 /home/user/vip-cutoms-ai/apps/web
+
+ ✓ src/pages/Goods.test.tsx (1 test) 70ms
+stderr | src/pages/Knowledge.test.tsx > admin sees provenance, authoritative badges, verify/import actions; verify posts a reason
+Warning: validateDOMNesting(...): <div> cannot appear as a descendant of <p>.
+    at div
+    at p
+    at div
+    at Row (/home/user/vip-cutoms-ai/apps/web/src/components.tsx:123:16)
+    at div
+    at div
+    at Card (/home/user/vip-cutoms-ai/apps/web/src/components.tsx:53:17)
+    at div
+    at Knowledge (/home/user/vip-cutoms-ai/apps/web/src/pages/Knowledge.tsx:34:22)
+
+ ✓ src/pages/Knowledge.test.tsx (2 tests) 182ms
+ ✓ src/App.test.tsx (2 tests) 258ms
+ ✓ src/api.test.ts (2 tests) 8ms
+
+ Test Files  4 passed (4)
+      Tests  7 passed (7)
+   Start at  19:31:48
+   Duration  2.80s (transform 763ms, setup 356ms, collect 2.02s, tests 518ms, environment 2.41s, prepare 345ms)
+
+SECRET SCAN: clean
+VERIFY: ALL CHECKS PASSED

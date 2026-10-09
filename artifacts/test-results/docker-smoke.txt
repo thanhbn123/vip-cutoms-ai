@@ -1,4 +1,4 @@
-# docker-smoke · 2026-10-09T18:39:42Z · ff18608
+# docker-smoke · 2026-10-09T19:30:27Z · e7d2593
 docker: 29.8.2 · compose: 5.6.0
 ## down -v --remove-orphans
  Volume vip-customs_uploads Removed 
@@ -8,16 +8,17 @@ docker: 29.8.2 · compose: 5.6.0
 build_exit=0
 #20 naming to docker.io/library/vip-customs-web:latest done
 #27 naming to docker.io/library/vip-customs-api:latest done
-real	1m31.867s
+real	1m10.896s
 ## up -d
  Container vip-customs-api-1 Starting 
  Container vip-customs-api-1 Started 
  Container vip-customs-web-1 Starting 
-Error response from daemon: failed to set up container networking: driver failed programming external connectivity on endpoint vip-customs-web-1 (bea52059b48485f87cb310eac4a42b6d54bf2b8eca890d1cbc8dec3e8b7b1571): failed to bind host port 0.0.0.0:5173/tcp: address already in use
+ Container vip-customs-web-1 Started 
 ## ps
 NAME                     IMAGE                STATUS                    PORTS
-vip-customs-api-1        vip-customs-api      Up 4 seconds              0.0.0.0:8000->8000/tcp
-vip-customs-postgres-1   postgres:16-alpine   Up 10 seconds (healthy)   0.0.0.0:55432->5432/tcp
+vip-customs-api-1        vip-customs-api      Up 12 seconds             0.0.0.0:8000->8000/tcp
+vip-customs-postgres-1   postgres:16-alpine   Up 18 seconds (healthy)   0.0.0.0:55432->5432/tcp
+vip-customs-web-1        vip-customs-web      Up 12 seconds             0.0.0.0:5173->5173/tcp
 ## health (host)
 {"status":"ok","service":"vip-customs-api","version":"0.1.0","mode":"demo","release_sha":null} [200]
 ## ready (host)
@@ -33,6 +34,6 @@ heads=1
 
 ## logs scan (last 200 lines/service)
 error/traceback/restart lines: 1
-postgres-1  | 2026-10-09 18:41:27.563 UTC [41] LOG:  background worker "logical replication launcher" (PID 47) exited with exit code 1
+postgres-1  | 2026-10-09 19:31:42.275 UTC [40] LOG:  background worker "logical replication launcher" (PID 46) exited with exit code 1
 secret leak check (POSTGRES_PASSWORD / APP_SECRET_KEY in logs): 0
-restart counts: /vip-customs-api-1=0 /vip-customs-postgres-1=0 
+restart counts: /vip-customs-api-1=0 /vip-customs-postgres-1=0 /vip-customs-web-1=0 
