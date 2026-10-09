@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import uuid
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy import select, text
@@ -36,6 +37,21 @@ class Actor:
 
 def _digest(payload: dict[str, Any]) -> str:
     return hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
+
+def _canonical_ts(value: datetime) -> str:
+    """Timestamp representation that survives a database round-trip.
+
+    `created_at` is a `timestamptz`, which the driver returns in the *database session's*
+    TimeZone. The same instant therefore renders as `...+00:00` in a UTC session but
+    `...+07:00` in, say, Asia/Ho_Chi_Minh, so hashing the raw `isoformat()` made the chain
+    verify only where the session happened to be UTC and report tampering everywhere else.
+    Normalising to UTC keeps the digest byte-identical to one written in a UTC session, so
+    chains recorded before this fix still verify.
+    """
+    if value.tzinfo is None:  # naive values are stored as UTC
+        value = value.replace(tzinfo=UTC)
+    return value.astimezone(UTC).isoformat()
 
 
 def record(
@@ -79,7 +95,7 @@ def record(
             "id": str(ev.id), "tenant": str(tenant_id), "case": str(case_id) if case_id else None,
             "actor": [actor.type, str(actor.id) if actor.id else None, actor.role], "action": action,
             "entity": [entity_type, ev.entity_id], "before": ev.before, "after": ev.after, "reason": reason,
-            "evidence": ev.evidence, "ts": ev.created_at.isoformat(), "prev": prev,
+            "evidence": ev.evidence, "ts": _canonical_ts(ev.created_at), "prev": prev,
         }
     )
     db.add(ev)
@@ -100,7 +116,7 @@ def verify_chain(db: Session, tenant_id: uuid.UUID) -> bool:
                 "id": str(ev.id), "tenant": str(tenant_id), "case": str(ev.case_id) if ev.case_id else None,
                 "actor": [ev.actor_type, str(ev.actor_id) if ev.actor_id else None, ev.actor_role], "action": ev.action,
                 "entity": [ev.entity_type, ev.entity_id], "before": ev.before, "after": ev.after, "reason": ev.reason,
-                "evidence": ev.evidence, "ts": ev.created_at.isoformat(), "prev": ev.prev_hash,
+                "evidence": ev.evidence, "ts": _canonical_ts(ev.created_at), "prev": ev.prev_hash,
             }
         )
         if expected != ev.hash:

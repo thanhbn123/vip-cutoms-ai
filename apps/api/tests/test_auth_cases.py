@@ -98,3 +98,21 @@ def test_reviewer_assignment_must_be_reviewer(world, client):
     assert r.status_code == 422
     r = client.patch(f"/api/v1/cases/{case['id']}", json={"reviewer_id": str(world.users[("T1", "REVIEWER")].id)}, headers=world.h())
     assert r.status_code == 200
+
+
+@pytest.mark.parametrize("session_tz", ["UTC", "Asia/Ho_Chi_Minh", "America/Los_Angeles"])
+def test_audit_chain_verifies_regardless_of_database_session_timezone(world, client, session_tz):
+    """`created_at` is a timestamptz returned in the session's TimeZone.
+
+    Hashing its raw isoformat() made the chain verify only in a UTC session and report
+    tampering in any other, so the digest normalises the timestamp to UTC instead.
+    """
+    from sqlalchemy.orm import Session
+
+    from app.services import audit
+
+    world.create_case()
+    tenant_id = world.users[("T1", "OPERATOR")].tenant_id
+    with Session(get_engine()) as db:
+        db.execute(text(f"SET TIME ZONE '{session_tz}'"))
+        assert audit.verify_chain(db, tenant_id) is True, f"chain must verify with session TimeZone={session_tz}"
