@@ -1,7 +1,7 @@
 import uuid
 
 from sqlalchemy import Boolean, ForeignKey, String, UniqueConstraint, Uuid
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
 from app.models.base import IdMixin, TenantMixin, TimestampMixin
@@ -15,11 +15,19 @@ class Tenant(IdMixin, TimestampMixin, Base):
 
 class User(IdMixin, TimestampMixin, TenantMixin, Base):
     __tablename__ = "users"
-    email: Mapped[str] = mapped_column(String(255), unique=True)
+    # E-mail is unique per tenant (G18F, D-042): the same person may hold accounts in several tenants and a tenant
+    # ADMIN can no longer learn whether an e-mail exists elsewhere. Login disambiguates by tenant code.
+    __table_args__ = (UniqueConstraint("tenant_id", "email", name="uq_users_tenant_email"),)
+    email: Mapped[str] = mapped_column(String(255), index=True)
     full_name: Mapped[str] = mapped_column(String(255))
     role: Mapped[str] = mapped_column(String(32))  # OPERATOR | REVIEWER | SENIOR_REVIEWER | ADMIN
     password_hash: Mapped[str] = mapped_column(String(255))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    tenant: Mapped[Tenant] = relationship(Tenant, lazy="joined")
+
+    @property
+    def tenant_code(self) -> str | None:
+        return self.tenant.code if self.tenant is not None else None
 
 
 class Customer(IdMixin, TimestampMixin, TenantMixin, Base):
