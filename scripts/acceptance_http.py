@@ -1,4 +1,4 @@
-"""Owner acceptance flow A–P executed over HTTP against a running stack (Docker or native). Exit 1 on any failed step.
+"""Owner acceptance flow A–R executed over HTTP against a running stack (Docker or native). Exit 1 on any failed step.
 
 Usage: BASE_URL=http://localhost:8000 SEED_DEMO_PASSWORD=... apps/api/.venv/bin/python scripts/acceptance_http.py
 Requires the demo tenant (scripts/seed_demo.py) — users operator/reviewer/senior@demo.local.
@@ -145,6 +145,43 @@ def main() -> None:
     top = it2[1]["candidates"][0]
     step("P", "similar next case finds history (EXACT, +0.05, still NEEDS_REVIEW)",
          top["history_refs"] and top["history_refs"][0]["match"] == "EXACT" and top["confidence"] == 0.92 and it2[1]["hs_status"] == "NEEDS_REVIEW")
+
+    # ---- G18F/G18G/G18H: tenant-aware login, account lifecycle, tenant audit feed ----
+    anon = httpx.Client(base_url=BASE + "/api/v1", timeout=30)
+    ok_code = anon.post("/auth/login", json={"email": "operator@demo.local", "password": PW, "tenant": "demo"})
+    bad_code = anon.post("/auth/login", json={"email": "operator@demo.local", "password": PW, "tenant": "NO-SUCH-TENANT"})
+    bad_pw = anon.post("/auth/login", json={"email": "operator@demo.local", "password": PW + "x"})
+    step("Q", "tenant-aware login: code (case-insensitive) → 200 with tenant_code; wrong code and wrong password → same generic 401",
+         ok_code.status_code == 200 and ok_code.json()["user"].get("tenant_code") == "DEMO"
+         and bad_code.status_code == 401 and bad_pw.status_code == 401
+         and bad_code.json()["detail"]["code"] == bad_pw.json()["detail"]["code"] == "INVALID_CREDENTIALS")
+
+    adm = Api("admin@demo.local")
+    import time as _t
+    email = f"acceptance-{int(_t.time())}@example.test"
+    created = adm.post("/users", json={"email": email, "full_name": "Acceptance Colleague", "role": "OPERATOR", "password": "initial-pass-1"})
+    uid = created.json().get("id")
+    rerole = adm.patch(f"/users/{uid}", json={"role": "REVIEWER", "reason": "acceptance: promoted"})
+    self_lock = adm.patch(f"/users/{adm.get('/auth/me').json()['user']['id']}", json={"is_active": False, "reason": "acceptance: self"})
+    colleague = httpx.Client(base_url=BASE + "/api/v1", timeout=30)
+    tok = colleague.post("/auth/login", json={"email": email, "password": "initial-pass-1"})
+    colleague.headers["Authorization"] = f"Bearer {tok.json().get('access_token', '')}"
+    _t.sleep(1.1)  # token voiding is second-granular
+    changed = colleague.post("/auth/change-password", json={"current_password": "initial-pass-1", "new_password": "rotated-pass-22"})
+    old_dead = colleague.get("/auth/me").status_code  # the pre-change token
+    colleague.headers["Authorization"] = f"Bearer {changed.json().get('access_token', '')}"
+    new_ok = colleague.get("/auth/me").status_code
+    deact = adm.patch(f"/users/{uid}", json={"is_active": False, "reason": "acceptance: deactivate"})
+    after = colleague.get("/auth/me").status_code
+    relogin = anon.post("/auth/login", json={"email": email, "password": "rotated-pass-22"}).status_code
+    feed = adm.get("/audit", params={"entity_type": "user", "limit": 20}).json()
+    actions = {e["action"] for e in feed if e.get("entity_id") == uid}
+    step("R", "account lifecycle (create → re-role → self password change voids old token → deactivate kills session) with tenant audit feed",
+         created.status_code == 201 and rerole.status_code == 200 and rerole.json()["role"] == "REVIEWER"
+         and self_lock.status_code == 409 and tok.status_code == 200 and changed.status_code == 200
+         and old_dead == 401 and new_ok == 200 and deact.status_code == 200 and after == 401 and relogin == 401
+         and {"user.created", "user.updated", "user.deactivated", "auth.password_changed"} <= actions,
+         f"audit actions={sorted(actions)}")
     finish()
 
 

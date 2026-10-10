@@ -108,3 +108,22 @@ Acceptance:
 ## G14 — External Customs Adapter Assessment
 
 No production write integration without explicit owner approval and documented legal/technical interface assessment.
+
+## G15–G17 — Staging acceptance, RC freeze, owner-approved main merge
+
+Done (see `PROJECT_STATUS.md`): staging stack accepted, release candidate frozen, `main` = `4a2acb9`.
+
+## G18 — Full-production preparation (limited mode, no owner credentials)
+
+- explicit runtime modes `demo|limited|full`, fail-closed FULL startup/readiness (G18A)
+- four AI capability boundaries + vendor-neutral adapter, authoritative-data governance (G18A/B)
+- review remediation, login throttling, Knowledge Hub steward UI (G18C–E)
+- tenant-aware login, user lifecycle, tenant audit feed, browser E2E in CI (G18F–H)
+- owner inputs collected in `docs/G18_OWNER_INPUTS.md` (B-01 provider, B-02 data source, B-06 host, backup/monitoring destinations)
+
+## G19 — Production provisioning in limited mode (needs owner inputs)
+
+- dedicated host, DNS, TLS, secrets per `docs/PRODUCTION_SECRETS.md`
+- off-host backup + monitoring destinations live, restore drill
+- real AI provider in limited mode with acceptance record; first authoritative dataset verified
+- no VNACCS/ECUS submission; drafts remain internal
