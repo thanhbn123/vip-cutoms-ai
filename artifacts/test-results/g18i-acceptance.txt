@@ -1,14 +1,5 @@
-# docker-acceptance · 2026-10-10T07:09:06Z · ae37e61 · api http://localhost:8000 · web http://localhost:5173
-## 1. seed demo tenant + V12 case inside the api container
-tenant DEMO ready; users: operator@demo.local, reviewer@demo.local, senior@demo.local, admin@demo.local; datasets seeded: ['HS_RULES', 'TARIFF', 'FTA', 'POLICY']
-demo case VIP-HQ-261008-001: {'documents_parsed': 4, 'status': 'BLOCKED'}
-## 2. Playwright against the Docker web (seeded case must be BLOCKED)
-  ✓  1 admin-users.spec.ts:8:1 › admin logs in with the tenant code, creates / re-roles / deactivates a colleague, and the tenant audit shows it (5.3s)
-  ✓  3 smoke.spec.ts:5:1 › login → V12 navigation → goods shows the BLOCKED item → copilot answers → release gate blocked (2.6s)
-
-  3 passed (9.3s)
-playwright_exit=0
-## 3. HTTP acceptance A–P (scripts/acceptance_http.py)
+# G18I acceptance A–R — 2026-10-10T07:09:57Z
+## native stack (fresh DB, port 8030)
 [PASS] 0. health/ready — migrations=0014_password_changed_at provider=mock
 [PASS] A. authentication/login (operator, reviewer, senior)
 [PASS] B. create case — VIP-HQ-261010-001
@@ -28,13 +19,19 @@ playwright_exit=0
 [PASS] P. similar next case finds history (EXACT, +0.05, still NEEDS_REVIEW)
 [PASS] Q. tenant-aware login: code (case-insensitive) → 200 with tenant_code; wrong code and wrong password → same generic 401
 [PASS] R. account lifecycle (create → re-role → self password change voids old token → deactivate kills session) with tenant audit feed — audit actions=['auth.password_changed', 'user.created', 'user.deactivated', 'user.updated']
-
+ACCEPTANCE_HTTP: 19/19 steps PASS against http://localhost:8030
+## Docker smoke + acceptance + negative
+build_exit=0
+0014_password_changed_at (head)
+secret leak check (POSTGRES_PASSWORD / APP_SECRET_KEY in logs): 0
+restart counts: /vip-customs-api-1=0 /vip-customs-postgres-1=0 /vip-customs-web-1=0 
+  3 passed (9.3s)
+playwright_exit=0
+[PASS] 0. health/ready — migrations=0014_password_changed_at provider=mock
+[PASS] Q. tenant-aware login: code (case-insensitive) → 200 with tenant_code; wrong code and wrong password → same generic 401
+[PASS] R. account lifecycle (create → re-role → self password change voids old token → deactivate kills session) with tenant audit feed — audit actions=['auth.password_changed', 'user.created', 'user.deactivated', 'user.updated']
 ACCEPTANCE_HTTP: 19/19 steps PASS against http://localhost:8000
 acceptance_exit=0
-## containers after flow
-NAME                     STATUS
-vip-customs-api-1        Up 45 seconds
-vip-customs-postgres-1   Up 56 seconds (healthy)
-vip-customs-web-1        Up 43 seconds
 restart counts: /vip-customs-api-1=0 /vip-customs-postgres-1=0 /vip-customs-web-1=0 
-uploaded documents in volume: 11
+NEGATIVE_TESTS: 20/20 PASS
+## infra 108 passed · ruff clean · secret scan clean

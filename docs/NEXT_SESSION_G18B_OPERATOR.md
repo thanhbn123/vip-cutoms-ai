@@ -31,7 +31,7 @@ deploy.sh takes a pre-deploy `pg_dump`, builds, migrates (`0010 → 0011 → 001
 Expected `/ready`: `"mode":"limited"`, `"migrations":"0014_password_changed_at"`, `migration_in_sync:true`,
 `blocking: []`, providers all `mock`. Then from a client:
 ```bash
-BASE_URL=https://hq.vipgroup.com.vn bash scripts/staging/acceptance.sh     # A–P 17/17, negative 20/20, Playwright, persistence, backup/restore
+BASE_URL=https://hq.vipgroup.com.vn bash scripts/staging/acceptance.sh     # A–R 19/19, negative 20/20, Playwright, persistence, backup/restore
 ```
 Rollback if anything fails: `docs/STAGING_ROLLBACK.md` (previous SHA `9649ec7`, restore the pre-deploy dump
 **before** downgrading, because 0011/0012 added columns/tables and 0013 changed the e-mail uniqueness: `alembic downgrade 0010_copilot_meta` is available; 0013's downgrade refuses while one e-mail exists in two tenants).

@@ -5,7 +5,6 @@
 #1 DONE 0.0s
 
 #2 [web internal] load build definition from Dockerfile
-#2 transferring dockerfile: 30B
 #2 transferring dockerfile: 521B done
 #2 DONE 0.0s
 
@@ -27,243 +26,261 @@
 #7 transferring context: 88B done
 #7 DONE 0.0s
 
-#8 [web internal] load build context
-#8 transferring context: 42.12kB done
+#8 [api internal] load build context
 #8 DONE 0.0s
 
-#9 [web stage-0 1/5] FROM docker.io/library/node:22-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402
-#9 resolve docker.io/library/node:22-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402 0.0s done
-#9 DONE 0.0s
+#9 [web internal] load build context
+#9 transferring context: 27.52kB 0.2s done
+#9 DONE 0.2s
 
-#10 [web stage-0 2/5] WORKDIR /app
-#10 CACHED
+#10 [web stage-0 1/5] FROM docker.io/library/node:22-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402
+#10 resolve docker.io/library/node:22-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402 0.2s done
+#10 DONE 0.2s
 
 #11 [api stage-0  1/10] FROM docker.io/library/python:3.12-slim@sha256:05cda9777409a9c3ffddd94a4c476b79f0769a0b4857f0c7ed9226b6800b0d6f
-#11 resolve docker.io/library/python:3.12-slim@sha256:05cda9777409a9c3ffddd94a4c476b79f0769a0b4857f0c7ed9226b6800b0d6f 0.0s done
-#11 DONE 0.0s
+#11 resolve docker.io/library/python:3.12-slim@sha256:05cda9777409a9c3ffddd94a4c476b79f0769a0b4857f0c7ed9226b6800b0d6f 0.2s done
+#11 DONE 0.2s
 
-#12 [api stage-0  2/10] WORKDIR /app
+#12 [web stage-0 2/5] WORKDIR /app
 #12 CACHED
 
-#13 [api internal] load build context
-#13 transferring context: 97.87kB 0.0s done
-#13 DONE 0.0s
+#13 [api stage-0  2/10] WORKDIR /app
+#13 CACHED
+
+#8 [api internal] load build context
+#8 transferring context: 18.64kB 1.0s done
+#8 DONE 1.0s
 
 #14 [api stage-0  3/10] COPY pyproject.toml ./
-#14 DONE 0.0s
+#14 ...
 
 #15 [web stage-0 3/5] COPY package.json package-lock.json ./
-#15 DONE 0.0s
+#15 DONE 1.2s
+
+#14 [api stage-0  3/10] COPY pyproject.toml ./
+#14 DONE 0.2s
 
 #16 [api stage-0  4/10] COPY app ./app
-#16 DONE 0.1s
+#16 DONE 1.2s
 
-#17 [api stage-0  5/10] RUN --mount=type=secret,id=ca_bundle,required=false     sh -c 'if [ -s /run/secrets/ca_bundle ]; then export PIP_CERT=/run/secrets/ca_bundle; fi;            pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir .'
-#17 1.672 Requirement already satisfied: pip in /usr/local/lib/python3.12/site-packages (25.0.1)
-#17 1.749 Collecting pip
-#17 1.881   Downloading pip-26.2.1-py3-none-any.whl.metadata (4.6 kB)
-#17 1.970 Downloading pip-26.2.1-py3-none-any.whl (1.8 MB)
-#17 2.591    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.8/1.8 MB 2.7 MB/s eta 0:00:00
-#17 2.616 Installing collected packages: pip
-#17 2.616   Attempting uninstall: pip
-#17 2.618     Found existing installation: pip 25.0.1
-#17 2.707     Uninstalling pip-25.0.1:
-#17 2.902       Successfully uninstalled pip-25.0.1
-#17 3.979 Successfully installed pip-26.2.1
-#17 3.981 WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
-#17 5.313 Processing ./.
-#17 5.321   Installing build dependencies: started
-#17 6.906   Installing build dependencies: finished with status 'done'
-#17 6.907   Getting requirements to build wheel: started
+#17 [web stage-0 4/5] RUN --mount=type=secret,id=ca_bundle,required=false     sh -c 'if [ -s /run/secrets/ca_bundle ]; then export NODE_EXTRA_CA_CERTS=/run/secrets/ca_bundle; npm config set cafile /run/secrets/ca_bundle; fi;            npm ci --no-audit --no-fund'
 #17 ...
 
-#18 [web stage-0 4/5] RUN --mount=type=secret,id=ca_bundle,required=false     sh -c 'if [ -s /run/secrets/ca_bundle ]; then export NODE_EXTRA_CA_CERTS=/run/secrets/ca_bundle; npm config set cafile /run/secrets/ca_bundle; fi;            npm ci --no-audit --no-fund'
-#18 2.741 npm warn deprecated whatwg-encoding@3.1.1: Use @exodus/bytes instead for a more spec-conformant and faster implementation
-#18 7.120 
-#18 7.120 added 194 packages in 6s
-#18 DONE 7.5s
+#18 [api stage-0  5/10] RUN --mount=type=secret,id=ca_bundle,required=false     sh -c 'if [ -s /run/secrets/ca_bundle ]; then export PIP_CERT=/run/secrets/ca_bundle; fi;            pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir .'
+#18 13.45 Requirement already satisfied: pip in /usr/local/lib/python3.12/site-packages (25.0.1)
+#18 13.56 Collecting pip
+#18 14.60   Downloading pip-26.2.1-py3-none-any.whl.metadata (4.6 kB)
+#18 15.53 Downloading pip-26.2.1-py3-none-any.whl (1.8 MB)
+#18 ...
+
+#17 [web stage-0 4/5] RUN --mount=type=secret,id=ca_bundle,required=false     sh -c 'if [ -s /run/secrets/ca_bundle ]; then export NODE_EXTRA_CA_CERTS=/run/secrets/ca_bundle; npm config set cafile /run/secrets/ca_bundle; fi;            npm ci --no-audit --no-fund'
+#17 17.19 npm warn deprecated whatwg-encoding@3.1.1: Use @exodus/bytes instead for a more spec-conformant and faster implementation
+#17 22.10 
+#17 22.10 added 194 packages in 8s
+#17 DONE 22.6s
+
+#18 [api stage-0  5/10] RUN --mount=type=secret,id=ca_bundle,required=false     sh -c 'if [ -s /run/secrets/ca_bundle ]; then export PIP_CERT=/run/secrets/ca_bundle; fi;            pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir .'
+#18 16.10    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.8/1.8 MB 3.3 MB/s eta 0:00:00
+#18 16.13 Installing collected packages: pip
+#18 16.13   Attempting uninstall: pip
+#18 16.13     Found existing installation: pip 25.0.1
+#18 16.20     Uninstalling pip-25.0.1:
+#18 16.45       Successfully uninstalled pip-25.0.1
+#18 18.55 Successfully installed pip-26.2.1
+#18 18.55 WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+#18 20.04 Processing ./.
+#18 20.04   Installing build dependencies: started
+#18 ...
 
 #19 [web stage-0 5/5] COPY . .
 #19 DONE 0.1s
-
-#17 [api stage-0  5/10] RUN --mount=type=secret,id=ca_bundle,required=false     sh -c 'if [ -s /run/secrets/ca_bundle ]; then export PIP_CERT=/run/secrets/ca_bundle; fi;            pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir .'
-#17 ...
 
 #20 [web] exporting to image
 #20 exporting layers
 #20 ...
 
-#17 [api stage-0  5/10] RUN --mount=type=secret,id=ca_bundle,required=false     sh -c 'if [ -s /run/secrets/ca_bundle ]; then export PIP_CERT=/run/secrets/ca_bundle; fi;            pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir .'
-#17 7.982   Getting requirements to build wheel: finished with status 'done'
-#17 7.984   Preparing metadata (pyproject.toml): started
-#17 8.813   Preparing metadata (pyproject.toml): finished with status 'done'
-#17 8.904 Collecting fastapi<1,>=0.115 (from vip-customs-api==0.1.0)
-#17 9.137   Downloading fastapi-0.143.0-py3-none-any.whl.metadata (26 kB)
-#17 9.193 Collecting uvicorn>=0.30 (from uvicorn[standard]>=0.30->vip-customs-api==0.1.0)
-#17 9.388   Downloading uvicorn-0.54.0-py3-none-any.whl.metadata (6.6 kB)
-#17 9.794 Collecting sqlalchemy<2.1,>=2.0.30 (from vip-customs-api==0.1.0)
-#17 9.964   Downloading sqlalchemy-2.0.54-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (9.7 kB)
-#17 10.03 Collecting alembic>=1.13 (from vip-customs-api==0.1.0)
-#17 10.19   Downloading alembic-1.20.0-py3-none-any.whl.metadata (7.3 kB)
-#17 10.23 Collecting psycopg>=3.2 (from psycopg[binary]>=3.2->vip-customs-api==0.1.0)
-#17 10.38   Downloading psycopg-3.3.6-py3-none-any.whl.metadata (4.4 kB)
-#17 10.52 Collecting pydantic>=2.7 (from vip-customs-api==0.1.0)
-#17 10.67   Downloading pydantic-2.14.0-py3-none-any.whl.metadata (131 kB)
-#17 10.72 Collecting pydantic-settings>=2.3 (from vip-customs-api==0.1.0)
-#17 10.86   Downloading pydantic_settings-2.15.0-py3-none-any.whl.metadata (3.9 kB)
-#17 10.89 Collecting python-multipart>=0.0.9 (from vip-customs-api==0.1.0)
-#17 11.02   Downloading python_multipart-0.0.32-py3-none-any.whl.metadata (2.1 kB)
-#17 11.06 Collecting httpx>=0.27 (from vip-customs-api==0.1.0)
-#17 11.24   Downloading httpx-0.28.1-py3-none-any.whl.metadata (7.1 kB)
-#17 11.30 Collecting starlette>=0.46.0 (from fastapi<1,>=0.115->vip-customs-api==0.1.0)
-#17 11.50   Downloading starlette-1.7.0-py3-none-any.whl.metadata (6.6 kB)
-#17 11.53 Collecting typing-extensions>=4.8.0 (from fastapi<1,>=0.115->vip-customs-api==0.1.0)
-#17 11.72   Downloading typing_extensions-4.16.0-py3-none-any.whl.metadata (3.3 kB)
-#17 11.74 Collecting typing-inspection>=0.4.2 (from fastapi<1,>=0.115->vip-customs-api==0.1.0)
-#17 11.92   Downloading typing_inspection-0.4.4-py3-none-any.whl.metadata (2.6 kB)
-#17 11.95 Collecting annotated-doc>=0.0.2 (from fastapi<1,>=0.115->vip-customs-api==0.1.0)
-#17 12.11   Downloading annotated_doc-0.0.5-py3-none-any.whl.metadata (6.5 kB)
-#17 12.14 Collecting opentelemetry-api>=1.44.0 (from fastapi<1,>=0.115->vip-customs-api==0.1.0)
-#17 12.35   Downloading opentelemetry_api-1.45.1-py3-none-any.whl.metadata (1.4 kB)
-#17 12.49 Collecting greenlet>=1 (from sqlalchemy<2.1,>=2.0.30->vip-customs-api==0.1.0)
-#17 12.75   Downloading greenlet-3.5.6-cp312-cp312-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl.metadata (3.8 kB)
-#17 12.78 Collecting Mako (from alembic>=1.13->vip-customs-api==0.1.0)
-#17 12.80   Downloading mako-1.4.3-py3-none-any.whl.metadata (2.9 kB)
-#17 12.84 Collecting anyio (from httpx>=0.27->vip-customs-api==0.1.0)
-#17 12.86   Downloading anyio-4.15.1-py3-none-any.whl.metadata (4.7 kB)
-#17 12.89 Collecting certifi (from httpx>=0.27->vip-customs-api==0.1.0)
-#17 12.91   Downloading certifi-2026.7.22-py3-none-any.whl.metadata (2.5 kB)
-#17 12.93 Collecting httpcore==1.* (from httpx>=0.27->vip-customs-api==0.1.0)
-#17 12.95   Downloading httpcore-1.0.9-py3-none-any.whl.metadata (21 kB)
-#17 12.98 Collecting idna (from httpx>=0.27->vip-customs-api==0.1.0)
-#17 13.00   Downloading idna-3.20-py3-none-any.whl.metadata (7.2 kB)
-#17 13.02 Collecting h11>=0.16 (from httpcore==1.*->httpx>=0.27->vip-customs-api==0.1.0)
-#17 13.05   Downloading h11-0.16.0-py3-none-any.whl.metadata (8.3 kB)
-#17 13.27 Collecting psycopg-binary==3.3.6 (from psycopg[binary]>=3.2->vip-customs-api==0.1.0)
-#17 13.30   Downloading psycopg_binary-3.3.6-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (2.7 kB)
-#17 13.32 Collecting annotated-types>=0.6.0 (from pydantic>=2.7->vip-customs-api==0.1.0)
-#17 13.34   Downloading annotated_types-0.8.0-py3-none-any.whl.metadata (15 kB)
-#17 ...
+#18 [api stage-0  5/10] RUN --mount=type=secret,id=ca_bundle,required=false     sh -c 'if [ -s /run/secrets/ca_bundle ]; then export PIP_CERT=/run/secrets/ca_bundle; fi;            pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir .'
+#18 22.60   Installing build dependencies: finished with status 'done'
+#18 22.60   Getting requirements to build wheel: started
+#18 23.87   Getting requirements to build wheel: finished with status 'done'
+#18 23.88   Preparing metadata (pyproject.toml): started
+#18 25.04   Preparing metadata (pyproject.toml): finished with status 'done'
+#18 25.15 Collecting fastapi<1,>=0.115 (from vip-customs-api==0.1.0)
+#18 25.25   Downloading fastapi-0.143.0-py3-none-any.whl.metadata (26 kB)
+#18 25.30 Collecting uvicorn>=0.30 (from uvicorn[standard]>=0.30->vip-customs-api==0.1.0)
+#18 25.32   Downloading uvicorn-0.54.0-py3-none-any.whl.metadata (6.6 kB)
+#18 25.83 Collecting sqlalchemy<2.1,>=2.0.30 (from vip-customs-api==0.1.0)
+#18 25.94   Downloading sqlalchemy-2.0.54-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (9.7 kB)
+#18 26.09 Collecting alembic>=1.13 (from vip-customs-api==0.1.0)
+#18 26.75   Downloading alembic-1.20.0-py3-none-any.whl.metadata (7.3 kB)
+#18 26.78 Collecting psycopg>=3.2 (from psycopg[binary]>=3.2->vip-customs-api==0.1.0)
+#18 27.21   Downloading psycopg-3.3.6-py3-none-any.whl.metadata (4.4 kB)
+#18 27.37 Collecting pydantic>=2.7 (from vip-customs-api==0.1.0)
+#18 27.76   Downloading pydantic-2.14.0-py3-none-any.whl.metadata (131 kB)
+#18 27.81 Collecting pydantic-settings>=2.3 (from vip-customs-api==0.1.0)
+#18 28.17   Downloading pydantic_settings-2.15.0-py3-none-any.whl.metadata (3.9 kB)
+#18 28.20 Collecting python-multipart>=0.0.9 (from vip-customs-api==0.1.0)
+#18 28.53   Downloading python_multipart-0.0.32-py3-none-any.whl.metadata (2.1 kB)
+#18 28.58 Collecting httpx>=0.27 (from vip-customs-api==0.1.0)
+#18 28.74   Downloading httpx-0.28.1-py3-none-any.whl.metadata (7.1 kB)
+#18 28.78 Collecting starlette>=0.46.0 (from fastapi<1,>=0.115->vip-customs-api==0.1.0)
+#18 28.80   Downloading starlette-1.7.0-py3-none-any.whl.metadata (6.6 kB)
+#18 28.84 Collecting typing-extensions>=4.8.0 (from fastapi<1,>=0.115->vip-customs-api==0.1.0)
+#18 28.87   Downloading typing_extensions-4.16.0-py3-none-any.whl.metadata (3.3 kB)
+#18 28.89 Collecting typing-inspection>=0.4.2 (from fastapi<1,>=0.115->vip-customs-api==0.1.0)
+#18 28.91   Downloading typing_inspection-0.4.4-py3-none-any.whl.metadata (2.6 kB)
+#18 28.94 Collecting annotated-doc>=0.0.2 (from fastapi<1,>=0.115->vip-customs-api==0.1.0)
+#18 28.96   Downloading annotated_doc-0.0.5-py3-none-any.whl.metadata (6.5 kB)
+#18 29.01 Collecting opentelemetry-api>=1.44.0 (from fastapi<1,>=0.115->vip-customs-api==0.1.0)
+#18 29.03   Downloading opentelemetry_api-1.45.1-py3-none-any.whl.metadata (1.4 kB)
+#18 29.29 Collecting greenlet>=1 (from sqlalchemy<2.1,>=2.0.30->vip-customs-api==0.1.0)
+#18 29.31   Downloading greenlet-3.5.6-cp312-cp312-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl.metadata (3.8 kB)
+#18 29.35 Collecting Mako (from alembic>=1.13->vip-customs-api==0.1.0)
+#18 29.39   Downloading mako-1.4.3-py3-none-any.whl.metadata (2.9 kB)
+#18 29.42 Collecting anyio (from httpx>=0.27->vip-customs-api==0.1.0)
+#18 29.44   Downloading anyio-4.15.1-py3-none-any.whl.metadata (4.7 kB)
+#18 29.48 Collecting certifi (from httpx>=0.27->vip-customs-api==0.1.0)
+#18 29.52   Downloading certifi-2026.7.22-py3-none-any.whl.metadata (2.5 kB)
+#18 29.56 Collecting httpcore==1.* (from httpx>=0.27->vip-customs-api==0.1.0)
+#18 29.58   Downloading httpcore-1.0.9-py3-none-any.whl.metadata (21 kB)
+#18 29.61 Collecting idna (from httpx>=0.27->vip-customs-api==0.1.0)
+#18 29.66   Downloading idna-3.20-py3-none-any.whl.metadata (7.2 kB)
+#18 29.69 Collecting h11>=0.16 (from httpcore==1.*->httpx>=0.27->vip-customs-api==0.1.0)
+#18 29.71   Downloading h11-0.16.0-py3-none-any.whl.metadata (8.3 kB)
+#18 30.17 Collecting psycopg-binary==3.3.6 (from psycopg[binary]>=3.2->vip-customs-api==0.1.0)
+#18 30.46   Downloading psycopg_binary-3.3.6-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (2.7 kB)
+#18 30.74 Collecting annotated-types>=0.6.0 (from pydantic>=2.7->vip-customs-api==0.1.0)
+#18 30.85   Downloading annotated_types-0.8.0-py3-none-any.whl.metadata (15 kB)
+#18 ...
 
 #20 [web] exporting to image
-#20 exporting layers 6.3s done
-#20 exporting manifest sha256:fa85fd5a74c0c34c555a7764f3a3e2663e922733a3cba97bb9f3a0f98e05ee69 done
-#20 exporting config sha256:06afa50386c69254682ac43e8bd3c29e2447b12613bc0a896f9462878294f4d6 0.0s done
-#20 exporting attestation manifest sha256:9a43cb00140985e53c8deee91bb1d7b68978f001fd5c7869faf0e141df08206c done
-#20 exporting manifest list sha256:12962eb55c02b60931368bd4939b62bfaef14be05233623050cf29686c9b6b02 done
+#20 exporting layers 9.8s done
+#20 exporting manifest sha256:4e70e1332e213169c7655876515e6ff9d4f409ed9b1ed957a1c74d9a08f95522
+#20 exporting manifest sha256:4e70e1332e213169c7655876515e6ff9d4f409ed9b1ed957a1c74d9a08f95522 0.2s done
+#20 exporting config sha256:ce79da470abfbd5ce7fd06e2eb7c2965f3896fc1b8e27cc383700558c9d59dba
+#20 exporting config sha256:ce79da470abfbd5ce7fd06e2eb7c2965f3896fc1b8e27cc383700558c9d59dba 0.3s done
+#20 exporting attestation manifest sha256:88f713ba190c0726477a1be717f638426e239692113b9f4f30b94872584afa0d 0.0s done
+#20 exporting manifest list sha256:52b85137b1abcf79c5e5f2f0dad0d197bab03efe45a01979227bfce9cbcd368a 0.0s done
 #20 naming to docker.io/library/vip-customs-web:latest done
 #20 unpacking to docker.io/library/vip-customs-web:latest
-#20 unpacking to docker.io/library/vip-customs-web:latest 2.1s done
-#20 DONE 8.5s
+#20 ...
 
-#17 [api stage-0  5/10] RUN --mount=type=secret,id=ca_bundle,required=false     sh -c 'if [ -s /run/secrets/ca_bundle ]; then export PIP_CERT=/run/secrets/ca_bundle; fi;            pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir .'
-#17 14.07 Collecting pydantic-core==2.50.0 (from pydantic>=2.7->vip-customs-api==0.1.0)
-#17 14.09   Downloading pydantic_core-2.50.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (6.5 kB)
-#17 14.13 Collecting python-dotenv>=0.21.0 (from pydantic-settings>=2.3->vip-customs-api==0.1.0)
-#17 14.15   Downloading python_dotenv-1.2.4-py3-none-any.whl.metadata (29 kB)
-#17 14.18 Collecting click>=7.0 (from uvicorn>=0.30->uvicorn[standard]>=0.30->vip-customs-api==0.1.0)
-#17 14.20   Downloading click-8.5.0-py3-none-any.whl.metadata (2.6 kB)
-#17 14.25 Collecting httptools>=0.8.0 (from uvicorn[standard]>=0.30->vip-customs-api==0.1.0)
-#17 14.27   Downloading httptools-0.9.0-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl.metadata (3.5 kB)
-#17 14.33 Collecting pyyaml>=5.1 (from uvicorn[standard]>=0.30->vip-customs-api==0.1.0)
-#17 14.34   Downloading pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.4 kB)
-#17 14.40 Collecting uvloop>=0.15.1 (from uvicorn[standard]>=0.30->vip-customs-api==0.1.0)
-#17 14.42   Downloading uvloop-0.23.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (5.1 kB)
-#17 14.50 Collecting watchfiles>=0.20 (from uvicorn[standard]>=0.30->vip-customs-api==0.1.0)
-#17 14.52   Downloading watchfiles-1.3.0-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (4.9 kB)
-#17 14.63 Collecting websockets>=13.0 (from uvicorn[standard]>=0.30->vip-customs-api==0.1.0)
-#17 14.65   Downloading websockets-17.2-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl.metadata (6.3 kB)
-#17 14.71 Collecting MarkupSafe>=2.0 (from Mako->alembic>=1.13->vip-customs-api==0.1.0)
-#17 14.74   Downloading markupsafe-3.0.4-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.7 kB)
-#17 14.76 Downloading fastapi-0.143.0-py3-none-any.whl (144 kB)
-#17 14.80 Downloading sqlalchemy-2.0.54-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (3.5 MB)
-#17 15.20    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 3.5/3.5 MB 8.5 MB/s  0:00:00
-#17 15.22 Downloading alembic-1.20.0-py3-none-any.whl (268 kB)
-#17 15.47 Downloading annotated_doc-0.0.5-py3-none-any.whl (5.3 kB)
-#17 15.76 Downloading greenlet-3.5.6-cp312-cp312-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl (621 kB)
-#17 15.77    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 621.4/621.4 kB 160.5 MB/s  0:00:00
-#17 15.96 Downloading httpx-0.28.1-py3-none-any.whl (73 kB)
-#17 15.97 Downloading httpcore-1.0.9-py3-none-any.whl (78 kB)
-#17 16.00 Downloading h11-0.16.0-py3-none-any.whl (37 kB)
-#17 16.02 Downloading opentelemetry_api-1.45.1-py3-none-any.whl (60 kB)
-#17 16.15 Downloading psycopg-3.3.6-py3-none-any.whl (215 kB)
-#17 ...
+#18 [api stage-0  5/10] RUN --mount=type=secret,id=ca_bundle,required=false     sh -c 'if [ -s /run/secrets/ca_bundle ]; then export PIP_CERT=/run/secrets/ca_bundle; fi;            pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir .'
+#18 32.15 Collecting pydantic-core==2.50.0 (from pydantic>=2.7->vip-customs-api==0.1.0)
+#18 32.17   Downloading pydantic_core-2.50.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (6.5 kB)
+#18 32.21 Collecting python-dotenv>=0.21.0 (from pydantic-settings>=2.3->vip-customs-api==0.1.0)
+#18 32.23   Downloading python_dotenv-1.2.4-py3-none-any.whl.metadata (29 kB)
+#18 32.47 Collecting click>=7.0 (from uvicorn>=0.30->uvicorn[standard]>=0.30->vip-customs-api==0.1.0)
+#18 32.49   Downloading click-8.5.0-py3-none-any.whl.metadata (2.6 kB)
+#18 32.55 Collecting httptools>=0.8.0 (from uvicorn[standard]>=0.30->vip-customs-api==0.1.0)
+#18 32.57   Downloading httptools-0.9.0-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl.metadata (3.5 kB)
+#18 32.63 Collecting pyyaml>=5.1 (from uvicorn[standard]>=0.30->vip-customs-api==0.1.0)
+#18 32.65   Downloading pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.4 kB)
+#18 32.74 Collecting uvloop>=0.15.1 (from uvicorn[standard]>=0.30->vip-customs-api==0.1.0)
+#18 32.77   Downloading uvloop-0.23.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (5.1 kB)
+#18 32.88 Collecting watchfiles>=0.20 (from uvicorn[standard]>=0.30->vip-customs-api==0.1.0)
+#18 32.90   Downloading watchfiles-1.3.0-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (4.9 kB)
+#18 33.37 Collecting websockets>=13.0 (from uvicorn[standard]>=0.30->vip-customs-api==0.1.0)
+#18 33.44   Downloading websockets-17.2-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl.metadata (6.3 kB)
+#18 33.54 Collecting MarkupSafe>=2.0 (from Mako->alembic>=1.13->vip-customs-api==0.1.0)
+#18 33.56   Downloading markupsafe-3.0.4-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.7 kB)
+#18 33.58 Downloading fastapi-0.143.0-py3-none-any.whl (144 kB)
+#18 33.61 Downloading sqlalchemy-2.0.54-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (3.5 MB)
+#18 33.70    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 3.5/3.5 MB 37.4 MB/s  0:00:00
+#18 33.72 Downloading alembic-1.20.0-py3-none-any.whl (268 kB)
+#18 33.75 Downloading annotated_doc-0.0.5-py3-none-any.whl (5.3 kB)
+#18 33.77 Downloading greenlet-3.5.6-cp312-cp312-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl (621 kB)
+#18 33.79    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 621.4/621.4 kB 40.8 MB/s  0:00:00
+#18 33.81 Downloading httpx-0.28.1-py3-none-any.whl (73 kB)
+#18 33.83 Downloading httpcore-1.0.9-py3-none-any.whl (78 kB)
+#18 33.85 Downloading h11-0.16.0-py3-none-any.whl (37 kB)
+#18 33.87 Downloading opentelemetry_api-1.45.1-py3-none-any.whl (60 kB)
+#18 33.89 Downloading psycopg-3.3.6-py3-none-any.whl (215 kB)
+#18 33.92 Downloading psycopg_binary-3.3.6-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (5.2 MB)
+#18 34.12    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 5.2/5.2 MB 26.3 MB/s  0:00:00
+#18 34.25 Downloading pydantic-2.14.0-py3-none-any.whl (487 kB)
+#18 34.28 Downloading pydantic_core-2.50.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (2.2 MB)
+#18 34.34    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2.2/2.2 MB 40.2 MB/s  0:00:00
+#18 34.36 Downloading annotated_types-0.8.0-py3-none-any.whl (13 kB)
+#18 34.53 Downloading pydantic_settings-2.15.0-py3-none-any.whl (69 kB)
+#18 34.65 Downloading python_dotenv-1.2.4-py3-none-any.whl (23 kB)
+#18 34.67 Downloading python_multipart-0.0.32-py3-none-any.whl (30 kB)
+#18 34.69 Downloading starlette-1.7.0-py3-none-any.whl (78 kB)
+#18 34.72 Downloading anyio-4.15.1-py3-none-any.whl (132 kB)
+#18 34.74 Downloading idna-3.20-py3-none-any.whl (69 kB)
+#18 34.76 Downloading typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+#18 34.78 Downloading typing_inspection-0.4.4-py3-none-any.whl (14 kB)
+#18 34.80 Downloading uvicorn-0.54.0-py3-none-any.whl (87 kB)
+#18 34.82 Downloading click-8.5.0-py3-none-any.whl (125 kB)
+#18 34.84 Downloading httptools-0.9.0-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (552 kB)
+#18 34.86    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 552.8/552.8 kB 42.7 MB/s  0:00:00
+#18 34.88 Downloading pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (807 kB)
+#18 34.90    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 807.9/807.9 kB 38.7 MB/s  0:00:00
+#18 34.92 Downloading uvloop-0.23.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (4.5 MB)
+#18 35.04    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 4.5/4.5 MB 39.3 MB/s  0:00:00
+#18 35.06 Downloading watchfiles-1.3.0-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (458 kB)
+#18 35.08 Downloading websockets-17.2-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (225 kB)
+#18 35.11 Downloading certifi-2026.7.22-py3-none-any.whl (136 kB)
+#18 35.13 Downloading mako-1.4.3-py3-none-any.whl (80 kB)
+#18 35.15 Downloading markupsafe-3.0.4-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (22 kB)
+#18 35.33 Building wheels for collected packages: vip-customs-api
+#18 35.34   Building wheel for vip-customs-api (pyproject.toml): started
+#18 39.86   Building wheel for vip-customs-api (pyproject.toml): finished with status 'done'
+#18 39.89   Created wheel for vip-customs-api: filename=vip_customs_api-0.1.0-py3-none-any.whl size=132567 sha256=66b9314ce9756d5be27169e213419cd144468777cc788ea03ad35c5d81bc1913
+#18 39.89   Stored in directory: /tmp/pip-ephem-wheel-cache-5wefneoq/wheels/54/1b/b7/aa63e25c8f14f4f2ae7b04e6097bdecb770e455c5c1ee0a600
+#18 39.90 Successfully built vip-customs-api
+#18 40.00 Installing collected packages: websockets, uvloop, typing-extensions, pyyaml, python-multipart, python-dotenv, psycopg-binary, MarkupSafe, idna, httptools, h11, greenlet, click, certifi, annotated-types, annotated-doc, uvicorn, typing-inspection, sqlalchemy, pydantic-core, psycopg, opentelemetry-api, Mako, httpcore, anyio, watchfiles, starlette, pydantic, httpx, alembic, pydantic-settings, fastapi, vip-customs-api
+#18 ...
+
+#20 [web] exporting to image
+#20 unpacking to docker.io/library/vip-customs-web:latest 10.9s done
+#20 DONE 21.4s
+
+#18 [api stage-0  5/10] RUN --mount=type=secret,id=ca_bundle,required=false     sh -c 'if [ -s /run/secrets/ca_bundle ]; then export PIP_CERT=/run/secrets/ca_bundle; fi;            pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir .'
+#18 ...
 
 #21 [web] resolving provenance for metadata file
 #21 DONE 0.0s
 
-#17 [api stage-0  5/10] RUN --mount=type=secret,id=ca_bundle,required=false     sh -c 'if [ -s /run/secrets/ca_bundle ]; then export PIP_CERT=/run/secrets/ca_bundle; fi;            pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir .'
-#17 16.17 Downloading psycopg_binary-3.3.6-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (5.2 MB)
-#17 16.99    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 5.2/5.2 MB 6.2 MB/s  0:00:00
-#17 17.03 Downloading pydantic-2.14.0-py3-none-any.whl (487 kB)
-#17 17.22 Downloading pydantic_core-2.50.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (2.2 MB)
-#17 17.51    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2.2/2.2 MB 7.7 MB/s  0:00:00
-#17 17.53 Downloading annotated_types-0.8.0-py3-none-any.whl (13 kB)
-#17 17.55 Downloading pydantic_settings-2.15.0-py3-none-any.whl (69 kB)
-#17 17.57 Downloading python_dotenv-1.2.4-py3-none-any.whl (23 kB)
-#17 17.59 Downloading python_multipart-0.0.32-py3-none-any.whl (30 kB)
-#17 17.62 Downloading starlette-1.7.0-py3-none-any.whl (78 kB)
-#17 17.64 Downloading anyio-4.15.1-py3-none-any.whl (132 kB)
-#17 17.67 Downloading idna-3.20-py3-none-any.whl (69 kB)
-#17 17.69 Downloading typing_extensions-4.16.0-py3-none-any.whl (45 kB)
-#17 17.71 Downloading typing_inspection-0.4.4-py3-none-any.whl (14 kB)
-#17 17.73 Downloading uvicorn-0.54.0-py3-none-any.whl (87 kB)
-#17 17.76 Downloading click-8.5.0-py3-none-any.whl (125 kB)
-#17 17.79 Downloading httptools-0.9.0-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (552 kB)
-#17 17.85    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 552.8/552.8 kB 10.0 MB/s  0:00:00
-#17 17.87 Downloading pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (807 kB)
-#17 17.99    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 807.9/807.9 kB 6.7 MB/s  0:00:00
-#17 18.01 Downloading uvloop-0.23.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (4.5 MB)
-#17 18.58    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 4.5/4.5 MB 8.0 MB/s  0:00:00
-#17 18.60 Downloading watchfiles-1.3.0-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (458 kB)
-#17 18.66 Downloading websockets-17.2-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (225 kB)
-#17 18.70 Downloading certifi-2026.7.22-py3-none-any.whl (136 kB)
-#17 18.73 Downloading mako-1.4.3-py3-none-any.whl (80 kB)
-#17 18.76 Downloading markupsafe-3.0.4-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (22 kB)
-#17 18.84 Building wheels for collected packages: vip-customs-api
-#17 18.84   Building wheel for vip-customs-api (pyproject.toml): started
-#17 19.73   Building wheel for vip-customs-api (pyproject.toml): finished with status 'done'
-#17 19.73   Created wheel for vip-customs-api: filename=vip_customs_api-0.1.0-py3-none-any.whl size=132567 sha256=6866ef531b70f7448ddf95ae7859c987f4226369428eee5ae58babd0ac2e1b32
-#17 19.73   Stored in directory: /tmp/pip-ephem-wheel-cache-ry6flefx/wheels/54/1b/b7/aa63e25c8f14f4f2ae7b04e6097bdecb770e455c5c1ee0a600
-#17 19.74 Successfully built vip-customs-api
-#17 19.84 Installing collected packages: websockets, uvloop, typing-extensions, pyyaml, python-multipart, python-dotenv, psycopg-binary, MarkupSafe, idna, httptools, h11, greenlet, click, certifi, annotated-types, annotated-doc, uvicorn, typing-inspection, sqlalchemy, pydantic-core, psycopg, opentelemetry-api, Mako, httpcore, anyio, watchfiles, starlette, pydantic, httpx, alembic, pydantic-settings, fastapi, vip-customs-api
-#17 23.32 
-#17 23.32 Successfully installed Mako-1.4.3 MarkupSafe-3.0.4 alembic-1.20.0 annotated-doc-0.0.5 annotated-types-0.8.0 anyio-4.15.1 certifi-2026.7.22 click-8.5.0 fastapi-0.143.0 greenlet-3.5.6 h11-0.16.0 httpcore-1.0.9 httptools-0.9.0 httpx-0.28.1 idna-3.20 opentelemetry-api-1.45.1 psycopg-3.3.6 psycopg-binary-3.3.6 pydantic-2.14.0 pydantic-core-2.50.0 pydantic-settings-2.15.0 python-dotenv-1.2.4 python-multipart-0.0.32 pyyaml-6.0.3 sqlalchemy-2.0.54 starlette-1.7.0 typing-extensions-4.16.0 typing-inspection-0.4.4 uvicorn-0.54.0 uvloop-0.23.0 vip-customs-api-0.1.0 watchfiles-1.3.0 websockets-17.2
-#17 23.32 WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
-#17 DONE 24.0s
+#18 [api stage-0  5/10] RUN --mount=type=secret,id=ca_bundle,required=false     sh -c 'if [ -s /run/secrets/ca_bundle ]; then export PIP_CERT=/run/secrets/ca_bundle; fi;            pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir .'
+#18 48.11 
+#18 48.11 Successfully installed Mako-1.4.3 MarkupSafe-3.0.4 alembic-1.20.0 annotated-doc-0.0.5 annotated-types-0.8.0 anyio-4.15.1 certifi-2026.7.22 click-8.5.0 fastapi-0.143.0 greenlet-3.5.6 h11-0.16.0 httpcore-1.0.9 httptools-0.9.0 httpx-0.28.1 idna-3.20 opentelemetry-api-1.45.1 psycopg-3.3.6 psycopg-binary-3.3.6 pydantic-2.14.0 pydantic-core-2.50.0 pydantic-settings-2.15.0 python-dotenv-1.2.4 python-multipart-0.0.32 pyyaml-6.0.3 sqlalchemy-2.0.54 starlette-1.7.0 typing-extensions-4.16.0 typing-inspection-0.4.4 uvicorn-0.54.0 uvloop-0.23.0 vip-customs-api-0.1.0 watchfiles-1.3.0 websockets-17.2
+#18 48.11 WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+#18 DONE 49.0s
 
 #22 [api stage-0  6/10] COPY alembic.ini ./
-#22 DONE 0.0s
+#22 DONE 0.1s
 
 #23 [api stage-0  7/10] COPY alembic ./alembic
-#23 DONE 0.0s
+#23 DONE 0.2s
 
 #24 [api stage-0  8/10] COPY scripts ./scripts
-#24 DONE 0.2s
+#24 DONE 0.0s
 
 #25 [api stage-0  9/10] COPY tests/fixtures ./tests/fixtures
 #25 DONE 0.0s
 
 #26 [api stage-0 10/10] RUN useradd -m appuser && mkdir -p /data/uploads && chown appuser /data/uploads
-#26 DONE 0.4s
+#26 DONE 1.4s
 
 #27 [api] exporting to image
 #27 exporting layers
-#27 exporting layers 4.0s done
-#27 exporting manifest sha256:cfa39ca52b1e683a6846a24eabf17101cd4fd36a1d3dc44d0267151b39f4cff7 done
-#27 exporting config sha256:4adfeac138487e7a2499424b51a0013f43da3a5b5799fbf23e80149611997439 done
-#27 exporting attestation manifest sha256:3bd4f3a71d2609b7c9acea1b8321c54d5fb9a587ebe6a79576f9a2674277f472 done
-#27 exporting manifest list sha256:daf112f455bc77dba6b8ed2a47fdb604522df89cb5a5581c05cdb3b8b7fd79fc done
+#27 exporting layers 6.1s done
+#27 exporting manifest sha256:c5c042daf12d309840ccd8d837665261217c97782afc4337d4e2e5831c7c6b1a
+#27 exporting manifest sha256:c5c042daf12d309840ccd8d837665261217c97782afc4337d4e2e5831c7c6b1a done
+#27 exporting config sha256:975b0abc83bf6488cf9a347c886bb17607aba23add86ef033cd3e56f7ab6cc03 done
+#27 exporting attestation manifest sha256:c2981493c4831171dc90a3c6c8803cc6e750f32519710a366a9fc6acd237f9df 0.0s done
+#27 exporting manifest list sha256:1fa37fe542570fb1ce2a125e3f476a3ac223a2cb1d6464651de678f8662d2355 done
 #27 naming to docker.io/library/vip-customs-api:latest done
 #27 unpacking to docker.io/library/vip-customs-api:latest
-#27 unpacking to docker.io/library/vip-customs-api:latest 1.0s done
-#27 DONE 5.1s
+#27 unpacking to docker.io/library/vip-customs-api:latest 2.2s done
+#27 DONE 8.4s
 
 #28 [api] resolving provenance for metadata file
 #28 DONE 0.0s
  Image vip-customs-api Built 
  Image vip-customs-web Built 
 
-real	0m30.790s
-user	0m0.335s
-sys	0m0.225s
+real	1m4.002s
+user	0m0.623s
+sys	0m0.596s
