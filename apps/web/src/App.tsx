@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { api, ApiError, getToken, recall, remember, setToken, type Case, type DemoNotice, type Me } from "./api";
+import { api, ApiError, getToken, post, recall, remember, setToken, type Case, type DemoNotice, type Me } from "./api";
 import { Login } from "./Login";
 import { NAV, type PageId } from "./nav";
 import { CasePage } from "./pages/CasePage";
@@ -40,6 +40,14 @@ export function App() {
   useEffect(() => { refreshCases().catch(() => undefined); }, [refreshCases, bump]);
 
   const toast = (m: string) => { setMsg(m); setTimeout(() => setMsg(null), 2200); };
+  // G18G self-service password change: the API returns a fresh token because every older token becomes void.
+  const changePassword = async () => {
+    const current = window.prompt("Mật khẩu hiện tại"); if (!current) return;
+    const next = window.prompt("Mật khẩu mới (≥10 ký tự)"); if (!next) return;
+    if (next.length < 10) { toast("Mật khẩu mới phải ≥10 ký tự"); return; }
+    try { const r = await post<{ access_token: string }>("/auth/change-password", { current_password: current, new_password: next }); setToken(r.access_token); toast("Đã đổi mật khẩu — các phiên đăng nhập khác đã bị huỷ"); }
+    catch (e) { toast(errMsg(e)); }
+  };
   const go = (p: PageId) => { setPage(p); remember("vip.page", p); window.scrollTo({ top: 0 }); };
   const ctx: Ctx = {
     me: me!, caseId, cases, can: (p) => !!me?.permissions.includes(p), toast, go, refreshCases,
@@ -56,6 +64,7 @@ export function App() {
         <div className="logo">VIP Customs AI<small>V12 · {env}{demo?.app_mode ? ` · ${demo.app_mode.toUpperCase()}` : ""} · {me.user.role}{me.user.tenant_code ? <span title="tenant đang đăng nhập"> · {me.user.tenant_code}</span> : null}</small></div>
         <div className="menu">
           {NAV.map((n) => (<button key={n.id} className={"nav" + (page === n.id ? " active" : "")} onClick={() => go(n.id)}>{n.label}</button>))}
+          <button className="nav" onClick={changePassword}>Đổi mật khẩu</button>
           <button className="nav" onClick={() => { setToken(null); setMe(null); }}>Đăng xuất</button>
         </div>
       </aside>

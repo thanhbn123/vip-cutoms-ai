@@ -30,6 +30,7 @@ class UserOut(ORM):
     role: str
     tenant_id: uuid.UUID
     tenant_code: str | None = None
+    is_active: bool = True
 
 
 class UserCreate(BaseModel):
@@ -37,6 +38,25 @@ class UserCreate(BaseModel):
     full_name: str = Field(min_length=1, max_length=255)
     role: Literal["OPERATOR", "REVIEWER", "SENIOR_REVIEWER", "ADMIN"]
     password: str = Field(min_length=10, max_length=255)
+
+
+class UserUpdate(BaseModel):
+    """ADMIN edits inside its own tenant (G18G). Every change needs a reason (audited)."""
+
+    full_name: str | None = Field(default=None, min_length=1, max_length=255)
+    role: Literal["OPERATOR", "REVIEWER", "SENIOR_REVIEWER", "ADMIN"] | None = None
+    is_active: bool | None = None
+    reason: str = Field(min_length=3, max_length=500)
+
+
+class PasswordResetIn(BaseModel):
+    password: str = Field(min_length=10, max_length=255)
+    reason: str = Field(min_length=3, max_length=500)
+
+
+class PasswordChangeIn(BaseModel):
+    current_password: str = Field(min_length=1, max_length=255)
+    new_password: str = Field(min_length=10, max_length=255)
 
 
 class CustomerIn(BaseModel):

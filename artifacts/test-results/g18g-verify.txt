@@ -1,0 +1,8 @@
+# G18G verification — 2026-10-10T02:48:13Z
+## isolated Playwright
+  ✓  2 demo-labels.spec.ts:8:1 › demo safety labels are visible on every surface that shows HS / tariff / FTA / policy data (3.0s)
+  ✓  1 smoke.spec.ts:5:1 › login → V12 navigation → goods shows the BLOCKED item → copilot answers → release gate blocked (3.5s)
+  2 passed (5.7s)
+## pytest
+186 passed, 1 skipped, 1 warning in 81.69s (0:01:21)
+## vitest 15 passed · infra 108 passed · tsc/build OK · ruff clean · secret scan clean · alembic 0013→0014→0013→0014 OK, heads=1

@@ -83,6 +83,8 @@ identity (G18F): users.email UNIQUE per (tenant_id, email) · POST /auth/login {
         candidates = active accounts with the e-mail (∩ tenant code if given) → verify password against each
         1 match → token{sub, tid, role} ; ≥2 matches → 401 TENANT_REQUIRED (password holder only) ; else 401 INVALID_CREDENTIALS
         create_user: uniqueness checked inside the admin's tenant only (no cross-tenant oracle)
+        lifecycle (G18G): PATCH /users/{id} · POST /users/{id}/reset-password · POST /auth/change-password — audited, reason required
+        token{iat} < users.password_changed_at → 401 (stateless revocation, migration 0014); is_active=false → 401; role read from DB row
 
 /ready  mode · database · migrations vs head · providers[cap] · customs_data_authoritative[kind] · backup_status · release_sha · blocking[]
 /metrics  Prometheus text (app/core/metrics.py + readiness.metrics_lines): http, 5xx, ai calls/failures/cost/tokens, dataset age, backup age

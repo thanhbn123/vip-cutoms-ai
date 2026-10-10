@@ -1,6 +1,7 @@
 import uuid
+from datetime import datetime
 
-from sqlalchemy import Boolean, ForeignKey, String, UniqueConstraint, Uuid
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, UniqueConstraint, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
@@ -23,6 +24,8 @@ class User(IdMixin, TimestampMixin, TenantMixin, Base):
     role: Mapped[str] = mapped_column(String(32))  # OPERATOR | REVIEWER | SENIOR_REVIEWER | ADMIN
     password_hash: Mapped[str] = mapped_column(String(255))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # G18G: set on every password change/reset; bearer tokens issued before it are refused (stateless revocation).
+    password_changed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     tenant: Mapped[Tenant] = relationship(Tenant, lazy="joined")
 
     @property
