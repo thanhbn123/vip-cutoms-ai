@@ -89,6 +89,23 @@ def case_audit(case_id: uuid.UUID, user: User = Depends(require(Perm.AUDIT_READ)
     ).scalars().all()
 
 
+@router.get("/audit", response_model=list[AuditOut])
+def tenant_audit(entity_type: str | None = Query(default=None, max_length=40), action_prefix: str | None = Query(default=None, max_length=80),
+                 include_cases: bool = Query(default=False), limit: int = Query(default=100, ge=1, le=500),
+                 user: User = Depends(require(Perm.AUDIT_READ)), db: Session = Depends(get_db)):
+    """G18H: tenant-level audit feed (accounts, lockouts, knowledge, …) — by default only the events that belong to no
+    single case (`include_cases=true` adds case events). Newest first; tenant isolation in the query.
+    `entity_type=user` or `action_prefix=auth.` narrow it."""
+    stmt = select(AuditEvent).where(AuditEvent.tenant_id == user.tenant_id)
+    if not include_cases:
+        stmt = stmt.where(AuditEvent.case_id.is_(None))
+    if entity_type:
+        stmt = stmt.where(AuditEvent.entity_type == entity_type)
+    if action_prefix:
+        stmt = stmt.where(AuditEvent.action.like(action_prefix.replace("%", "\\%").replace("_", "\\_") + "%", escape="\\"))
+    return db.execute(stmt.order_by(AuditEvent.created_at.desc(), AuditEvent.id.desc()).limit(limit)).scalars().all()
+
+
 @router.get("/audit/verify")
 def verify_audit(user: User = Depends(require(Perm.AUDIT_READ)), db: Session = Depends(get_db)):
     return {"tenant_id": str(user.tenant_id), "chain_valid": audit.verify_chain(db, user.tenant_id)}

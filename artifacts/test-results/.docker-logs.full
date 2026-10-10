@@ -1,32 +1,4 @@
-api-1  | INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
-api-1  | INFO  [alembic.runtime.migration] Will assume transactional DDL.
-api-1  | INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, G01 baseline (empty schema, establishes migration head)
-api-1  | INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_identity_cases_audit, G02 identity, masterdata, cases, audit
-api-1  | INFO  [alembic.runtime.migration] Running upgrade 0002_identity_cases_audit -> 0003_documents, G03 documents
-api-1  | INFO  [alembic.runtime.migration] Running upgrade 0003_documents -> 0004_fields_issues, G04 extracted fields, case fields, issues
-api-1  | INFO  [alembic.runtime.migration] Running upgrade 0004_fields_issues -> 0005_goods_hs_knowledge, G05 goods, HS candidates, decisions, knowledge
-api-1  | INFO  [alembic.runtime.migration] Running upgrade 0005_goods_hs_knowledge -> 0006_assessments, G06 assessments, issue owner
-api-1  | INFO  [alembic.runtime.migration] Running upgrade 0006_assessments -> 0007_drafts, G08 declaration drafts
-api-1  | INFO  [alembic.runtime.migration] Running upgrade 0007_drafts -> 0008_copilot_memory, G09-G10 copilot messages, proposals, product memory
-api-1  | INFO  [alembic.runtime.migration] Running upgrade 0008_copilot_memory -> 0009_decision_request_info, G05 widen classification decision for REQUEST_INFO
-api-1  | INFO  [alembic.runtime.migration] Running upgrade 0009_decision_request_info -> 0010_copilot_meta, G09 copilot message meta
-api-1  | INFO  [alembic.runtime.migration] Running upgrade 0010_copilot_meta -> 0011_dataset_provenance, G18 knowledge dataset provenance (authoritative-source governance, B-02)
-api-1  | INFO  [alembic.runtime.migration] Running upgrade 0011_dataset_provenance -> 0012_ai_usage_events, G18B persistent AI usage ledger (cost control survives restarts)
-api-1  | INFO  [alembic.runtime.migration] Running upgrade 0012_ai_usage_events -> 0013_tenant_scoped_email, G18F tenant-scoped user e-mail (tenant-aware login; closes the cross-tenant e-mail oracle)
-api-1  | INFO  [alembic.runtime.migration] Running upgrade 0013_tenant_scoped_email -> 0014_password_changed_at, G18G user lifecycle: users.password_changed_at (tokens issued before a password change are rejected)
-api-1  | INFO:     Started server process [8]
-api-1  | INFO:     Waiting for application startup.
-api-1  | INFO:     Application startup complete.
-api-1  | INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
-api-1  | INFO:     172.18.0.1:57668 - "GET /ready HTTP/1.1" 200 OK
-api-1  | INFO:     172.18.0.1:57676 - "GET /health HTTP/1.1" 200 OK
-api-1  | INFO:     172.18.0.1:57692 - "GET /ready HTTP/1.1" 200 OK
 postgres-1  | The files belonging to this database system will be owned by user "postgres".
-web-1       | 
-web-1       |   VITE v6.0.7  ready in 341 ms
-web-1       | 
-web-1       |   ➜  Local:   http://localhost:5173/
-web-1       |   ➜  Network: http://172.18.0.4:5173/
 postgres-1  | This user must also own the server process.
 postgres-1  | 
 postgres-1  | The database cluster will be initialized with locale "en_US.utf8".
@@ -44,9 +16,10 @@ postgres-1  | selecting default time zone ... UTC
 postgres-1  | creating configuration files ... ok
 postgres-1  | running bootstrap script ... ok
 postgres-1  | sh: locale: not found
-postgres-1  | 2026-10-10 02:47:18.900 UTC [35] WARNING:  no usable system locales were found
+postgres-1  | 2026-10-10 03:18:50.734 UTC [35] WARNING:  no usable system locales were found
 postgres-1  | performing post-bootstrap initialization ... ok
 postgres-1  | initdb: warning: enabling "trust" authentication for local connections
+postgres-1  | initdb: hint: You can change this by editing pg_hba.conf or using the option -A, or --auth-local and --auth-host, the next time you run initdb.
 postgres-1  | syncing data to disk ... ok
 postgres-1  | 
 postgres-1  | 
@@ -54,11 +27,10 @@ postgres-1  | Success. You can now start the database server using:
 postgres-1  | 
 postgres-1  |     pg_ctl -D /var/lib/postgresql/data -l logfile start
 postgres-1  | 
-postgres-1  | initdb: hint: You can change this by editing pg_hba.conf or using the option -A, or --auth-local and --auth-host, the next time you run initdb.
-postgres-1  | waiting for server to start....2026-10-10 02:47:19.527 UTC [41] LOG:  starting PostgreSQL 16.15 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit
-postgres-1  | 2026-10-10 02:47:19.528 UTC [41] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
-postgres-1  | 2026-10-10 02:47:19.531 UTC [44] LOG:  database system was shut down at 2026-10-10 02:47:19 UTC
-postgres-1  | 2026-10-10 02:47:19.536 UTC [41] LOG:  database system is ready to accept connections
+postgres-1  | waiting for server to start....2026-10-10 03:18:51.305 UTC [41] LOG:  starting PostgreSQL 16.15 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit
+postgres-1  | 2026-10-10 03:18:51.307 UTC [41] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+postgres-1  | 2026-10-10 03:18:51.309 UTC [44] LOG:  database system was shut down at 2026-10-10 03:18:51 UTC
+postgres-1  | 2026-10-10 03:18:51.314 UTC [41] LOG:  database system is ready to accept connections
 postgres-1  |  done
 postgres-1  | server started
 postgres-1  | CREATE DATABASE
@@ -66,21 +38,49 @@ postgres-1  |
 postgres-1  | 
 postgres-1  | /usr/local/bin/docker-entrypoint.sh: ignoring /docker-entrypoint-initdb.d/*
 postgres-1  | 
-postgres-1  | waiting for server to shut down....2026-10-10 02:47:19.689 UTC [41] LOG:  received fast shutdown request
-postgres-1  | 2026-10-10 02:47:19.689 UTC [41] LOG:  aborting any active transactions
-postgres-1  | 2026-10-10 02:47:19.692 UTC [41] LOG:  background worker "logical replication launcher" (PID 47) exited with exit code 1
-postgres-1  | 2026-10-10 02:47:19.694 UTC [42] LOG:  shutting down
-postgres-1  | 2026-10-10 02:47:19.694 UTC [42] LOG:  checkpoint starting: shutdown immediate
-postgres-1  | 2026-10-10 02:47:19.725 UTC [42] LOG:  checkpoint complete: wrote 926 buffers (5.7%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.008 s, sync=0.020 s, total=0.032 s; sync files=301, longest=0.005 s, average=0.001 s; distance=4283 kB, estimate=4283 kB; lsn=0/1925D68, redo lsn=0/1925D68
-postgres-1  | 2026-10-10 02:47:19.732 UTC [41] LOG:  database system is shut down
+postgres-1  | waiting for server to shut down....2026-10-10 03:18:51.480 UTC [41] LOG:  received fast shutdown request
+postgres-1  | 2026-10-10 03:18:51.481 UTC [41] LOG:  aborting any active transactions
+postgres-1  | 2026-10-10 03:18:51.485 UTC [41] LOG:  background worker "logical replication launcher" (PID 47) exited with exit code 1
+postgres-1  | 2026-10-10 03:18:51.486 UTC [42] LOG:  shutting down
+postgres-1  | 2026-10-10 03:18:51.486 UTC [42] LOG:  checkpoint starting: shutdown immediate
+postgres-1  | 2026-10-10 03:18:51.520 UTC [42] LOG:  checkpoint complete: wrote 926 buffers (5.7%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.009 s, sync=0.024 s, total=0.035 s; sync files=301, longest=0.007 s, average=0.001 s; distance=4283 kB, estimate=4283 kB; lsn=0/1925D68, redo lsn=0/1925D68
+postgres-1  | 2026-10-10 03:18:51.525 UTC [41] LOG:  database system is shut down
 postgres-1  |  done
 postgres-1  | server stopped
 postgres-1  | 
 postgres-1  | PostgreSQL init process complete; ready for start up.
 postgres-1  | 
-postgres-1  | 2026-10-10 02:47:19.807 UTC [1] LOG:  starting PostgreSQL 16.15 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit
-postgres-1  | 2026-10-10 02:47:19.808 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
-postgres-1  | 2026-10-10 02:47:19.808 UTC [1] LOG:  could not create IPv6 socket for address "::": Address family not supported by protocol
-postgres-1  | 2026-10-10 02:47:19.810 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
-postgres-1  | 2026-10-10 02:47:19.814 UTC [57] LOG:  database system was shut down at 2026-10-10 02:47:19 UTC
-postgres-1  | 2026-10-10 02:47:19.818 UTC [1] LOG:  database system is ready to accept connections
+postgres-1  | 2026-10-10 03:18:51.599 UTC [1] LOG:  starting PostgreSQL 16.15 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit
+postgres-1  | 2026-10-10 03:18:51.599 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+postgres-1  | 2026-10-10 03:18:51.599 UTC [1] LOG:  could not create IPv6 socket for address "::": Address family not supported by protocol
+postgres-1  | 2026-10-10 03:18:51.600 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+postgres-1  | 2026-10-10 03:18:51.602 UTC [57] LOG:  database system was shut down at 2026-10-10 03:18:51 UTC
+postgres-1  | 2026-10-10 03:18:51.606 UTC [1] LOG:  database system is ready to accept connections
+web-1       | 
+web-1       |   VITE v6.0.7  ready in 301 ms
+web-1       | 
+web-1       |   ➜  Local:   http://localhost:5173/
+web-1       |   ➜  Network: http://172.18.0.4:5173/
+api-1       | INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+api-1       | INFO  [alembic.runtime.migration] Will assume transactional DDL.
+api-1       | INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, G01 baseline (empty schema, establishes migration head)
+api-1       | INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_identity_cases_audit, G02 identity, masterdata, cases, audit
+api-1       | INFO  [alembic.runtime.migration] Running upgrade 0002_identity_cases_audit -> 0003_documents, G03 documents
+api-1       | INFO  [alembic.runtime.migration] Running upgrade 0003_documents -> 0004_fields_issues, G04 extracted fields, case fields, issues
+api-1       | INFO  [alembic.runtime.migration] Running upgrade 0004_fields_issues -> 0005_goods_hs_knowledge, G05 goods, HS candidates, decisions, knowledge
+api-1       | INFO  [alembic.runtime.migration] Running upgrade 0005_goods_hs_knowledge -> 0006_assessments, G06 assessments, issue owner
+api-1       | INFO  [alembic.runtime.migration] Running upgrade 0006_assessments -> 0007_drafts, G08 declaration drafts
+api-1       | INFO  [alembic.runtime.migration] Running upgrade 0007_drafts -> 0008_copilot_memory, G09-G10 copilot messages, proposals, product memory
+api-1       | INFO  [alembic.runtime.migration] Running upgrade 0008_copilot_memory -> 0009_decision_request_info, G05 widen classification decision for REQUEST_INFO
+api-1       | INFO  [alembic.runtime.migration] Running upgrade 0009_decision_request_info -> 0010_copilot_meta, G09 copilot message meta
+api-1       | INFO  [alembic.runtime.migration] Running upgrade 0010_copilot_meta -> 0011_dataset_provenance, G18 knowledge dataset provenance (authoritative-source governance, B-02)
+api-1       | INFO  [alembic.runtime.migration] Running upgrade 0011_dataset_provenance -> 0012_ai_usage_events, G18B persistent AI usage ledger (cost control survives restarts)
+api-1       | INFO  [alembic.runtime.migration] Running upgrade 0012_ai_usage_events -> 0013_tenant_scoped_email, G18F tenant-scoped user e-mail (tenant-aware login; closes the cross-tenant e-mail oracle)
+api-1       | INFO  [alembic.runtime.migration] Running upgrade 0013_tenant_scoped_email -> 0014_password_changed_at, G18G user lifecycle: users.password_changed_at (tokens issued before a password change are rejected)
+api-1       | INFO:     Started server process [9]
+api-1       | INFO:     Waiting for application startup.
+api-1       | INFO:     Application startup complete.
+api-1       | INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+api-1       | INFO:     172.18.0.1:41658 - "GET /ready HTTP/1.1" 200 OK
+api-1       | INFO:     172.18.0.1:41664 - "GET /health HTTP/1.1" 200 OK
+api-1       | INFO:     172.18.0.1:41668 - "GET /ready HTTP/1.1" 200 OK

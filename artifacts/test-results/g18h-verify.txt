@@ -1,0 +1,9 @@
+# G18H verification — 2026-10-10T03:19:58Z
+## isolated Playwright (3 specs)
+  ✓  2 demo-labels.spec.ts:8:1 › demo safety labels are visible on every surface that shows HS / tariff / FTA / policy data (1.4s)
+  ✓  1 admin-users.spec.ts:8:1 › admin logs in with the tenant code, creates / re-roles / deactivates a colleague, and the tenant audit shows it (2.5s)
+  ✓  3 smoke.spec.ts:5:1 › login → V12 navigation → goods shows the BLOCKED item → copilot answers → release gate blocked (1.5s)
+  3 passed (3.7s)
+## pytest
+187 passed, 1 skipped, 1 warning in 91.01s (0:01:31)
+## vitest 16 passed · infra 108 passed · tsc/build OK · ruff clean · ci.yml parses (api, web, infra, e2e, secrets) · secret scan clean

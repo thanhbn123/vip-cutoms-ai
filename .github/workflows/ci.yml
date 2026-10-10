@@ -44,6 +44,30 @@ jobs:
         with: { python-version: "3.12" }
       - run: pip install pytest
       - run: python -m pytest tests -q
+  e2e:
+    # Browser E2E against the real stack (G18H): migrate from zero → seed demo → API → Vite → Playwright (3 specs).
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_USER: vip_customs, POSTGRES_PASSWORD: vip_customs, POSTGRES_DB: vip_customs_test }
+        ports: ["5432:5432"]
+        options: --health-cmd pg_isready --health-interval 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - run: pip install -e './apps/api[dev]'
+      - run: npm ci
+        working-directory: apps/web
+      - run: npx playwright install --with-deps chromium
+        working-directory: apps/web
+      - run: E2E_PYTHON=python bash scripts/e2e.sh
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with: { name: e2e-logs, path: local-data/e2e-*.log, if-no-files-found: ignore }
   secrets:
     runs-on: ubuntu-latest
     steps:

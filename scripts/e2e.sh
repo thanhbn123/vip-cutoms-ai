@@ -8,7 +8,7 @@ export APP_SECRET_KEY="${APP_SECRET_KEY:-e2e-only-secret-key-not-for-any-real-en
 export SEED_DEMO_PASSWORD="${SEED_DEMO_PASSWORD:-demo-acceptance-2026}"
 export LOCAL_STORAGE_DIR="${LOCAL_STORAGE_DIR:-$ROOT/local-data/e2e-uploads}"
 API_PORT="${API_PORT:-8000}"; WEB_PORT="${WEB_PORT:-5173}"
-PY="$ROOT/apps/api/.venv/bin/python"
+PY="${E2E_PYTHON:-$ROOT/apps/api/.venv/bin/python}"   # CI sets E2E_PYTHON=python (no venv)
 mkdir -p "$ROOT/local-data"   # gitignored; absent in a fresh clone, and the log redirections below would abort under set -e
 cd "$ROOT/apps/api"
 $PY -c "from sqlalchemy import create_engine,text;e=create_engine('$DATABASE_URL');c=e.connect();c.execute(text('DROP SCHEMA public CASCADE; CREATE SCHEMA public;'));c.commit()"
