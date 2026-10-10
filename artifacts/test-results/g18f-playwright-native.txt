@@ -1,0 +1,4 @@
+# G18F isolated Playwright (vip_customs_clean, API 8020 / WEB 5193) — 2026-10-10T02:14:04Z
+  ✓  2 demo-labels.spec.ts:8:1 › demo safety labels are visible on every surface that shows HS / tariff / FTA / policy data (2.2s)
+  ✓  1 smoke.spec.ts:5:1 › login → V12 navigation → goods shows the BLOCKED item → copilot answers → release gate blocked (2.6s)
+  2 passed (4.8s)

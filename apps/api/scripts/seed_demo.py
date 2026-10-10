@@ -41,7 +41,7 @@ def main() -> None:
         db.flush()
     users = {}
     for email, name, role in USERS:
-        u = db.execute(select(User).where(User.email == email)).scalar()
+        u = db.execute(select(User).where(User.tenant_id == tenant.id, User.email == email)).scalar()
         if not u:
             u = User(tenant_id=tenant.id, email=email, full_name=name, role=role, password_hash=hash_password(pw))
             db.add(u)

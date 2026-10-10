@@ -79,6 +79,11 @@ app/services/customs_data.py ── select_dataset(kind, on, mode)  ← the only
         import (FileImportProvider / POST /knowledge/datasets/import) → verify (ADMIN/SENIOR) → activate → supersede
         knowledge_datasets provenance columns (migration 0011), CHECK NOT (is_authoritative AND is_demo)
 
+identity (G18F): users.email UNIQUE per (tenant_id, email) · POST /auth/login {email, password, tenant?}
+        candidates = active accounts with the e-mail (∩ tenant code if given) → verify password against each
+        1 match → token{sub, tid, role} ; ≥2 matches → 401 TENANT_REQUIRED (password holder only) ; else 401 INVALID_CREDENTIALS
+        create_user: uniqueness checked inside the admin's tenant only (no cross-tenant oracle)
+
 /ready  mode · database · migrations vs head · providers[cap] · customs_data_authoritative[kind] · backup_status · release_sha · blocking[]
 /metrics  Prometheus text (app/core/metrics.py + readiness.metrics_lines): http, 5xx, ai calls/failures/cost/tokens, dataset age, backup age
 ```

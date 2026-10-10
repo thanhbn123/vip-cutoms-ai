@@ -12,6 +12,9 @@ class ORM(BaseModel):
 class LoginIn(BaseModel):
     email: str = Field(min_length=3, max_length=255)
     password: str = Field(min_length=1, max_length=255)
+    # Tenant code (e.g. "DEMO"). Optional: when the e-mail exists in exactly one tenant it is resolved automatically;
+    # when the same e-mail+password is valid in several tenants the API answers 401 TENANT_REQUIRED (G18F).
+    tenant: str | None = Field(default=None, min_length=1, max_length=50)
 
 
 class TokenOut(BaseModel):
@@ -26,6 +29,7 @@ class UserOut(ORM):
     full_name: str
     role: str
     tenant_id: uuid.UUID
+    tenant_code: str | None = None
 
 
 class UserCreate(BaseModel):

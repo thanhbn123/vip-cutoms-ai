@@ -1,0 +1,16 @@
+# G18F Docker smoke + acceptance (feature/g18f-tenant-login, migration 0013) — 2026-10-10T02:14:04Z
+docker_smoke_g18f.log:build_exit=0
+docker_smoke_g18f.log:ready: migrations=0013_tenant_scoped_email
+docker_smoke_g18f.log:0013_tenant_scoped_email (head)
+docker_smoke_g18f.log:secret leak check (POSTGRES_PASSWORD / APP_SECRET_KEY in logs): 0
+docker_smoke_g18f.log:restart counts: /vip-customs-api-1=0 /vip-customs-postgres-1=0 /vip-customs-web-1=0 
+docker_acceptance_g18f.log:  2 passed (4.4s)
+docker_acceptance_g18f.log:playwright_exit=0
+docker_acceptance_g18f.log:[PASS] 0. health/ready — migrations=0013_tenant_scoped_email provider=mock
+docker_acceptance_g18f.log:ACCEPTANCE_HTTP: 17/17 steps PASS against http://localhost:8000
+docker_acceptance_g18f.log:acceptance_exit=0
+docker_acceptance_g18f.log:restart counts: /vip-customs-api-1=0 /vip-customs-postgres-1=0 /vip-customs-web-1=0 
+smoke exit=0
+acceptance exit=0
+
+[exited with code 0]

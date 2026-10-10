@@ -27,14 +27,14 @@ cd /opt/vip-customs-ai
 #    two different networks and compare the api access log; if both show the proxy's address, disable the ip dimension)
 DEPLOY_SHA=<develop sha> DEPLOY_PATH=/opt/vip-customs-ai bash scripts/staging/deploy.sh
 ```
-deploy.sh takes a pre-deploy `pg_dump`, builds, migrates (`0010 → 0011 → 0012`), prints `/health` `/ready`.
-Expected `/ready`: `"mode":"limited"`, `"migrations":"0012_ai_usage_events"`, `migration_in_sync:true`,
+deploy.sh takes a pre-deploy `pg_dump`, builds, migrates (`0010 → 0011 → 0012 → 0013`), prints `/health` `/ready`.
+Expected `/ready`: `"mode":"limited"`, `"migrations":"0013_tenant_scoped_email"`, `migration_in_sync:true`,
 `blocking: []`, providers all `mock`. Then from a client:
 ```bash
 BASE_URL=https://hq.vipgroup.com.vn bash scripts/staging/acceptance.sh     # A–P 17/17, negative 18/18, Playwright, persistence, backup/restore
 ```
 Rollback if anything fails: `docs/STAGING_ROLLBACK.md` (previous SHA `9649ec7`, restore the pre-deploy dump
-**before** downgrading, because 0011/0012 added columns/tables: `alembic downgrade 0010_copilot_meta` is available).
+**before** downgrading, because 0011/0012 added columns/tables and 0013 changed the e-mail uniqueness: `alembic downgrade 0010_copilot_meta` is available; 0013's downgrade refuses while one e-mail exists in two tenants).
 
 ## 2. B-07 — deactivate the demo users (after acceptance is signed off)
 ```bash
