@@ -48,3 +48,16 @@ Web: field not sent when empty · `TENANT_REQUIRED` reveals the field and the re
   is duplicated across tenants (the downgrade checks and refuses otherwise).
 - Users who hold accounts in several tenants with the same password will be asked for the tenant code once; the UI
   guides them. Tenant codes are the `tenants.code` values (e.g. `DEMO`).
+
+## G18F-2 — self-review of the G18F diff (same day)
+
+| # | Finding | Fix | Test |
+|---|---|---|---|
+| 1 | The web header showed role and mode but not **which tenant** the session belongs to — a person holding accounts in several tenants could not tell them apart | sidebar shows `· <tenant_code>` from `/auth/me` | `App.test.tsx` |
+| 2 | After `TENANT_REQUIRED` the UI asked the user to **type** the tenant code although the API had already returned the list (to the password holder only) | the field becomes a `<select>` of the returned tenants; free text remains for the manual "Đăng nhập theo mã tenant" path and when no list came back | `Login.test.tsx` (4) |
+| 3 | A lockout reached through a **wrong tenant code** locked the real account (pair/e-mail keys are tenant-agnostic) but produced **no `auth.login_locked` audit**, because the candidate list had been filtered by tenant | the audit covers every active account holding the e-mail, with `tenant_code_given` in `after` | `test_lockout_through_a_wrong_tenant_code_still_audits_the_real_account` |
+| 4 | The staging negative suite had no tenant-aware probe | `negative_tests.py` +2: unknown tenant code → generic 401 `INVALID_CREDENTIALS`; `tenant: "demo"` (case-insensitive) → 200 with `tenant_code = DEMO` — the suite is now **20** checks | run against the local Docker stack (`artifacts/test-results/g18f2-docker.txt`) |
+
+Considered and kept as is: `TENANT_REQUIRED` discloses the tenant list to a caller who already holds a valid password
+(needed so the person can pick; counted as a failed attempt so it cannot be used to probe); `User.tenant` is eager-joined
+(one extra join on user loads, negligible); the e-mail dimension of the throttle remains shared across tenants by design.

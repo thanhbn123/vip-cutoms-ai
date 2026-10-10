@@ -23,7 +23,7 @@ test("with a token the nine V12 sidebar entries render in order", async () => {
   localStorage.setItem("vip.token", "x.y");
   mockFetch({
     "/ready": { status: "ready", checks: { environment: "test" } },
-    "/auth/me": { user: { id: "u", email: "r@t", full_name: "R", role: "REVIEWER", tenant_id: "t" }, permissions: ["case.read"] },
+    "/auth/me": { user: { id: "u", email: "r@t", full_name: "R", role: "REVIEWER", tenant_id: "t", tenant_code: "DEMO" }, permissions: ["case.read"] },
     "/knowledge/notice": { demo_active: true, notice: "DEMO DATA — NON-AUTHORITATIVE — NOT FOR CUSTOMS FILING", datasets: ["HS_RULES demo-hs-2026.10"], non_demo_datasets: [],
       app_mode: "limited", mode_notice: "CHẾ ĐỘ GIỚI HẠN (LIMITED): chỉ soạn tờ khai NHÁP nội bộ; KHÔNG dùng để khai hải quan thực.", mock_ai_active: true, real_filing_decisions: false },
     "/cases": [],
@@ -35,6 +35,7 @@ test("with a token the nine V12 sidebar entries render in order", async () => {
   expect(screen.getByRole("status")).toHaveTextContent("CHẾ ĐỘ GIỚI HẠN");
   expect(screen.getByRole("status")).toHaveTextContent("AI provider: mock");
   expect(screen.getByText(/· LIMITED ·/)).toBeInTheDocument();
+  expect(screen.getByText(/· DEMO$/)).toBeInTheDocument();  // the tenant the token belongs to (G18F-2)
   const labels = screen.getAllByRole("button", { name: /.+/ }).map((b) => b.textContent).filter((t) => NAV.some((n) => n.label === t));
   expect(labels).toEqual(NAV.map((n) => n.label));
 });

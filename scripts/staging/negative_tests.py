@@ -35,6 +35,10 @@ anon = httpx.Client(base_url=BASE, timeout=30, verify=op._transport is not None 
 check("invalid auth: no token → 401", anon.get("/cases").status_code == 401)
 check("invalid auth: tampered token → 401", anon.get("/cases", headers={"Authorization": "Bearer abc.def"}).status_code == 401)
 check("invalid auth: wrong password → 401", anon.post("/auth/login", json={"email": "operator@demo.local", "password": "wrong-password-xx"}).status_code == 401)
+r = anon.post("/auth/login", json={"email": "operator@demo.local", "password": PW, "tenant": "NO-SUCH-TENANT"})
+check("tenant login: unknown tenant code → generic 401 (no enumeration)", r.status_code == 401 and r.json()["detail"]["code"] == "INVALID_CREDENTIALS", f"got {r.status_code}")
+r = anon.post("/auth/login", json={"email": "operator@demo.local", "password": PW, "tenant": "demo"})
+check("tenant login: correct tenant code (case-insensitive) → 200 with tenant_code", r.status_code == 200 and r.json()["user"].get("tenant_code") == "DEMO", f"got {r.status_code}")
 
 cust = op.get("/customers").json()[0]
 case = op.post("/cases", json={"customer_id": cust["id"], "declaration_type": "A11"}).json()

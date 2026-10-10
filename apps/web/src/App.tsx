@@ -53,7 +53,7 @@ export function App() {
   return (
     <div className="app">
       <aside className="sidebar">
-        <div className="logo">VIP Customs AI<small>V12 · {env}{demo?.app_mode ? ` · ${demo.app_mode.toUpperCase()}` : ""} · {me.user.role}</small></div>
+        <div className="logo">VIP Customs AI<small>V12 · {env}{demo?.app_mode ? ` · ${demo.app_mode.toUpperCase()}` : ""} · {me.user.role}{me.user.tenant_code ? <span title="tenant đang đăng nhập"> · {me.user.tenant_code}</span> : null}</small></div>
         <div className="menu">
           {NAV.map((n) => (<button key={n.id} className={"nav" + (page === n.id ? " active" : "")} onClick={() => go(n.id)}>{n.label}</button>))}
           <button className="nav" onClick={() => { setToken(null); setMe(null); }}>Đăng xuất</button>
