@@ -39,6 +39,9 @@ test("TENANT_REQUIRED reveals the tenant field and the retry sends the code", as
   await waitFor(() => expect(screen.getByLabelText("Mã tenant")).toBeInTheDocument());
   expect(screen.getByText(/nhiều tenant/)).toBeInTheDocument();
   expect(onLogin).not.toHaveBeenCalled();
+  // the tenants the API disclosed to the password holder are offered as choices, not typed
+  expect(screen.getByRole("option", { name: "T1" })).toBeInTheDocument();
+  expect(screen.getByRole("option", { name: "T2" })).toBeInTheDocument();
   fireEvent.change(screen.getByLabelText("Mã tenant"), { target: { value: "T2" } });
   fireEvent.click(screen.getByRole("button", { name: "Đăng nhập" }));
   await waitFor(() => expect(onLogin).toHaveBeenCalled());
@@ -54,4 +57,13 @@ test("a wrong password shows the generic message and no tenant field", async () 
   fireEvent.click(screen.getByRole("button", { name: "Đăng nhập" }));
   await waitFor(() => expect(screen.getByText("invalid email, tenant or password")).toBeInTheDocument());
   expect(screen.queryByLabelText("Mã tenant")).toBeNull();
+});
+
+test("the manual tenant field stays a free-text input when no list was returned", async () => {
+  mockFetch([], () => new Response(JSON.stringify({ access_token: "tok", token_type: "bearer" }), { status: 200 }));
+  render(<Login onLogin={vi.fn()} env="test" />);
+  fireEvent.click(screen.getByText("Đăng nhập theo mã tenant"));
+  const field = screen.getByLabelText("Mã tenant");
+  expect(field.tagName).toBe("INPUT");
+  expect(field).toBeRequired();
 });

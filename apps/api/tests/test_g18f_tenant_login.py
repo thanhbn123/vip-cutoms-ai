@@ -152,3 +152,17 @@ def test_tenant_required_counts_as_a_failed_attempt(world, client, monkeypatch):
     _add_user(world, "T2", SHARED, PW)
     assert _login(client, SHARED, PW).json()["detail"]["code"] == "TENANT_REQUIRED"
     assert _login(client, SHARED, PW).status_code == 429
+
+
+def test_lockout_through_a_wrong_tenant_code_still_audits_the_real_account(world, client, monkeypatch):
+    monkeypatch.setattr(ratelimit, "_LOGIN", _lims(pair=2))
+    assert _login(client, "reviewer@t1.test", "x", tenant="NOPE").status_code == 401
+    assert _login(client, "reviewer@t1.test", "x", tenant="NOPE").status_code == 429
+    assert _login(client, "reviewer@t1.test", PW).status_code == 429  # the real account is locked by the tenant-agnostic pair key
+    db = get_sessionmaker()()
+    try:
+        ev = db.execute(select(AuditEvent).where(AuditEvent.action == "auth.login_locked")).scalars().all()
+        assert [e.entity_id for e in ev] == [str(world.users[("T1", "REVIEWER")].id)]
+        assert ev[0].after["tenant_code_given"] is True
+    finally:
+        db.close()

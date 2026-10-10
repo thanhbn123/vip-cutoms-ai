@@ -69,11 +69,15 @@ def login(body: LoginIn, request: Request, db: Session = Depends(get_db)):
                 worst = max(worst, r.retry_after)
         if locked:
             log.warning("login_locked dimensions=%s", ",".join(locked))
-            for u in candidates:  # a known account entering the locked state is a security transition → audit (G18E)
+            # A known account entering the locked state is a security transition → audit (G18E). The pair/e-mail keys are
+            # tenant-agnostic, so every account holding the e-mail is affected — audit all of them even when the attempts
+            # named a wrong tenant code (G18F-2).
+            affected = candidates if body.tenant is None else _candidates(db, email, None)
+            for u in affected:
                 audit.record(db, tenant_id=u.tenant_id, actor=audit.Actor.system(), action="auth.login_locked", entity_type="user",
-                             entity_id=u.id, after={"dimensions": locked, "retry_after_seconds": worst},
+                             entity_id=u.id, after={"dimensions": locked, "retry_after_seconds": worst, "tenant_code_given": body.tenant is not None},
                              reason="repeated failed login attempts")
-            if candidates:
+            if affected:
                 db.commit()
             return _throttled(worst)
         if len(matched) > 1:
