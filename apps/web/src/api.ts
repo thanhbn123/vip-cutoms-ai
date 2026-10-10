@@ -51,7 +51,7 @@ export function uploadDocument(caseId: string, docType: string, file: File) {
 }
 
 // ---- shared types (subset of the API schemas)
-export interface User { id: string; email: string; full_name: string; role: string; tenant_id: string; tenant_code?: string | null }
+export interface User { id: string; email: string; full_name: string; role: string; tenant_id: string; tenant_code?: string | null; is_active?: boolean }
 export interface Me { user: User; permissions: string[] }
 export interface Case { id: string; case_no: string; status: string; declaration_type: string; customs_office: string | null; customer_id: string; supplier_id: string | null; priority: string; owner_id: string; reviewer_id: string | null; created_at: string }
 export interface Doc { id: string; doc_type: string; filename: string; version: number; status: string; parse_confidence: number | null; parse_warnings: string[]; sha256: string }

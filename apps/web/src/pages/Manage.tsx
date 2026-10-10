@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { api, type User } from "../api";
+import { api, patch, post, type User } from "../api";
 import { errMsg, type Ctx } from "../App";
-import { Card, Flow, Gap, Metric } from "../components";
+import { Card, Flow, Gap, Metric, ask } from "../components";
 
 interface Summary { cases_by_status: Record<string, number>; open_issues: Record<string, number>; fields_total: number; fields_accepted_pct: number; drafts_exported: number }
 interface ProviderHealth { name: string; configured: boolean; healthy: boolean; is_mock: boolean; detail: string }
@@ -24,9 +24,19 @@ export function Manage({ ctx }: { ctx: Ctx }) {
   const [chain, setChain] = useState<boolean | null>(null);
   const [audit, setAudit] = useState<Audit[]>([]);
   const [err, setErr] = useState<string | null>(null);
+  const [newUser, setNewUser] = useState({ email: "", full_name: "", role: "OPERATOR", password: "" });
+  const [createOpen, setCreateOpen] = useState(false);
+  const loadUsers = () => api<User[]>("/users").then(setUsers).catch(() => undefined);
+  const canManage = ctx.can("user.manage");
+  // G18G user lifecycle: every change goes through the audited API; failures are shown, never swallowed
+  const run = (p: Promise<unknown>, msg: string) => p.then(() => { setErr(null); ctx.toast(msg); loadUsers(); return true; }).catch((e) => { setErr(errMsg(e)); return false; });
+  const createUser = () => run(post("/users", newUser), "Đã tạo tài khoản").then((ok) => { if (ok) { setNewUser({ email: "", full_name: "", role: "OPERATOR", password: "" }); setCreateOpen(false); } });
+  const toggleActive = (u: User) => { const r = ask(`Lý do ${u.is_active === false ? "kích hoạt lại" : "vô hiệu hoá"} ${u.email} (≥5 ký tự)`); if (r) run(patch(`/users/${u.id}`, { is_active: u.is_active === false, reason: r }), u.is_active === false ? "Đã kích hoạt lại" : "Đã vô hiệu hoá (token hiện tại hết hiệu lực)"); };
+  const changeRole = (u: User, role: string) => { if (role === u.role) return; const r = ask(`Lý do đổi vai trò ${u.email} → ${role} (≥5 ký tự)`); if (r) run(patch(`/users/${u.id}`, { role, reason: r }), "Đã đổi vai trò"); };
+  const resetPw = (u: User) => { const pw = window.prompt(`Mật khẩu mới cho ${u.email} (≥10 ký tự) — hãy trao trực tiếp cho người dùng`); if (!pw) return; if (pw.length < 10) { setErr("Mật khẩu phải ≥10 ký tự"); return; } const r = ask("Lý do đặt lại mật khẩu (≥5 ký tự)"); if (r) run(post(`/users/${u.id}/reset-password`, { password: pw, reason: r }), "Đã đặt lại mật khẩu — mọi phiên đăng nhập cũ của người này đã bị huỷ"); };
   useEffect(() => {
     api<Summary>("/dashboard/summary").then(setS).catch((e) => setErr(errMsg(e)));
-    api<User[]>("/users").then(setUsers).catch(() => undefined);
+    loadUsers();
     fetch("/ready").then((r) => r.json()).then(setReady).catch(() => undefined);
     if (ctx.caseId && ctx.can("audit.read")) api<Audit[]>(`/cases/${ctx.caseId}/audit`).then((a) => setAudit(a.slice().reverse())).catch(() => undefined);
   }, [ctx.caseId, ctx.bump]);
@@ -70,7 +80,32 @@ export function Manage({ ctx }: { ctx: Ctx }) {
       <div className="grid g2">
         <Card title="Roles & users" right={<span className="badge info">{users.length}</span>}>
           {err && <p className="err">{err}</p>}
-          <table><thead><tr><th>User</th><th>Role</th></tr></thead><tbody>{users.map((u) => <tr key={u.id}><td>{u.full_name}<div className="mini">{u.email}</div></td><td>{u.role}</td></tr>)}</tbody></table>
+          <table><thead><tr><th>User</th><th>Role</th>{canManage && <th></th>}</tr></thead><tbody>{users.map((u) => (
+            <tr key={u.id} style={u.is_active === false ? { opacity: 0.55 } : undefined}>
+              <td>{u.full_name}{u.is_active === false && <span className="badge warn" style={{ marginLeft: 6 }}>inactive</span>}<div className="mini">{u.email}</div></td>
+              <td>{canManage && u.id !== ctx.me.user.id
+                ? <select aria-label={`Vai trò ${u.email}`} value={u.role} onChange={(e) => changeRole(u, e.target.value)}>{["OPERATOR", "REVIEWER", "SENIOR_REVIEWER", "ADMIN"].map((r) => <option key={r} value={r}>{r}</option>)}</select>
+                : u.role}</td>
+              {canManage && <td className="mini">{u.id === ctx.me.user.id ? "(bạn)" : <>
+                <a href="#" onClick={(e) => { e.preventDefault(); toggleActive(u); }}>{u.is_active === false ? "kích hoạt lại" : "vô hiệu hoá"}</a>
+                {" · "}<a href="#" onClick={(e) => { e.preventDefault(); resetPw(u); }}>đặt lại mật khẩu</a>
+              </>}</td>}
+            </tr>))}</tbody></table>
+          {canManage && (
+            <div style={{ marginTop: 8 }}>
+              <button className="btn secondary small" onClick={() => setCreateOpen((o) => !o)}>{createOpen ? "Đóng" : "Tạo tài khoản"}</button>
+              {createOpen && (
+                <form onSubmit={(e) => { e.preventDefault(); createUser(); }} style={{ marginTop: 8 }}>
+                  <div className="field"><label htmlFor="nu-email">Email</label><input id="nu-email" value={newUser.email} onChange={(e) => setNewUser({ ...newUser, email: e.target.value })} required /></div>
+                  <div className="field"><label htmlFor="nu-name">Họ tên</label><input id="nu-name" value={newUser.full_name} onChange={(e) => setNewUser({ ...newUser, full_name: e.target.value })} required /></div>
+                  <div className="field"><label htmlFor="nu-role">Vai trò</label><select id="nu-role" value={newUser.role} onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}>{["OPERATOR", "REVIEWER", "SENIOR_REVIEWER", "ADMIN"].map((r) => <option key={r} value={r}>{r}</option>)}</select></div>
+                  <div className="field"><label htmlFor="nu-pw">Mật khẩu ban đầu (≥10 ký tự)</label><input id="nu-pw" type="password" value={newUser.password} onChange={(e) => setNewUser({ ...newUser, password: e.target.value })} minLength={10} required autoComplete="new-password" /></div>
+                  <button className="btn primary small" type="submit">Tạo</button>
+                  <p className="mini">Người dùng nên đổi mật khẩu ngay sau lần đăng nhập đầu (menu "Đổi mật khẩu"). Mọi thay đổi tài khoản đều được audit.</p>
+                </form>
+              )}
+            </div>
+          )}
           <p className="mini">Operator: upload, sửa dữ liệu thường, gửi review · Reviewer: duyệt HS/C/O/trị giá/policy · Senior: waive critical, override HS, outcome · Admin: cấu hình, không ra quyết định hải quan.</p>
         </Card>
         <Card title="Audit" right={ctx.can("audit.read") ? <button className="btn secondary small" onClick={() => api<{ chain_valid: boolean }>("/audit/verify").then((r) => setChain(r.chain_valid))}>Verify chain {chain == null ? "" : chain ? "✓" : "✗"}</button> : undefined}>

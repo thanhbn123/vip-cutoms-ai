@@ -24,6 +24,12 @@ def current_user(authorization: str | None = Header(default=None), db: Session =
     user = db.get(User, subject)
     if not user or not user.is_active or str(user.tenant_id) != payload.get("tid"):
         raise HTTPException(status_code=401, detail={"code": "UNAUTHENTICATED", "message": "inactive or unknown user"})
+    if user.password_changed_at is not None:
+        # G18G: a token issued before the last password change/reset is void (tokens without iat count as issued at 0).
+        iat = payload.get("iat")
+        issued = float(iat) if isinstance(iat, (int, float)) else 0.0
+        if issued < int(user.password_changed_at.timestamp()):  # same-second issue (the fresh token after a change) survives
+            raise HTTPException(status_code=401, detail={"code": "UNAUTHENTICATED", "message": "token predates a password change"})
     return user
 
 

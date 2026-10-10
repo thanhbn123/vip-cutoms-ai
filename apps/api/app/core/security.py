@@ -51,7 +51,8 @@ def _sign(body: str) -> str:
 
 def issue_token(user_id: str, tenant_id: str, role: str, ttl: int | None = None) -> str:
     ttl = ttl or get_settings().token_ttl_seconds
-    payload = {"sub": user_id, "tid": tenant_id, "role": role, "exp": int(time.time()) + ttl}
+    now = int(time.time())
+    payload = {"sub": user_id, "tid": tenant_id, "role": role, "iat": now, "exp": now + ttl}
     body = _b64(json.dumps(payload, separators=(",", ":")).encode())
     return f"{body}.{_sign(body)}"
 
