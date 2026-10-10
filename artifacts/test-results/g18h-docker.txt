@@ -1,0 +1,35 @@
+# G18H Docker smoke + acceptance (3 Playwright specs) + negative suite — 2026-10-10T03:19:58Z
+build_exit=0
+0014_password_changed_at (head)
+secret leak check (POSTGRES_PASSWORD / APP_SECRET_KEY in logs): 0
+restart counts: /vip-customs-api-1=0 /vip-customs-postgres-1=0 /vip-customs-web-1=0 
+  ✓  1 admin-users.spec.ts:8:1 › admin logs in with the tenant code, creates / re-roles / deactivates a colleague, and the tenant audit shows it (2.8s)
+  ✓  3 smoke.spec.ts:5:1 › login → V12 navigation → goods shows the BLOCKED item → copilot answers → release gate blocked (1.5s)
+  3 passed (5.2s)
+playwright_exit=0
+[PASS] 0. health/ready — migrations=0014_password_changed_at provider=mock
+ACCEPTANCE_HTTP: 17/17 steps PASS against http://localhost:8000
+acceptance_exit=0
+restart counts: /vip-customs-api-1=0 /vip-customs-postgres-1=0 /vip-customs-web-1=0 
+## negative_tests.py
+[PASS] invalid auth: no token → 401
+[PASS] invalid auth: tampered token → 401
+[PASS] invalid auth: wrong password → 401
+[PASS] tenant login: unknown tenant code → generic 401 (no enumeration) — got 401
+[PASS] tenant login: correct tenant code (case-insensitive) → 200 with tenant_code — got 200
+[PASS] RBAC: operator cannot approve HS critical → 403
+[PASS] RBAC: operator cannot resolve issues → 403
+[PASS] RBAC: operator cannot mark READY → 403
+[PASS] RBAC: operator cannot export release draft → 403
+[PASS] upload: path-traversal filename sanitised (stored as basename, no error)
+[PASS] upload: unsupported type rejected → 422 — got 422
+[PASS] upload: unknown doc_type rejected → 422 — got 422
+[PASS] upload: oversize rejected → 413 — got 413
+[PASS] release gate: open issues block READY (reviewer) → 409
+[PASS] release gate: release draft blocked → 409
+[PASS] tenant/ID isolation: unknown case id → 404 (no enumeration leak)
+[PASS] tenant/ID isolation: unknown document → 404
+[PASS] RBAC: admin has no customs-decision permission
+[PASS] audit records critical actions with actor/before/after
+[PASS] audit chain valid
+NEGATIVE_TESTS: 20/20 PASS

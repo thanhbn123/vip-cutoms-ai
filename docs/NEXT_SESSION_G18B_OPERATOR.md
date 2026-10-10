@@ -39,7 +39,7 @@ Rollback if anything fails: `docs/STAGING_ROLLBACK.md` (previous SHA `9649ec7`, 
 ## 2. B-07 — deactivate the demo users (after acceptance is signed off)
 Two equivalent paths. **UI (G18G, no SSH):** log in as `admin@demo.local`, *Quản trị → Roles & users → Tạo tài khoản*
 a real ADMIN (own e-mail, password ≥10), log in as that admin, *vô hiệu hoá* each `*@demo.local` with a reason (audited
-`user.deactivated`), then run `--verify` below. **Script (batch, SYSTEM actor):**
+`user.deactivated`, visible at once in *Quản trị → Audit → Tenant*), then run `--verify` below. **Script (batch, SYSTEM actor):**
 ```bash
 DEPLOY_PATH=/opt/vip-customs-ai bash scripts/staging/deactivate_demo_users.sh              # inventory: 4 accounts, active=True
 # create a real ADMIN for tenant DEMO first if the tenant stays in use (POST /api/v1/users as admin@demo.local)

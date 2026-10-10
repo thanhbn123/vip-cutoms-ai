@@ -100,3 +100,23 @@ test("a reviewer sees the user list read-only", async () => {
   expect(screen.queryByText("vô hiệu hoá")).toBeNull();
   expect(screen.getByText("OPERATOR")).toBeInTheDocument();
 });
+
+test("the Audit card shows the tenant-level feed by default and switches to the selected case", async () => {
+  const calls: string[] = [];
+  globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
+    const url = String(input);
+    calls.push(url);
+    if (url.includes("/audit?limit=50")) return new Response(JSON.stringify([{ id: "a1", action: "user.deactivated", entity_type: "user", actor_type: "USER", actor_role: "ADMIN", reason: "left the company", created_at: "2026-10-10T01:02:03Z", before: { is_active: true }, after: { is_active: false }, hash: "h" }]), { status: 200 });
+    if (url.includes("/cases/c1/audit")) return new Response(JSON.stringify([{ id: "a2", action: "issue.raised", entity_type: "issue", actor_type: "SYSTEM", actor_role: null, reason: null, created_at: "2026-10-10T01:00:00Z", before: null, after: null, hash: "h2" }]), { status: 200 });
+    if (url.endsWith("/ready")) return new Response(JSON.stringify({ status: "ready", checks: {} }), { status: 200 });
+    if (url.endsWith("/users")) return new Response("[]", { status: 200 });
+    return new Response(JSON.stringify({ cases_by_status: {}, open_issues: {}, fields_total: 0, fields_accepted_pct: 0, drafts_exported: 0 }), { status: 200 });
+  }) as unknown as typeof fetch;
+  render(<Manage ctx={{ ...ctx, caseId: "c1" }} />);
+  await waitFor(() => expect(screen.getByText("user.deactivated")).toBeInTheDocument());
+  expect(screen.getByText("left the company")).toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText("Phạm vi audit"), { target: { value: "case" } });
+  await waitFor(() => expect(screen.getByText("issue.raised")).toBeInTheDocument());
+  expect(screen.queryByText("user.deactivated")).toBeNull();
+  expect(calls.some((c) => c.includes("/cases/c1/audit"))).toBe(true);
+});

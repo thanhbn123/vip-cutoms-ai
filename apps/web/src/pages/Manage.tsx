@@ -15,7 +15,7 @@ interface Ready {
   };
 }
 const CAP: Record<string, string> = { document_ocr: "OCR", document_ai: "Trích xuất", hs_ai: "HS", copilot: "Copilot" };
-interface Audit { id: string; action: string; actor_type: string; actor_role: string | null; reason: string | null; created_at: string; before: unknown; after: unknown }
+interface Audit { id: string; action: string; entity_type?: string; actor_type: string; actor_role: string | null; reason: string | null; created_at: string; before: unknown; after: unknown }
 
 export function Manage({ ctx }: { ctx: Ctx }) {
   const [s, setS] = useState<Summary | null>(null);
@@ -23,13 +23,15 @@ export function Manage({ ctx }: { ctx: Ctx }) {
   const [ready, setReady] = useState<Ready | null>(null);
   const [chain, setChain] = useState<boolean | null>(null);
   const [audit, setAudit] = useState<Audit[]>([]);
+  const [auditScope, setAuditScope] = useState<"case" | "tenant">("tenant");  // G18H: tenant feed (accounts, lockouts, knowledge) is the default
   const [err, setErr] = useState<string | null>(null);
   const [newUser, setNewUser] = useState({ email: "", full_name: "", role: "OPERATOR", password: "" });
   const [createOpen, setCreateOpen] = useState(false);
   const loadUsers = () => api<User[]>("/users").then(setUsers).catch(() => undefined);
   const canManage = ctx.can("user.manage");
   // G18G user lifecycle: every change goes through the audited API; failures are shown, never swallowed
-  const run = (p: Promise<unknown>, msg: string) => p.then(() => { setErr(null); ctx.toast(msg); loadUsers(); return true; }).catch((e) => { setErr(errMsg(e)); return false; });
+  const [auditBump, setAuditBump] = useState(0);
+  const run = (p: Promise<unknown>, msg: string) => p.then(() => { setErr(null); ctx.toast(msg); loadUsers(); setAuditBump((b) => b + 1); return true; }).catch((e) => { setErr(errMsg(e)); return false; });
   const createUser = () => run(post("/users", newUser), "Đã tạo tài khoản").then((ok) => { if (ok) { setNewUser({ email: "", full_name: "", role: "OPERATOR", password: "" }); setCreateOpen(false); } });
   const toggleActive = (u: User) => { const r = ask(`Lý do ${u.is_active === false ? "kích hoạt lại" : "vô hiệu hoá"} ${u.email} (≥5 ký tự)`); if (r) run(patch(`/users/${u.id}`, { is_active: u.is_active === false, reason: r }), u.is_active === false ? "Đã kích hoạt lại" : "Đã vô hiệu hoá (token hiện tại hết hiệu lực)"); };
   const changeRole = (u: User, role: string) => { if (role === u.role) return; const r = ask(`Lý do đổi vai trò ${u.email} → ${role} (≥5 ký tự)`); if (r) run(patch(`/users/${u.id}`, { role, reason: r }), "Đã đổi vai trò"); };
@@ -38,8 +40,11 @@ export function Manage({ ctx }: { ctx: Ctx }) {
     api<Summary>("/dashboard/summary").then(setS).catch((e) => setErr(errMsg(e)));
     loadUsers();
     fetch("/ready").then((r) => r.json()).then(setReady).catch(() => undefined);
-    if (ctx.caseId && ctx.can("audit.read")) api<Audit[]>(`/cases/${ctx.caseId}/audit`).then((a) => setAudit(a.slice().reverse())).catch(() => undefined);
-  }, [ctx.caseId, ctx.bump]);
+    if (!ctx.can("audit.read")) return;
+    if (auditScope === "tenant") api<Audit[]>("/audit?limit=50").then(setAudit).catch(() => undefined);
+    else if (ctx.caseId) api<Audit[]>(`/cases/${ctx.caseId}/audit`).then((a) => setAudit(a.slice().reverse())).catch(() => undefined);
+    else setAudit([]);
+  }, [ctx.caseId, ctx.bump, auditScope, auditBump]);
   const total = Object.values(s?.cases_by_status ?? {}).reduce((a, b) => a + b, 0);
   return (
     <>
@@ -108,10 +113,12 @@ export function Manage({ ctx }: { ctx: Ctx }) {
           )}
           <p className="mini">Operator: upload, sửa dữ liệu thường, gửi review · Reviewer: duyệt HS/C/O/trị giá/policy · Senior: waive critical, override HS, outcome · Admin: cấu hình, không ra quyết định hải quan.</p>
         </Card>
-        <Card title="Audit" right={ctx.can("audit.read") ? <button className="btn secondary small" onClick={() => api<{ chain_valid: boolean }>("/audit/verify").then((r) => setChain(r.chain_valid))}>Verify chain {chain == null ? "" : chain ? "✓" : "✗"}</button> : undefined}>
+        <Card title="Audit" right={ctx.can("audit.read") ? <>
+            <select aria-label="Phạm vi audit" value={auditScope} onChange={(e) => setAuditScope(e.target.value as "case" | "tenant")}><option value="tenant">Tenant (tài khoản, knowledge, lockout)</option><option value="case">Hồ sơ đang chọn</option></select>{" "}
+            <button className="btn secondary small" onClick={() => api<{ chain_valid: boolean }>("/audit/verify").then((r) => setChain(r.chain_valid))}>Verify chain {chain == null ? "" : chain ? "✓" : "✗"}</button></> : undefined}>
           <table><thead><tr><th>Actor</th><th>Action</th><th>Reason</th><th>At</th></tr></thead><tbody>
-            {audit.slice(0, 25).map((a) => <tr key={a.id}><td>{a.actor_type}{a.actor_role ? ` · ${a.actor_role}` : ""}</td><td>{a.action}<div className="mini">{a.before ? `before: ${JSON.stringify(a.before).slice(0, 60)}` : ""}</div></td><td className="mini">{a.reason}</td><td className="mini">{a.created_at.replace("T", " ").slice(0, 19)}</td></tr>)}
-            {!audit.length && <tr><td colSpan={4} className="mini">Chọn hồ sơ để xem audit.</td></tr>}
+            {audit.slice(0, 50).map((a) => <tr key={a.id}><td>{a.actor_type}{a.actor_role ? ` · ${a.actor_role}` : ""}</td><td>{a.action}<div className="mini">{a.entity_type}{a.before ? ` · before: ${JSON.stringify(a.before).slice(0, 60)}` : ""}</div></td><td className="mini">{a.reason}</td><td className="mini">{a.created_at.replace("T", " ").slice(0, 19)}</td></tr>)}
+            {!audit.length && <tr><td colSpan={4} className="mini">{auditScope === "case" ? "Chọn hồ sơ để xem audit." : "Chưa có sự kiện audit cấp tenant."}</td></tr>}
           </tbody></table>
         </Card>
       </div>
