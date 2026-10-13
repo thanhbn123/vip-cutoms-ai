@@ -1,17 +1,17 @@
-# docker-acceptance · 2026-10-10T07:09:06Z · ae37e61 · api http://localhost:8000 · web http://localhost:5173
+# docker-acceptance · 2026-10-13T09:34:53Z · d19a0de · api http://localhost:8000 · web http://localhost:5173
 ## 1. seed demo tenant + V12 case inside the api container
 tenant DEMO ready; users: operator@demo.local, reviewer@demo.local, senior@demo.local, admin@demo.local; datasets seeded: ['HS_RULES', 'TARIFF', 'FTA', 'POLICY']
 demo case VIP-HQ-261008-001: {'documents_parsed': 4, 'status': 'BLOCKED'}
 ## 2. Playwright against the Docker web (seeded case must be BLOCKED)
-  ✓  1 admin-users.spec.ts:8:1 › admin logs in with the tenant code, creates / re-roles / deactivates a colleague, and the tenant audit shows it (5.3s)
-  ✓  3 smoke.spec.ts:5:1 › login → V12 navigation → goods shows the BLOCKED item → copilot answers → release gate blocked (2.6s)
+  ✓  1 e2e/admin-users.spec.ts:8:1 › admin logs in with the tenant code, creates / re-roles / deactivates a colleague, and the tenant audit shows it (3.0s)
+  ✓  3 e2e/smoke.spec.ts:5:1 › login → V12 navigation → goods shows the BLOCKED item → copilot answers → release gate blocked (1.5s)
 
-  3 passed (9.3s)
+  3 passed (5.8s)
 playwright_exit=0
 ## 3. HTTP acceptance A–P (scripts/acceptance_http.py)
 [PASS] 0. health/ready — migrations=0014_password_changed_at provider=mock
 [PASS] A. authentication/login (operator, reviewer, senior)
-[PASS] B. create case — VIP-HQ-261010-001
+[PASS] B. create case — VIP-HQ-261013-001
 [PASS] C. upload mock documents (Invoice, PL, B/L, Form E)
 [PASS] D. parse with mock provider
 [PASS] E. package conflict 124/126 detected, not auto-resolved
@@ -33,8 +33,8 @@ ACCEPTANCE_HTTP: 19/19 steps PASS against http://localhost:8000
 acceptance_exit=0
 ## containers after flow
 NAME                     STATUS
-vip-customs-api-1        Up 45 seconds
-vip-customs-postgres-1   Up 56 seconds (healthy)
-vip-customs-web-1        Up 43 seconds
+vip-customs-api-1        Up 31 seconds
+vip-customs-postgres-1   Up 42 seconds (healthy)
+vip-customs-web-1        Up 29 seconds
 restart counts: /vip-customs-api-1=0 /vip-customs-postgres-1=0 /vip-customs-web-1=0 
 uploaded documents in volume: 11

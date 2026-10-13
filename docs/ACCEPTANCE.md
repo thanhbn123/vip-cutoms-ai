@@ -40,4 +40,5 @@ A test case with Invoice + Packing List must be able to:
 - unit/integration tests pass on PostgreSQL;
 - browser E2E covers the primary case, tenant-code login and the account lifecycle, and runs in CI;
 - seed/demo tariff and policy data are visibly labeled as non-authoritative;
-- no production customs submission occurs during MVP/staging acceptance.
+- no production customs submission occurs during MVP/staging acceptance;
+- `scripts/deps_audit.sh` reports `DEPS_AUDIT: CLEAN` on the release commit (known-vulnerability audit of API and web dependencies).

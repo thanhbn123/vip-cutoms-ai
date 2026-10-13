@@ -1,14 +1,14 @@
-# docker-smoke · 2026-10-10T07:07:26Z · ae37e61
+# docker-smoke · 2026-10-13T09:32:51Z · d19a0de
 docker: 29.8.2 · compose: 5.6.0
 ## down -v --remove-orphans
+ Volume vip-customs_uploads Removed 
  Network vip-customs_default Removed 
  Volume vip-customs_pgdata Removed 
- Volume vip-customs_uploads Removed 
 ## build --no-cache
 build_exit=0
 #20 naming to docker.io/library/vip-customs-web:latest done
 #27 naming to docker.io/library/vip-customs-api:latest done
-real	1m4.002s
+real	1m30.875s
 ## up -d
  Container vip-customs-api-1 Starting 
  Container vip-customs-api-1 Started 
@@ -16,16 +16,16 @@ real	1m4.002s
  Container vip-customs-web-1 Started 
 ## ps
 NAME                     IMAGE                STATUS                    PORTS
-vip-customs-api-1        vip-customs-api      Up 18 seconds             0.0.0.0:8000->8000/tcp
-vip-customs-postgres-1   postgres:16-alpine   Up 29 seconds (healthy)   0.0.0.0:55432->5432/tcp
-vip-customs-web-1        vip-customs-web      Up 16 seconds             0.0.0.0:5173->5173/tcp
+vip-customs-api-1        vip-customs-api      Up 13 seconds             0.0.0.0:8000->8000/tcp
+vip-customs-postgres-1   postgres:16-alpine   Up 23 seconds (healthy)   0.0.0.0:55432->5432/tcp
+vip-customs-web-1        vip-customs-web      Up 11 seconds             0.0.0.0:5173->5173/tcp
 ## health (host)
 {"status":"ok","service":"vip-customs-api","version":"0.1.0","mode":"demo","release_sha":null} [200]
 ## ready (host)
-{"status":"ready","mode":"demo","checks":{"mode":"demo","environment":"development","release_sha":null,"migration_head":"0014_password_changed_at","database":"ok","migrations":"0014_password_changed_at","migration_in_sync":true,"providers":{"document_ocr":{"capability":"document_ocr","name":"mock","version":"mock-1.0.0","configured":true,"healthy":true,"detail":"deterministic mock","is_mock":true},"document_ai":{"capability":"document_ai","name":"mock","version":"mock-1.0.0","configured":true,"healthy":true,"detail":"deterministic mock","is_mock":true},"hs_ai":{"capability":"hs_ai","name":"mock","version":"mock-1.0.0","configured":true,"healthy":true,"detail":"deterministic mock","is_mock":true},"copilot":{"capability":"copilot","name":"mock","version":"mock-1.0.0","configured":true,"healthy":true,"detail":"deterministic mock","is_mock":true}},"ai_provider":"mock","document_provider":"mock","customs_data_authoritative":{"HS_RULES":{"authoritative":false,"reason":"HS_RULES: no verified authoritative dataset effective on 2026-10-10 (demo/unverified data refused in full mode)"},"TARIFF":{"authoritative":false,"reason":"TARIFF: no verified authoritative dataset effective on 2026-10-10 (demo/unverified data refused in full mode)"},"FTA":{"authoritative":false,"reason":"FTA: no verified authoritative dataset effective on 2026-10-10 (demo/unverified data refused in full mode)"},"POLICY":{"authoritative":false,"reason":"POLICY: no verified authoritative dataset effective on 2026-10-10 (demo/unverified data refused in full mode)"},"all_authoritative":false},"backup_status":{"state":"unconfigured"}},"blocking":[]} [200]
+{"status":"ready","mode":"demo","checks":{"mode":"demo","environment":"development","release_sha":null,"migration_head":"0014_password_changed_at","database":"ok","migrations":"0014_password_changed_at","migration_in_sync":true,"providers":{"document_ocr":{"capability":"document_ocr","name":"mock","version":"mock-1.0.0","configured":true,"healthy":true,"detail":"deterministic mock","is_mock":true},"document_ai":{"capability":"document_ai","name":"mock","version":"mock-1.0.0","configured":true,"healthy":true,"detail":"deterministic mock","is_mock":true},"hs_ai":{"capability":"hs_ai","name":"mock","version":"mock-1.0.0","configured":true,"healthy":true,"detail":"deterministic mock","is_mock":true},"copilot":{"capability":"copilot","name":"mock","version":"mock-1.0.0","configured":true,"healthy":true,"detail":"deterministic mock","is_mock":true}},"ai_provider":"mock","document_provider":"mock","customs_data_authoritative":{"HS_RULES":{"authoritative":false,"reason":"HS_RULES: no verified authoritative dataset effective on 2026-10-13 (demo/unverified data refused in full mode)"},"TARIFF":{"authoritative":false,"reason":"TARIFF: no verified authoritative dataset effective on 2026-10-13 (demo/unverified data refused in full mode)"},"FTA":{"authoritative":false,"reason":"FTA: no verified authoritative dataset effective on 2026-10-13 (demo/unverified data refused in full mode)"},"POLICY":{"authoritative":false,"reason":"POLICY: no verified authoritative dataset effective on 2026-10-13 (demo/unverified data refused in full mode)"},"all_authoritative":false},"backup_status":{"state":"unconfigured"}},"blocking":[]} [200]
 ## frontend (host)
 HTTP/1.1 200 OK
-Access-Control-Allow-Origin: *
+Vary: Origin
 ## alembic in api container
 0014_password_changed_at (head)
 heads=1
@@ -33,7 +33,8 @@ heads=1
 22
 
 ## logs scan (last 200 lines/service)
-error/traceback/restart lines: 1
-postgres-1  | 2026-10-10 07:08:40.874 UTC [48] LOG:  background worker "logical replication launcher" (PID 54) exited with exit code 1
+error/traceback/restart lines: 2
+postgres-1  | 2026-10-13 09:34:31.283 UTC [41] LOG:  background worker "logical replication launcher" (PID 47) exited with exit code 1
+postgres-1  | 2026-10-13 09:34:31.337 UTC [59] FATAL:  the database system is shutting down
 secret leak check (POSTGRES_PASSWORD / APP_SECRET_KEY in logs): 0
 restart counts: /vip-customs-api-1=0 /vip-customs-postgres-1=0 /vip-customs-web-1=0 
