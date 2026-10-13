@@ -21,7 +21,7 @@ The system is **fail-closed**: AI may extract, compare, explain, recommend, and 
 
 ## Run locally
 
-See `docs/RUNBOOK.md`. Short version: `bash scripts/dev_db.sh`; in `apps/api`: `alembic upgrade head`, `SEED_DEMO_PASSWORD=... python scripts/seed_demo.py --with-case`, `uvicorn app.main:app --port 8000`; in `apps/web`: `npm ci && npm run dev`. Full verification: `bash scripts/verify.sh`.
+See `docs/RUNBOOK.md`. Short version: `bash scripts/dev_db.sh`; in `apps/api`: `alembic upgrade head`, `SEED_DEMO_PASSWORD=... python scripts/seed_demo.py --with-case`, `uvicorn app.main:app --port 8000`; in `apps/web`: `npm ci && npm run dev`. Full verification: `bash scripts/verify.sh`. Browser E2E: `bash scripts/e2e.sh`. Dependency audit: `bash scripts/deps_audit.sh`.
 
 Open `prototype/index.html` for the owner-approved design direction.
 

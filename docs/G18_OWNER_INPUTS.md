@@ -63,8 +63,9 @@ corresponding blocker stays `BLOCKED_OWNER`.
 
 | # | Input | Goes to |
 |---|---|---|
-| 1 | Confirmation that staging acceptance is signed off and the demo accounts may be deactivated | run `scripts/staging/deactivate_demo_users.sh --execute` on the staging host (`docs/G18_B07_DEMO_USERS.md`) |
-| 2 | A real (non-demo) ADMIN account for the DEMO tenant if that tenant will keep being used | create via `POST /users` before deactivation; the script's `--verify` checks it |
+| 1 | Confirmation that staging acceptance is signed off and the demo accounts may be deactivated | either path: **UI** — a real DEMO admin deactivates each `*@demo.local` on *Quản trị → Roles & users* with a reason (G18G, no host access needed), or **script** — `scripts/staging/deactivate_demo_users.sh --execute` on the staging host (`docs/G18_B07_DEMO_USERS.md`); `--verify` confirms the end state either way |
+| 2 | A real (non-demo) ADMIN account for the DEMO tenant if that tenant will keep being used | create on *Quản trị → Tạo tài khoản* (or `POST /users`) before deactivation; that person then changes their password via *Đổi mật khẩu* |
+| 3 | Staging must first be redeployed to the current `develop` (the running G15C image predates G18) | `docs/NEXT_SESSION_G18B_OPERATOR.md` §1 |
 
 ## Not requested (and must not be supplied)
 

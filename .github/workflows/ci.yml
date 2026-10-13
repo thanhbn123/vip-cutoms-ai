@@ -73,3 +73,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: bash scripts/secret_scan.sh
+  deps-audit:
+    # Known-vulnerability audit of the API environment and the web dependencies (G18J). Informational: a CVE published
+    # overnight must not block an unrelated merge, but the result is visible on every run and in the job summary.
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - run: pip install -e './apps/api[dev]' pip-audit
+      - run: npm ci
+        working-directory: apps/web
+      - run: DEPS_AUDIT_PYTHON=python bash scripts/deps_audit.sh | tee -a "$GITHUB_STEP_SUMMARY"
